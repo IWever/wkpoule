@@ -1,3 +1,5 @@
+console.log("✅ NEW pouleEngine loaded");
+
 import {
   GROUPS,
   GROUP_MATCHES,
