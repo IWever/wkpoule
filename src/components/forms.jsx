@@ -15,27 +15,11 @@ import {
   FLAG,
 } from "../data/tournamentData";
 import {
-  load,
-  persist,
-  hash,
-  blank,
   deepSet,
-  computeGroupStandings,
   deriveGroupStandings,
   deriveGroupStandingsFromResults,
-  groupsAllFilled,
-  slotLabel,
-  resolveGroupSlot,
-  resolveSlotRich,
   buildRichKOSlots,
-  resolveSlot,
-  buildKOSlots,
-  deriveTopOuts,
-  deriveSurpriseStage,
   calcGroupMatchPts,
-  calcPoints,
-  fmtDate,
-  fmtTime,
   fmtDateTime,
 } from "../pouleEngine";
 import { S } from "../styles/ui";
