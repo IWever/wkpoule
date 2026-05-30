@@ -1,4 +1,3 @@
-
 import React from "react";
 import { FLAG } from "../data/tournamentData";
 import { S } from "../styles/ui";

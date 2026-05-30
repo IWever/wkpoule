@@ -1,4 +1,4 @@
-
+import React from "react";
 import { useState } from "react";
 import { load, persist, hash, blank } from "./pouleEngine";
 import { AuthScreen, AdminLogin } from "./components/auth";
