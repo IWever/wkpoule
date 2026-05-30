@@ -2,17 +2,18 @@ import React from "react";
 import { useState } from "react";
 import {
   GROUP_MATCHES,
-  KO_STRUCTURE,
   ALL_TEAMS,
+  KO_STRUCTURE,
   NL_STAGES,
   SURPRISE_TEAMS,
   PTS_SURPRISE,
   TOP_TEAMS,
   PTS_TOP_OUT,
   PLAYERS_BY_COUNTRY,
-  PTS_EXTRA,
   PTS_GROUP,
+  PTS_STANDING,
   PTS_KO,
+  PTS_EXTRA,
   FLAG,
 } from "../data/tournamentData";
 import {
