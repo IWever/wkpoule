@@ -1028,489 +1028,489 @@ function blank() {
       koFrozen: true,
     },
   };
+}
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
 
-  // ─── HELPERS ─────────────────────────────────────────────────────────────────
-
-  function deepSet(obj, path, value) {
-    if (path.length === 1) {
-      var r = {};
-      Object.keys(obj).forEach(function (k) {
-        r[k] = obj[k];
-      });
-      r[path[0]] = value;
-      return r;
-    }
-    var child = obj[path[0]] || {};
-    var r2 = {};
+function deepSet(obj, path, value) {
+  if (path.length === 1) {
+    var r = {};
     Object.keys(obj).forEach(function (k) {
-      r2[k] = obj[k];
+      r[k] = obj[k];
     });
-    r2[path[0]] = deepSet(child, path.slice(1), value);
-    return r2;
+    r[path[0]] = value;
+    return r;
+  }
+  var child = obj[path[0]] || {};
+  var r2 = {};
+  Object.keys(obj).forEach(function (k) {
+    r2[k] = obj[k];
+  });
+  r2[path[0]] = deepSet(child, path.slice(1), value);
+  return r2;
+}
+
+function computeGroupStandings(matchScores) {
+  var standings = {};
+  Object.keys(GROUPS).forEach(function (g) {
+    var teams = GROUPS[g];
+    var stat = {};
+    teams.forEach(function (t) {
+      stat[t] = { pts: 0, gp: 0, gf: 0, ga: 0 };
+    });
+    GROUP_MATCHES.filter(function (m) {
+      return m.group === g;
+    }).forEach(function (m) {
+      var s = matchScores(m.id);
+      if (!s || s.home === "" || s.home === undefined) return;
+      var h = parseInt(s.home),
+        a = parseInt(s.away);
+      if (isNaN(h) || isNaN(a)) return;
+      stat[m.home].gp++;
+      stat[m.away].gp++;
+      stat[m.home].gf += h;
+      stat[m.home].ga += a;
+      stat[m.away].gf += a;
+      stat[m.away].ga += h;
+      if (h > a) {
+        stat[m.home].pts += 3;
+      } else if (h === a) {
+        stat[m.home].pts++;
+        stat[m.away].pts++;
+      } else {
+        stat[m.away].pts += 3;
+      }
+    });
+    var sorted = teams.slice().sort(function (a, b) {
+      return (
+        stat[b].pts - stat[a].pts ||
+        stat[b].gf - stat[b].ga - (stat[a].gf - stat[a].ga) ||
+        stat[b].gf - stat[a].gf
+      );
+    });
+    standings[g] = {
+      winner: sorted[0],
+      runnerUp: sorted[1],
+      table: sorted.map(function (t) {
+        return {
+          team: t,
+          pts: stat[t].pts,
+          gp: stat[t].gp,
+          gf: stat[t].gf,
+          ga: stat[t].ga,
+          gd: stat[t].gf - stat[t].ga,
+        };
+      }),
+    };
+  });
+  return standings;
+}
+
+function deriveGroupStandings(pred) {
+  return computeGroupStandings(function (id) {
+    return pred && pred.matches && pred.matches[id];
+  });
+}
+
+function deriveGroupStandingsFromResults(results) {
+  return computeGroupStandings(function (id) {
+    var r = results[id];
+    return r && r.played ? r : null;
+  });
+}
+
+function groupsAllFilled(matchScores) {
+  var result = {};
+  Object.keys(GROUPS).forEach(function (g) {
+    var matches = GROUP_MATCHES.filter(function (m) {
+      return m.group === g;
+    });
+    result[g] = matches.every(function (m) {
+      var s = matchScores(m.id);
+      return s != null && s.home !== "" && s.home !== undefined;
+    });
+  });
+  return result;
+}
+
+function slotLabel(slot) {
+  if (!slot) return "?";
+  if (/^1[A-L]$/.test(slot)) return "Nr. 1 Groep " + slot[1];
+  if (/^2[A-L]$/.test(slot)) return "Nr. 2 Groep " + slot[1];
+  if (/^N3/.test(slot)) return "Beste nr. 3";
+  if (slot.charAt(0) === "W") {
+    var m = KO_STRUCTURE.filter(function (x) {
+      return x.id === slot.slice(1);
+    })[0];
+    return m ? "Winnaar " + m.label : slot;
+  }
+  if (slot.charAt(0) === "L") {
+    var m2 = KO_STRUCTURE.filter(function (x) {
+      return x.id === slot.slice(1);
+    })[0];
+    return m2 ? "Verliezer " + m2.label : slot;
+  }
+  return slot;
+}
+
+function resolveGroupSlot(slot, standings, allGroupsComplete) {
+  var rank = slot[0];
+  var g = slot[1];
+  var s = standings[g];
+  if (!s) return null;
+  var team = rank === "1" ? s.winner : s.runnerUp;
+  return allGroupsComplete[g] ? team : null;
+}
+
+function resolveSlotRich(slot, ctx) {
+  var adminStandings = ctx.adminStandings;
+  var adminComplete = ctx.adminComplete;
+  var userKoWinners = ctx.userKoWinners;
+  var adminKoResults = ctx.adminKoResults;
+
+  if (!slot) return { type: "label", label: "?" };
+
+  if (/^[12][A-L]$/.test(slot)) {
+    var g = slot[1];
+    var adminTeam = adminStandings
+      ? resolveGroupSlot(slot, adminStandings, adminComplete)
+      : null;
+    if (adminTeam) return { type: "team", team: adminTeam };
+    return { type: "label", label: slotLabel(slot) };
   }
 
-  function computeGroupStandings(matchScores) {
-    var standings = {};
-    Object.keys(GROUPS).forEach(function (g) {
-      var teams = GROUPS[g];
-      var stat = {};
-      teams.forEach(function (t) {
-        stat[t] = { pts: 0, gp: 0, gf: 0, ga: 0 };
-      });
-      GROUP_MATCHES.filter(function (m) {
-        return m.group === g;
-      }).forEach(function (m) {
-        var s = matchScores(m.id);
-        if (!s || s.home === "" || s.home === undefined) return;
-        var h = parseInt(s.home),
-          a = parseInt(s.away);
-        if (isNaN(h) || isNaN(a)) return;
-        stat[m.home].gp++;
-        stat[m.away].gp++;
-        stat[m.home].gf += h;
-        stat[m.home].ga += a;
-        stat[m.away].gf += a;
-        stat[m.away].ga += h;
-        if (h > a) {
-          stat[m.home].pts += 3;
-        } else if (h === a) {
-          stat[m.home].pts++;
-          stat[m.away].pts++;
-        } else {
-          stat[m.away].pts += 3;
-        }
-      });
-      var sorted = teams.slice().sort(function (a, b) {
-        return (
-          stat[b].pts - stat[a].pts ||
-          stat[b].gf - stat[b].ga - (stat[a].gf - stat[a].ga) ||
-          stat[b].gf - stat[a].gf
-        );
-      });
-      standings[g] = {
-        winner: sorted[0],
-        runnerUp: sorted[1],
-        table: sorted.map(function (t) {
-          return {
-            team: t,
-            pts: stat[t].pts,
-            gp: stat[t].gp,
-            gf: stat[t].gf,
-            ga: stat[t].ga,
-            gd: stat[t].gf - stat[t].ga,
-          };
-        }),
+  if (/^N3/.test(slot)) {
+    if (
+      adminComplete &&
+      Object.keys(adminComplete).every(function (k) {
+        return adminComplete[k];
+      })
+    ) {
+      // Collect all nr3 teams and their stats
+      var thirds = [];
+      if (adminStandings) {
+        Object.keys(GROUPS).forEach(function (g2) {
+          if (!adminComplete[g2]) return;
+          var table = adminStandings[g2] && adminStandings[g2].table;
+          if (table && table.length >= 3) {
+            thirds.push({
+              team: table[2].team,
+              group: g2,
+              pts: table[2].pts,
+              gd: table[2].gd,
+              gf: table[2].gf,
+            });
+          }
+        });
+        thirds.sort(function (a, b) {
+          return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf;
+        });
+      }
+      // Top 8 nr3 teams qualify
+      var top8 = thirds.slice(0, 8);
+      // Map each N3 slot to the eligible groups it can pull from
+      var slotGroupMap = {
+        N3BCDI: ["B", "C", "D", "I"],
+        N3ABCD: ["A", "B", "C", "D"],
+        N3ABFG: ["A", "B", "F", "G"],
+        N3EFGL: ["E", "F", "G", "L"],
+        N3HJKL: ["H", "J", "K", "L"],
+        N3ABCE: ["A", "B", "C", "E"],
+        N3IJKL: ["I", "J", "K", "L"],
+        N3EFGH: ["E", "F", "G", "H"],
       };
-    });
-    return standings;
-  }
-
-  function deriveGroupStandings(pred) {
-    return computeGroupStandings(function (id) {
-      return pred && pred.matches && pred.matches[id];
-    });
-  }
-
-  function deriveGroupStandingsFromResults(results) {
-    return computeGroupStandings(function (id) {
-      var r = results[id];
-      return r && r.played ? r : null;
-    });
-  }
-
-  function groupsAllFilled(matchScores) {
-    var result = {};
-    Object.keys(GROUPS).forEach(function (g) {
-      var matches = GROUP_MATCHES.filter(function (m) {
-        return m.group === g;
-      });
-      result[g] = matches.every(function (m) {
-        var s = matchScores(m.id);
-        return s != null && s.home !== "" && s.home !== undefined;
-      });
-    });
-    return result;
-  }
-
-  function slotLabel(slot) {
-    if (!slot) return "?";
-    if (/^1[A-L]$/.test(slot)) return "Nr. 1 Groep " + slot[1];
-    if (/^2[A-L]$/.test(slot)) return "Nr. 2 Groep " + slot[1];
-    if (/^N3/.test(slot)) return "Beste nr. 3";
-    if (slot.charAt(0) === "W") {
-      var m = KO_STRUCTURE.filter(function (x) {
-        return x.id === slot.slice(1);
-      })[0];
-      return m ? "Winnaar " + m.label : slot;
+      var eligible = slotGroupMap[slot];
+      if (eligible) {
+        // Find the best qualified nr3 team from the eligible groups
+        var match2 = null;
+        for (var qi = 0; qi < top8.length; qi++) {
+          if (eligible.indexOf(top8[qi].group) >= 0) {
+            match2 = top8[qi];
+            break;
+          }
+        }
+        if (match2) return { type: "team", team: match2.team };
+      }
     }
-    if (slot.charAt(0) === "L") {
-      var m2 = KO_STRUCTURE.filter(function (x) {
-        return x.id === slot.slice(1);
-      })[0];
-      return m2 ? "Verliezer " + m2.label : slot;
-    }
-    return slot;
+    return { type: "label", label: "Beste nr. 3" };
   }
 
-  function resolveGroupSlot(slot, standings, allGroupsComplete) {
+  if (slot.charAt(0) === "W") {
+    var matchId = slot.slice(1);
+    if (
+      adminKoResults &&
+      adminKoResults[matchId] &&
+      adminKoResults[matchId].played
+    ) {
+      return { type: "team", team: adminKoResults[matchId].winner };
+    }
+    var userPick = userKoWinners && userKoWinners[matchId];
+    if (userPick) return { type: "team", team: userPick };
+    var koMatch = KO_STRUCTURE.filter(function (m) {
+      return m.id === matchId;
+    })[0];
+    if (koMatch) {
+      var hd = resolveSlotRich(koMatch.homeSlot, ctx);
+      var ad = resolveSlotRich(koMatch.awaySlot, ctx);
+      if (hd.type === "team" && ad.type === "team")
+        return { type: "two", teams: [hd.team, ad.team] };
+    }
+    return { type: "label", label: slotLabel(slot) };
+  }
+
+  if (slot.charAt(0) === "L") {
+    var loserMatchId = slot.slice(1); // e.g. "SF_1"
+    var srcMatch = KO_STRUCTURE.filter(function (km) {
+      return km.id === loserMatchId;
+    })[0];
+    var hTeam = null;
+    var aTeam = null;
+    if (srcMatch) {
+      var hDesc = resolveSlotRich(srcMatch.homeSlot, ctx);
+      var aDesc = resolveSlotRich(srcMatch.awaySlot, ctx);
+      hTeam = hDesc && hDesc.type === "team" ? hDesc.team : null;
+      aTeam = aDesc && aDesc.type === "team" ? aDesc.team : null;
+    }
+    // First try admin result
+    if (
+      adminKoResults &&
+      adminKoResults[loserMatchId] &&
+      adminKoResults[loserMatchId].played
+    ) {
+      var winner = adminKoResults[loserMatchId].winner;
+      var loser =
+        winner === hTeam && aTeam
+          ? aTeam
+          : winner === aTeam && hTeam
+          ? hTeam
+          : null;
+      if (loser) return { type: "team", team: loser };
+    }
+    // Fall back to user's predicted winner to derive predicted loser
+    var userWinner = userKoWinners && userKoWinners[loserMatchId];
+    if (userWinner) {
+      var predLoser =
+        userWinner === hTeam && aTeam
+          ? aTeam
+          : userWinner === aTeam && hTeam
+          ? hTeam
+          : null;
+      if (predLoser) return { type: "team", team: predLoser };
+    }
+    return { type: "label", label: slotLabel(slot) };
+  }
+  return { type: "label", label: slot };
+}
+
+function buildRichKOSlots(pred, results, koResults) {
+  var adminStandings = deriveGroupStandingsFromResults(results);
+  var adminComplete = groupsAllFilled(function (id) {
+    var r = results[id];
+    return r && r.played ? r : null;
+  });
+  var koWinners = {};
+  KO_STRUCTURE.forEach(function (km) {
+    var winner = koResults[km.id] && koResults[km.id].winner;
+    if (winner) koWinners[km.id] = winner;
+  });
+  if (pred && pred.koWinners) {
+    Object.keys(pred.koWinners).forEach(function (k) {
+      if (pred.koWinners[k]) koWinners[k] = pred.koWinners[k];
+    });
+  }
+  var ctx = {
+    adminStandings: adminStandings,
+    adminComplete: adminComplete,
+    userKoWinners: koWinners,
+    adminKoResults: koResults,
+  };
+  var slots = {};
+  KO_STRUCTURE.forEach(function (m) {
+    slots[m.id] = {
+      home: resolveSlotRich(m.homeSlot, ctx),
+      away: resolveSlotRich(m.awaySlot, ctx),
+    };
+  });
+  return slots;
+}
+
+function resolveSlot(slot, pred, koWinners) {
+  if (!slot) return null;
+  if (/^[12][A-L]$/.test(slot)) {
     var rank = slot[0];
     var g = slot[1];
-    var s = standings[g];
-    if (!s) return null;
-    var team = rank === "1" ? s.winner : s.runnerUp;
-    return allGroupsComplete[g] ? team : null;
+    var s = deriveGroupStandings(pred);
+    return rank === "1" ? s[g] && s[g].winner : s[g] && s[g].runnerUp;
   }
-
-  function resolveSlotRich(slot, ctx) {
-    var adminStandings = ctx.adminStandings;
-    var adminComplete = ctx.adminComplete;
-    var userKoWinners = ctx.userKoWinners;
-    var adminKoResults = ctx.adminKoResults;
-
-    if (!slot) return { type: "label", label: "?" };
-
-    if (/^[12][A-L]$/.test(slot)) {
-      var g = slot[1];
-      var adminTeam = adminStandings
-        ? resolveGroupSlot(slot, adminStandings, adminComplete)
-        : null;
-      if (adminTeam) return { type: "team", team: adminTeam };
-      return { type: "label", label: slotLabel(slot) };
-    }
-
-    if (/^N3/.test(slot)) {
-      if (
-        adminComplete &&
-        Object.keys(adminComplete).every(function (k) {
-          return adminComplete[k];
-        })
-      ) {
-        // Collect all nr3 teams and their stats
-        var thirds = [];
-        if (adminStandings) {
-          Object.keys(GROUPS).forEach(function (g2) {
-            if (!adminComplete[g2]) return;
-            var table = adminStandings[g2] && adminStandings[g2].table;
-            if (table && table.length >= 3) {
-              thirds.push({
-                team: table[2].team,
-                group: g2,
-                pts: table[2].pts,
-                gd: table[2].gd,
-                gf: table[2].gf,
-              });
-            }
-          });
-          thirds.sort(function (a, b) {
-            return b.pts - a.pts || b.gd - a.gd || b.gf - a.gf;
-          });
-        }
-        // Top 8 nr3 teams qualify
-        var top8 = thirds.slice(0, 8);
-        // Map each N3 slot to the eligible groups it can pull from
-        var slotGroupMap = {
-          N3BCDI: ["B", "C", "D", "I"],
-          N3ABCD: ["A", "B", "C", "D"],
-          N3ABFG: ["A", "B", "F", "G"],
-          N3EFGL: ["E", "F", "G", "L"],
-          N3HJKL: ["H", "J", "K", "L"],
-          N3ABCE: ["A", "B", "C", "E"],
-          N3IJKL: ["I", "J", "K", "L"],
-          N3EFGH: ["E", "F", "G", "H"],
-        };
-        var eligible = slotGroupMap[slot];
-        if (eligible) {
-          // Find the best qualified nr3 team from the eligible groups
-          var match2 = null;
-          for (var qi = 0; qi < top8.length; qi++) {
-            if (eligible.indexOf(top8[qi].group) >= 0) {
-              match2 = top8[qi];
-              break;
-            }
-          }
-          if (match2) return { type: "team", team: match2.team };
-        }
-      }
-      return { type: "label", label: "Beste nr. 3" };
-    }
-
-    if (slot.charAt(0) === "W") {
-      var matchId = slot.slice(1);
-      if (
-        adminKoResults &&
-        adminKoResults[matchId] &&
-        adminKoResults[matchId].played
-      ) {
-        return { type: "team", team: adminKoResults[matchId].winner };
-      }
-      var userPick = userKoWinners && userKoWinners[matchId];
-      if (userPick) return { type: "team", team: userPick };
-      var koMatch = KO_STRUCTURE.filter(function (m) {
-        return m.id === matchId;
-      })[0];
-      if (koMatch) {
-        var hd = resolveSlotRich(koMatch.homeSlot, ctx);
-        var ad = resolveSlotRich(koMatch.awaySlot, ctx);
-        if (hd.type === "team" && ad.type === "team")
-          return { type: "two", teams: [hd.team, ad.team] };
-      }
-      return { type: "label", label: slotLabel(slot) };
-    }
-
-    if (slot.charAt(0) === "L") {
-      var loserMatchId = slot.slice(1); // e.g. "SF_1"
-      var srcMatch = KO_STRUCTURE.filter(function (km) {
-        return km.id === loserMatchId;
-      })[0];
-      var hTeam = null;
-      var aTeam = null;
-      if (srcMatch) {
-        var hDesc = resolveSlotRich(srcMatch.homeSlot, ctx);
-        var aDesc = resolveSlotRich(srcMatch.awaySlot, ctx);
-        hTeam = hDesc && hDesc.type === "team" ? hDesc.team : null;
-        aTeam = aDesc && aDesc.type === "team" ? aDesc.team : null;
-      }
-      // First try admin result
-      if (
-        adminKoResults &&
-        adminKoResults[loserMatchId] &&
-        adminKoResults[loserMatchId].played
-      ) {
-        var winner = adminKoResults[loserMatchId].winner;
-        var loser =
-          winner === hTeam && aTeam
-            ? aTeam
-            : winner === aTeam && hTeam
-            ? hTeam
-            : null;
-        if (loser) return { type: "team", team: loser };
-      }
-      // Fall back to user's predicted winner to derive predicted loser
-      var userWinner = userKoWinners && userKoWinners[loserMatchId];
-      if (userWinner) {
-        var predLoser =
-          userWinner === hTeam && aTeam
-            ? aTeam
-            : userWinner === aTeam && hTeam
-            ? hTeam
-            : null;
-        if (predLoser) return { type: "team", team: predLoser };
-      }
-      return { type: "label", label: slotLabel(slot) };
-    }
-    return { type: "label", label: slot };
-  }
-
-  function buildRichKOSlots(pred, results, koResults) {
-    var adminStandings = deriveGroupStandingsFromResults(results);
-    var adminComplete = groupsAllFilled(function (id) {
-      var r = results[id];
-      return r && r.played ? r : null;
-    });
-    var koWinners = {};
-    KO_STRUCTURE.forEach(function (km) {
-      var winner = koResults[km.id] && koResults[km.id].winner;
-      if (winner) koWinners[km.id] = winner;
-    });
-    if (pred && pred.koWinners) {
-      Object.keys(pred.koWinners).forEach(function (k) {
-        if (pred.koWinners[k]) koWinners[k] = pred.koWinners[k];
-      });
-    }
-    var ctx = {
-      adminStandings: adminStandings,
-      adminComplete: adminComplete,
-      userKoWinners: koWinners,
-      adminKoResults: koResults,
-    };
-    var slots = {};
-    KO_STRUCTURE.forEach(function (m) {
-      slots[m.id] = {
-        home: resolveSlotRich(m.homeSlot, ctx),
-        away: resolveSlotRich(m.awaySlot, ctx),
-      };
-    });
-    return slots;
-  }
-
-  function resolveSlot(slot, pred, koWinners) {
-    if (!slot) return null;
-    if (/^[12][A-L]$/.test(slot)) {
-      var rank = slot[0];
-      var g = slot[1];
-      var s = deriveGroupStandings(pred);
-      return rank === "1" ? s[g] && s[g].winner : s[g] && s[g].runnerUp;
-    }
-    if (/^N3/.test(slot)) return null;
-    if (slot.charAt(0) === "W") return koWinners && koWinners[slot.slice(1)];
-    return null;
-  }
-
-  function buildKOSlots(pred) {
-    var koWinners = (pred && pred.koWinners) || {};
-    var slots = {};
-    KO_STRUCTURE.forEach(function (m) {
-      slots[m.id] = {
-        home: resolveSlot(m.homeSlot, pred, koWinners),
-        away: resolveSlot(m.awaySlot, pred, koWinners),
-      };
-    });
-    return slots;
-  }
-
-  function deriveTopOuts(results) {
-    var actualS = deriveGroupStandingsFromResults(results);
-    var eliminated = [];
-    TOP_TEAMS.forEach(function (team) {
-      var g = Object.keys(GROUPS).filter(function (g2) {
-        return GROUPS[g2].indexOf(team) >= 0;
-      })[0];
-      if (!g) return;
-      var allPlayed = GROUP_MATCHES.filter(function (m) {
-        return m.group === g;
-      }).every(function (m) {
-        return results[m.id] && results[m.id].played;
-      });
-      if (!allPlayed) return;
-      var top2 = [
-        actualS[g] && actualS[g].winner,
-        actualS[g] && actualS[g].runnerUp,
-      ].filter(Boolean);
-      if (top2.length === 2 && top2.indexOf(team) === -1) eliminated.push(team);
-    });
-    return eliminated;
-  }
-
-  var KO_ROUND_ORDER = ["r32", "r16", "qf", "sf", "3rd", "final"];
-  var KO_ROUND_TO_STAGE = {
-    r32: "Zestiende finale",
-    r16: "Achtste finale",
-    qf: "Kwartfinale",
-    sf: "Halve finale",
-    "3rd": "3e Plaats",
-    final: "🏆 Wereldkampioen",
-  };
-
-  function deriveSurpriseStage(team, koResults) {
-    if (!team) return null;
-    var furthestIdx = -1;
-    KO_STRUCTURE.forEach(function (m) {
-      var r = koResults[m.id];
-      if (!r || !r.played) return;
-      var roundIdx = KO_ROUND_ORDER.indexOf(m.round);
-      if (r.winner === team && roundIdx > furthestIdx) furthestIdx = roundIdx;
-      var hId =
-        m.homeSlot && m.homeSlot.charAt(0) === "W" ? m.homeSlot.slice(1) : null;
-      var aId =
-        m.awaySlot && m.awaySlot.charAt(0) === "W" ? m.awaySlot.slice(1) : null;
-      var hw = hId && koResults[hId] && koResults[hId].winner;
-      var aw = aId && koResults[aId] && koResults[aId].winner;
-      if ((hw === team || aw === team) && roundIdx > furthestIdx)
-        furthestIdx = roundIdx;
-    });
-    return furthestIdx >= 0
-      ? KO_ROUND_TO_STAGE[KO_ROUND_ORDER[furthestIdx]]
-      : null;
-  }
-
-  function calcGroupMatchPts(pred, result) {
-    if (
-      !result ||
-      !result.played ||
-      !pred ||
-      pred.home === undefined ||
-      pred.home === ""
-    )
-      return null;
-    var rH = parseInt(result.home),
-      rA = parseInt(result.away);
-    var pH = parseInt(pred.home),
-      pA = parseInt(pred.away);
-    if (pH === rH && pA === rA) return { pts: PTS_GROUP.exact, label: "exact" };
-    var rDiff = rH - rA,
-      pDiff = pH - pA;
-    if (rDiff === pDiff) return { pts: PTS_GROUP.diff, label: "diff" };
-    if (pDiff > 0 === rDiff > 0 && rDiff !== 0)
-      return { pts: PTS_GROUP.winner, label: "winner" };
-    return { pts: 0, label: "miss" };
-  }
-
-  function calcPoints(user, results, koResults) {
-    var p = user.predictions || {};
-    var pts = 0;
-    GROUP_MATCHES.forEach(function (m) {
-      var r = results[m.id];
-      var res = calcGroupMatchPts(p.matches && p.matches[m.id], r);
-      if (res) pts += res.pts;
-    });
-    var predS = deriveGroupStandings(p);
-    var actualS = deriveGroupStandingsFromResults(results);
-    Object.keys(GROUPS).forEach(function (g) {
-      var aS = actualS[g];
-      var allPlayed = GROUP_MATCHES.filter(function (m) {
-        return m.group === g;
-      }).every(function (m) {
-        return results[m.id] && results[m.id].played;
-      });
-      if (!allPlayed || !aS || !aS.winner || !aS.runnerUp) return;
-      var a1 = aS.winner,
-        a2 = aS.runnerUp;
-      var p1 = predS[g] && predS[g].winner,
-        p2 = predS[g] && predS[g].runnerUp;
-      var top2 = [a1, a2];
-      if (p1 && top2.indexOf(p1) >= 0) {
-        pts += PTS_STANDING.qualified;
-        if (p1 === a1)
-          pts += PTS_STANDING.qualifiedCorrectPos - PTS_STANDING.qualified;
-      }
-      if (p2 && top2.indexOf(p2) >= 0) {
-        pts += PTS_STANDING.qualified;
-        if (p2 === a2)
-          pts += PTS_STANDING.qualifiedCorrectPos - PTS_STANDING.qualified;
-      }
-    });
-    KO_STRUCTURE.forEach(function (m) {
-      var r = koResults[m.id];
-      if (!r || !r.played) return;
-      var schema = PTS_KO[m.round] || PTS_KO.r16;
-      var pw = p.koWinners && p.koWinners[m.id];
-      var ps = p.koScores && p.koScores[m.id];
-      if (pw && r.winner === pw) pts += schema.winner;
-      if (
-        ps &&
-        ps.home !== undefined &&
-        r.home90 !== undefined &&
-        parseInt(ps.home) === parseInt(r.home90) &&
-        parseInt(ps.away) === parseInt(r.away90)
-      )
-        pts += schema.exact;
-    });
-    if (
-      p.champion &&
-      koResults["FINAL"] &&
-      koResults["FINAL"].played &&
-      p.champion === koResults["FINAL"].winner
-    )
-      pts += PTS_EXTRA.champion;
-    if (
-      p.topScorer &&
-      results["TOP_SCORER"] &&
-      p.topScorer === results["TOP_SCORER"]
-    )
-      pts += PTS_EXTRA.topScorer;
-    if (p.nlStage && results["NL_STAGE"] && p.nlStage === results["NL_STAGE"])
-      pts += PTS_EXTRA.nlStage;
-    if (p.surpriseTeam) {
-      var ss = deriveSurpriseStage(p.surpriseTeam, koResults);
-      if (ss) pts += PTS_SURPRISE[ss] || 0;
-    }
-    if (p.topOut) {
-      var outs = deriveTopOuts(results);
-      if (outs.indexOf(p.topOut) >= 0) pts += PTS_TOP_OUT;
-    }
-    return pts;
-  }
+  if (/^N3/.test(slot)) return null;
+  if (slot.charAt(0) === "W") return koWinners && koWinners[slot.slice(1)];
+  return null;
 }
+
+function buildKOSlots(pred) {
+  var koWinners = (pred && pred.koWinners) || {};
+  var slots = {};
+  KO_STRUCTURE.forEach(function (m) {
+    slots[m.id] = {
+      home: resolveSlot(m.homeSlot, pred, koWinners),
+      away: resolveSlot(m.awaySlot, pred, koWinners),
+    };
+  });
+  return slots;
+}
+
+function deriveTopOuts(results) {
+  var actualS = deriveGroupStandingsFromResults(results);
+  var eliminated = [];
+  TOP_TEAMS.forEach(function (team) {
+    var g = Object.keys(GROUPS).filter(function (g2) {
+      return GROUPS[g2].indexOf(team) >= 0;
+    })[0];
+    if (!g) return;
+    var allPlayed = GROUP_MATCHES.filter(function (m) {
+      return m.group === g;
+    }).every(function (m) {
+      return results[m.id] && results[m.id].played;
+    });
+    if (!allPlayed) return;
+    var top2 = [
+      actualS[g] && actualS[g].winner,
+      actualS[g] && actualS[g].runnerUp,
+    ].filter(Boolean);
+    if (top2.length === 2 && top2.indexOf(team) === -1) eliminated.push(team);
+  });
+  return eliminated;
+}
+
+var KO_ROUND_ORDER = ["r32", "r16", "qf", "sf", "3rd", "final"];
+var KO_ROUND_TO_STAGE = {
+  r32: "Zestiende finale",
+  r16: "Achtste finale",
+  qf: "Kwartfinale",
+  sf: "Halve finale",
+  "3rd": "3e Plaats",
+  final: "🏆 Wereldkampioen",
+};
+
+function deriveSurpriseStage(team, koResults) {
+  if (!team) return null;
+  var furthestIdx = -1;
+  KO_STRUCTURE.forEach(function (m) {
+    var r = koResults[m.id];
+    if (!r || !r.played) return;
+    var roundIdx = KO_ROUND_ORDER.indexOf(m.round);
+    if (r.winner === team && roundIdx > furthestIdx) furthestIdx = roundIdx;
+    var hId =
+      m.homeSlot && m.homeSlot.charAt(0) === "W" ? m.homeSlot.slice(1) : null;
+    var aId =
+      m.awaySlot && m.awaySlot.charAt(0) === "W" ? m.awaySlot.slice(1) : null;
+    var hw = hId && koResults[hId] && koResults[hId].winner;
+    var aw = aId && koResults[aId] && koResults[aId].winner;
+    if ((hw === team || aw === team) && roundIdx > furthestIdx)
+      furthestIdx = roundIdx;
+  });
+  return furthestIdx >= 0
+    ? KO_ROUND_TO_STAGE[KO_ROUND_ORDER[furthestIdx]]
+    : null;
+}
+
+function calcGroupMatchPts(pred, result) {
+  if (
+    !result ||
+    !result.played ||
+    !pred ||
+    pred.home === undefined ||
+    pred.home === ""
+  )
+    return null;
+  var rH = parseInt(result.home),
+    rA = parseInt(result.away);
+  var pH = parseInt(pred.home),
+    pA = parseInt(pred.away);
+  if (pH === rH && pA === rA) return { pts: PTS_GROUP.exact, label: "exact" };
+  var rDiff = rH - rA,
+    pDiff = pH - pA;
+  if (rDiff === pDiff) return { pts: PTS_GROUP.diff, label: "diff" };
+  if (pDiff > 0 === rDiff > 0 && rDiff !== 0)
+    return { pts: PTS_GROUP.winner, label: "winner" };
+  return { pts: 0, label: "miss" };
+}
+
+function calcPoints(user, results, koResults) {
+  var p = user.predictions || {};
+  var pts = 0;
+  GROUP_MATCHES.forEach(function (m) {
+    var r = results[m.id];
+    var res = calcGroupMatchPts(p.matches && p.matches[m.id], r);
+    if (res) pts += res.pts;
+  });
+  var predS = deriveGroupStandings(p);
+  var actualS = deriveGroupStandingsFromResults(results);
+  Object.keys(GROUPS).forEach(function (g) {
+    var aS = actualS[g];
+    var allPlayed = GROUP_MATCHES.filter(function (m) {
+      return m.group === g;
+    }).every(function (m) {
+      return results[m.id] && results[m.id].played;
+    });
+    if (!allPlayed || !aS || !aS.winner || !aS.runnerUp) return;
+    var a1 = aS.winner,
+      a2 = aS.runnerUp;
+    var p1 = predS[g] && predS[g].winner,
+      p2 = predS[g] && predS[g].runnerUp;
+    var top2 = [a1, a2];
+    if (p1 && top2.indexOf(p1) >= 0) {
+      pts += PTS_STANDING.qualified;
+      if (p1 === a1)
+        pts += PTS_STANDING.qualifiedCorrectPos - PTS_STANDING.qualified;
+    }
+    if (p2 && top2.indexOf(p2) >= 0) {
+      pts += PTS_STANDING.qualified;
+      if (p2 === a2)
+        pts += PTS_STANDING.qualifiedCorrectPos - PTS_STANDING.qualified;
+    }
+  });
+  KO_STRUCTURE.forEach(function (m) {
+    var r = koResults[m.id];
+    if (!r || !r.played) return;
+    var schema = PTS_KO[m.round] || PTS_KO.r16;
+    var pw = p.koWinners && p.koWinners[m.id];
+    var ps = p.koScores && p.koScores[m.id];
+    if (pw && r.winner === pw) pts += schema.winner;
+    if (
+      ps &&
+      ps.home !== undefined &&
+      r.home90 !== undefined &&
+      parseInt(ps.home) === parseInt(r.home90) &&
+      parseInt(ps.away) === parseInt(r.away90)
+    )
+      pts += schema.exact;
+  });
+  if (
+    p.champion &&
+    koResults["FINAL"] &&
+    koResults["FINAL"].played &&
+    p.champion === koResults["FINAL"].winner
+  )
+    pts += PTS_EXTRA.champion;
+  if (
+    p.topScorer &&
+    results["TOP_SCORER"] &&
+    p.topScorer === results["TOP_SCORER"]
+  )
+    pts += PTS_EXTRA.topScorer;
+  if (p.nlStage && results["NL_STAGE"] && p.nlStage === results["NL_STAGE"])
+    pts += PTS_EXTRA.nlStage;
+  if (p.surpriseTeam) {
+    var ss = deriveSurpriseStage(p.surpriseTeam, koResults);
+    if (ss) pts += PTS_SURPRISE[ss] || 0;
+  }
+  if (p.topOut) {
+    var outs = deriveTopOuts(results);
+    if (outs.indexOf(p.topOut) >= 0) pts += PTS_TOP_OUT;
+  }
+  return pts;
+}
+
 export {
   load,
   persist,
@@ -1531,7 +1531,4 @@ export {
   deriveSurpriseStage,
   calcGroupMatchPts,
   calcPoints,
-  fmtDate,
-  fmtTime,
-  fmtDateTime,
 };
