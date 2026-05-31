@@ -1,14 +1,10 @@
 {
-    "buildCommand": "pnpm build",
-    "outputDirectory": "dist",
-    "rewrites": [
-      {
-        "source": "/api/state",
-        "destination": "/api/state"
-      },
-      {
-        "source": "/(.*)",
-        "destination": "/index.html"
-      }
-    ]
-  }
+  "buildCommand": "pnpm build",
+  "outputDirectory": "dist",
+  "rewrites": [
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
