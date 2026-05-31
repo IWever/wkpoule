@@ -1,7 +1,5 @@
-// api/state.cjs
-// Vercel Serverless Function (CommonJS formaat — werkt naast Vite's ES module setup)
-
-const { neon } = require("@neondatabase/serverless");
+// api/state.js — ES Module syntax (werkt met "type": "module" in package.json)
+import { neon } from "@neondatabase/serverless";
 
 function getDb() {
   if (!process.env.DATABASE_URL) {
@@ -10,7 +8,7 @@ function getDb() {
   return neon(process.env.DATABASE_URL);
 }
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -24,7 +22,6 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 
-  // ── GET ──────────────────────────────────────────────────────────────────
   if (req.method === "GET") {
     try {
       await sql`
@@ -44,7 +41,6 @@ module.exports = async function handler(req, res) {
     }
   }
 
-  // ── POST ─────────────────────────────────────────────────────────────────
   if (req.method === "POST") {
     try {
       const newState = req.body;
@@ -77,4 +73,4 @@ module.exports = async function handler(req, res) {
   }
 
   return res.status(405).json({ error: "Methode niet toegestaan." });
-};
+}
