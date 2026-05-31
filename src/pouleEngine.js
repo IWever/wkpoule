@@ -1,4 +1,4 @@
-console.log("✅ NEW pouleEngine loaded");
+console.log("✅ NEW pouleEngine loaded (database versie)");
 
 import {
   GROUPS,
@@ -14,16 +14,67 @@ import {
   KEY,
 } from "./data/tournamentData";
 
-// ─── STORAGE ──────────────────────────────────────────────────────────────────
-function load() {
+// ─── STORAGE (API-backed, async) ──────────────────────────────────────────────
+//
+// Vroeger: localStorage.getItem / setItem (alleen lokaal per browser)
+// Nu:      fetch('/api/state')  →  Neon Postgres op Vercel (gedeeld voor iedereen)
+//
+// load()    → async, geeft de state terug (of null bij eerste gebruik)
+// persist() → async, stuurt de volledige state naar de server
+//
+// Tijdens lokale ontwikkeling (vite dev) valt de API niet beschikbaar.
+// Dan valt load/persist automatisch terug op localStorage als fallback.
+
+const IS_DEV = import.meta.env.DEV;
+
+async function load() {
+  // Dev fallback: gebruik localStorage zodat je lokaal gewoon kunt testen
+  if (IS_DEV) {
+    try {
+      return JSON.parse(localStorage.getItem(KEY)) || null;
+    } catch {
+      return null;
+    }
+  }
+
   try {
-    return JSON.parse(localStorage.getItem(KEY)) || null;
-  } catch (e) {
+    const res = await fetch("/api/state");
+    if (!res.ok) {
+      console.error("load() API fout:", res.status, await res.text());
+      return null;
+    }
+    return await res.json(); // null als er nog geen state is
+  } catch (err) {
+    console.error("load() netwerk fout:", err);
     return null;
   }
 }
 
-const persist = (d) => localStorage.setItem(KEY, JSON.stringify(d));
+async function persist(data) {
+  // Dev fallback
+  if (IS_DEV) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(data));
+    } catch {
+      // quota exceeded — negeer
+    }
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/state", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      console.error("persist() API fout:", res.status, await res.text());
+    }
+  } catch (err) {
+    console.error("persist() netwerk fout:", err);
+  }
+}
+
 const hash = (s) => btoa(encodeURIComponent(s + "_wk_salt_2026"));
 
 // ─── BASIS STATE ──────────────────────────────────────────────────────────────
@@ -115,11 +166,9 @@ function computeGroupStandings(matchScores) {
     const sorted = teams.slice().sort((a, b) => {
       const ptsDiff = stat[b].pts - stat[a].pts;
       if (ptsDiff !== 0) return ptsDiff;
-
       const gdA = stat[a].gf - stat[a].ga;
       const gdB = stat[b].gf - stat[b].ga;
       if (gdB !== gdA) return gdB - gdA;
-
       return stat[b].gf - stat[a].gf;
     });
 
@@ -202,7 +251,6 @@ function resolveSlotRich(slot, ctx) {
     const adminTeam = adminStandings
       ? resolveGroupSlot(slot, adminStandings, adminComplete)
       : null;
-
     if (adminTeam) return { type: "team", team: adminTeam };
     return { type: "label", label: slotLabel(slot) };
   }
@@ -255,7 +303,6 @@ function resolveSlotRich(slot, ctx) {
           : winner === aTeam && hTeam
           ? hTeam
           : null;
-
       if (loser) return { type: "team", team: loser };
     }
 
@@ -267,7 +314,6 @@ function resolveSlotRich(slot, ctx) {
           : userWinner === aTeam && hTeam
           ? hTeam
           : null;
-
       if (predLoser) return { type: "team", team: predLoser };
     }
 
