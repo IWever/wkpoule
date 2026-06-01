@@ -34,6 +34,26 @@ import { S } from "../styles/ui";
 import { Alert, SlotDisplay, TabBar } from "./common";
 import { SingleMatchCompare, PlayerCompare } from "./compare";
 
+// ─── HELPER: bereken rang van user in een competitie ─────────────────────────
+
+function calcPrimaryComp(user, state) {
+  const competitions = (state.competitions || []).filter((c) => !c.hidden);
+  if (!user || competitions.length === 0) return null;
+  const userCompIds = user.competitionIds || [];
+  const comp = competitions.find((c) => userCompIds.includes(c.id));
+  if (!comp) return null;
+  const members = state.users.filter((u) =>
+    (u.competitionIds || []).includes(comp.id)
+  );
+  const ranked = [...members].sort(
+    (a, b) =>
+      calcPoints(b, state.results, state.koResults) -
+      calcPoints(a, state.results, state.koResults)
+  );
+  const userRank = ranked.findIndex((u) => u.id === user.id) + 1;
+  return { comp, userRank, size: members.length };
+}
+
 // ─── MY OVERVIEW ─────────────────────────────────────────────────────────────
 
 function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
@@ -48,6 +68,9 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
   const koAvailable = state.koOpen || state.fase === "ko";
   const [compareMatch, setCompareMatch] = useState(null);
   const [comparePlayer, setComparePlayer] = useState(null);
+
+  // Primaire competitie voor de derde stat-card
+  const primaryComp = calcPrimaryComp(user, state);
 
   const sortedGroup = [...GROUP_MATCHES].sort((a, b) =>
     (a.dt || "").localeCompare(b.dt || "")
@@ -429,10 +452,11 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
         </div>
       </div>
 
+      {/* ── Stat cards: 2 of 3 kolommen afhankelijk van competitie ── */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: primaryComp ? "1fr 1fr 1fr" : "1fr 1fr",
           gap: 10,
           marginBottom: 16,
         }}
@@ -456,9 +480,10 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
               letterSpacing: "0.08em",
             }}
           >
-            Positie
+            Totaal
           </div>
         </div>
+
         <div style={{ ...S.card(), textAlign: "center" }}>
           <div
             style={{
@@ -480,6 +505,35 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
             Jouw score
           </div>
         </div>
+
+        {primaryComp && (
+          <div style={{ ...S.card(), textAlign: "center" }}>
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: 28,
+                color: "var(--gold)",
+              }}
+            >
+              #{primaryComp.userRank}{" "}
+              <span style={{ fontSize: 18 }}>van {primaryComp.size}</span>
+            </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: "var(--muted)",
+                textTransform: "uppercase",
+                letterSpacing: "0.08em",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+              title={primaryComp.comp.name}
+            >
+              {primaryComp.comp.name}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Grote navigatieknoppen met voortgang */}
@@ -1791,8 +1845,6 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
     "3rd": "3e Plaats",
     final: "Finale",
   };
-  const anyKoFrozen =
-    Object.values(frozenRounds).some(Boolean) || state.koFrozen;
 
   return (
     <div>
@@ -1939,7 +1991,6 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
               </div>
             );
           })}
-          {/* KO ronde statussen */}
           {Object.entries(frozenRoundLabels).map(([key, label]) => {
             const frozen = !!frozenRounds[key];
             return (
@@ -1983,7 +2034,6 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
         </div>
       </div>
 
-      {/* Laatste / volgende wedstrijden — zelfde als voor */}
       <div
         style={{
           fontSize: 12,
@@ -2452,7 +2502,6 @@ function AdminPanel({ state, setState }) {
 
       {tab === "fase" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {/* Groepsfase & extra */}
           {[
             {
               key: "groupFrozen",
@@ -2538,7 +2587,6 @@ function AdminPanel({ state, setState }) {
             );
           })}
 
-          {/* KO per ronde bevriezen */}
           <div style={{ ...S.card(), marginTop: 4 }}>
             <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
               ⚔️ KO-fase — per ronde bevriezen

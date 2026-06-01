@@ -63,8 +63,8 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
         <div style={{ fontWeight: 700, fontSize: 16 }}>
           📝{" "}
           {frozen
-            ? "Jouw groepsvoorspellingen (bevroren)"
-            : "Groepsvoorspellingen invullen"}
+            ? "Jouw voorspellingen voor de groepsfase (bevroren)"
+            : "Groepsfase invullen"}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {saved && (
