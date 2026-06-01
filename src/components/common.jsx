@@ -48,35 +48,37 @@ function SlotDisplay(props) {
   return <span style={{ fontSize:size-2, color:"var(--muted)", fontStyle:"italic" }}>{desc.label}</span>;
 }
 
+// Columns: W (wedstrijden), Pts, GV+ (doelpunten voor), GT- (doelpunten tegen), DS (doelsaldo)
 function GroupStandingTable(props) {
   var rows = props.rows;
   return (
     <div style={{ fontSize:11 }}>
-      <div style={{ display:"grid", gridTemplateColumns:"1fr 28px 28px 28px 28px 28px 28px", gap:"0 4px", color:"var(--muted)", fontWeight:700, textTransform:"uppercase", padding:"2px 6px", borderBottom:"1px solid var(--border)" }}>
-        <span>Team</span><span style={{textAlign:"center"}}>W</span><span style={{textAlign:"center"}}>P</span><span style={{textAlign:"center"}}>DS</span><span style={{textAlign:"center"}}>V</span><span style={{textAlign:"center"}}>T</span><span style={{textAlign:"center"}}>Pts</span>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 28px 32px 32px 32px 32px", gap:"0 4px", color:"var(--muted)", fontWeight:700, textTransform:"uppercase", padding:"2px 6px", borderBottom:"1px solid var(--border)" }}>
+        <span>Team</span>
+        <span style={{textAlign:"center"}}>W</span>
+        <span style={{textAlign:"center"}}>Pts</span>
+        <span style={{textAlign:"center", color:"var(--green)"}}>GV+</span>
+        <span style={{textAlign:"center", color:"var(--red)"}}>GT-</span>
+        <span style={{textAlign:"center"}}>DS</span>
       </div>
       {rows.map(function(r, i) {
         return (
-          <div key={r.team} style={{ display:"grid", gridTemplateColumns:"1fr 28px 28px 28px 28px 28px 28px", gap:"0 4px", padding:"4px 6px", background:i<2?"rgba(88,166,255,0.06)":"transparent", borderRadius:4, borderBottom:"1px solid rgba(48,54,61,.4)" }}>
+          <div key={r.team} style={{ display:"grid", gridTemplateColumns:"1fr 28px 32px 32px 32px 32px", gap:"0 4px", padding:"4px 6px", background:i<2?"rgba(88,166,255,0.06)":"transparent", borderRadius:4, borderBottom:"1px solid rgba(48,54,61,.4)" }}>
             <span style={{ fontWeight:i<2?700:400, display:"flex", alignItems:"center", gap:4 }}>
               <span style={{ color:i===0?"var(--gold)":i===1?"var(--muted)":"var(--border)", fontWeight:700, width:14 }}>{i===0?"①":i===1?"②":i===2?"③":"④"}</span>
               {FLAG[r.team]} {r.team}
             </span>
             <span style={{textAlign:"center",color:"var(--muted)"}}>{r.gp}</span>
-            <span style={{textAlign:"center",color:"var(--muted)"}}>{r.gp}</span>
-            <span style={{textAlign:"center",color:r.gd>0?"var(--green)":r.gd<0?"var(--red)":"var(--muted)"}}>{r.gd>0?"+":""}{r.gd}</span>
-            <span style={{textAlign:"center",color:"var(--muted)"}}>{r.gf}</span>
-            <span style={{textAlign:"center",color:"var(--muted)"}}>{r.ga}</span>
             <span style={{textAlign:"center",fontWeight:700,color:"var(--accent)"}}>{r.pts}</span>
+            <span style={{textAlign:"center",color:"var(--green)"}}>{r.gf}</span>
+            <span style={{textAlign:"center",color:"var(--red)"}}>{r.ga}</span>
+            <span style={{textAlign:"center",color:r.gd>0?"var(--green)":r.gd<0?"var(--red)":"var(--muted)",fontWeight:r.gd!==0?700:400}}>{r.gd>0?"+":""}{r.gd}</span>
           </div>
         );
       })}
     </div>
   );
 }
-
-// ─── AUTH ─────────────────────────────────────────────────────────────────────
-
 
 export {
   TabBar,

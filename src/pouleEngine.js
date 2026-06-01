@@ -12,10 +12,28 @@ import {
   TOP_TEAMS,
   PTS_TOP_OUT,
   KEY,
+  SESSION_KEY,
 } from "./data/tournamentData";
 
 const IS_DEV = import.meta.env.DEV;
 
+// ─── SESSION PERSISTENCE ──────────────────────────────────────────────────────
+function saveSession(sessionId) {
+  try {
+    if (sessionId) localStorage.setItem(SESSION_KEY, sessionId);
+    else localStorage.removeItem(SESSION_KEY);
+  } catch {}
+}
+
+function loadSession() {
+  try {
+    return localStorage.getItem(SESSION_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── STATE PERSISTENCE ───────────────────────────────────────────────────────
 async function load() {
   if (IS_DEV) {
     try {
@@ -70,11 +88,7 @@ function blank() {
     extraFrozen: false,
     koOpen: false,
     koFrozen: false,
-    // Competities (poules): elke competitie is een groepje deelnemers
     competitions: [],
-    // Voorbeeld structuur competition:
-    // { id: "c_1748000000000", name: "Familie poule" }
-    // Gebruiker heeft: user.competitionIds = ["c_1748000000000"]
   };
 }
 
@@ -399,11 +413,15 @@ function calcGroupMatchPts(pred, result) {
 function calcPoints(user, results, koResults) {
   const p = user.predictions || {};
   let pts = 0;
+
+  // Groepswedstrijden
   GROUP_MATCHES.forEach((m) => {
     const r = results[m.id];
     const res = calcGroupMatchPts(p.matches?.[m.id], r);
     if (res) pts += res.pts;
   });
+
+  // Groepsstand
   const predS = deriveGroupStandings(p);
   const actualS = deriveGroupStandingsFromResults(results);
   Object.keys(GROUPS).forEach((g) => {
@@ -428,6 +446,8 @@ function calcPoints(user, results, koResults) {
         pts += PTS_STANDING.qualifiedCorrectPos - PTS_STANDING.qualified;
     }
   });
+
+  // KO-wedstrijden
   KO_STRUCTURE.forEach((m) => {
     const r = koResults[m.id];
     if (!r?.played) return;
@@ -444,28 +464,43 @@ function calcPoints(user, results, koResults) {
     )
       pts += schema.exact;
   });
+
+  // Extra: kampioen
   if (
     p.champion &&
     koResults["FINAL"]?.played &&
     p.champion === koResults["FINAL"].winner
   )
     pts += PTS_EXTRA.champion;
-  if (
-    p.topScorer &&
-    results["TOP_SCORER"] &&
-    p.topScorer === results["TOP_SCORER"]
-  )
-    pts += PTS_EXTRA.topScorer;
+
+  // Extra: topscorer — ondersteunt nu meerdere winnaars
+  if (p.topScorer && results["TOP_SCORER"]) {
+    const winners = Array.isArray(results["TOP_SCORER"])
+      ? results["TOP_SCORER"]
+      : [results["TOP_SCORER"]];
+    if (winners.includes(p.topScorer)) pts += PTS_EXTRA.topScorer;
+  }
+
+  // Extra: hoe ver Nederland
   if (p.nlStage && results["NL_STAGE"] && p.nlStage === results["NL_STAGE"])
     pts += PTS_EXTRA.nlStage;
+
+  // Extra: gele kaarten
+  if (p.yellowCards && results["YELLOW_CARDS"] && p.yellowCards === results["YELLOW_CARDS"])
+    pts += PTS_EXTRA.yellowCards;
+
+  // Extra: verrassing
   if (p.surpriseTeam) {
     const ss = deriveSurpriseStage(p.surpriseTeam, koResults);
     if (ss) pts += PTS_SURPRISE[ss] || 0;
   }
+
+  // Extra: topland eruit
   if (p.topOut) {
     const outs = deriveTopOuts(results);
     if (outs.includes(p.topOut)) pts += PTS_TOP_OUT;
   }
+
   return pts;
 }
 
@@ -474,6 +509,8 @@ export {
   persist,
   hash,
   blank,
+  saveSession,
+  loadSession,
   deepSet,
   computeGroupStandings,
   deriveGroupStandings,

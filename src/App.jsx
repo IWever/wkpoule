@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { load, persist, hash, blank } from "./pouleEngine";
+import { load, persist, hash, blank, saveSession, loadSession } from "./pouleEngine";
 import { AuthScreen, AdminLogin } from "./components/auth";
 import {
   GroupPredictionsForm,
@@ -102,6 +102,23 @@ export default function App() {
     loadState();
   }, [loadState]);
 
+  // Restore session from localStorage after state is loaded
+  useEffect(() => {
+    if (loadStatus !== "ready" || !state) return;
+    const saved = loadSession();
+    if (!saved) return;
+    if (saved === "__admin__") {
+      setSession("__admin__");
+      return;
+    }
+    // Verify user still exists
+    const userExists = state.users.find((u) => u.id === saved);
+    if (userExists) {
+      setSession(saved);
+      setScreen("overview");
+    }
+  }, [loadStatus]); // Only run once after initial load
+
   const setAndPersist = useCallback((updater) => {
     setState((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -132,15 +149,16 @@ export default function App() {
         pwPlain: newUser.pw,
         predictions: {},
         locked: false,
-        // Sla de geselecteerde competities op
         competitionIds: newUser.competitionIds || [],
       };
       setAndPersist((s) => ({ ...s, users: [...s.users, user] }));
       setSession(id);
+      saveSession(id);
       setScreen("editGroup");
       return;
     }
     setSession(userId);
+    saveSession(userId);
     setScreen("overview");
   };
 
@@ -155,6 +173,7 @@ export default function App() {
 
   const logout = () => {
     setSession(null);
+    saveSession(null);
     setScreen("overview");
     setAdminStep(false);
     setMainTab("overview");
@@ -199,6 +218,7 @@ export default function App() {
           onSuccess={() => {
             setAdminStep(false);
             setSession("__admin__");
+            saveSession("__admin__");
           }}
           onCancel={() => setAdminStep(false)}
         />
@@ -218,7 +238,6 @@ export default function App() {
       >
         {styleTag}
         {fonts}
-        {/* Geef competitions door aan AuthScreen voor registratie-keuze */}
         <AuthScreen
           onLogin={handleLogin}
           users={state.users}

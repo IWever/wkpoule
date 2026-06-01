@@ -25,6 +25,8 @@ import {
 import { S } from "../styles/ui";
 import { Alert, TabBar, GroupStandingTable, SlotDisplay } from "./common";
 
+// ─── GROUP PREDICTIONS FORM ───────────────────────────────────────────────────
+
 function GroupPredictionsForm({ user, state, onSave, onBack }) {
   const [pred, setPred] = useState(() =>
     JSON.parse(JSON.stringify(user.predictions || {}))
@@ -43,6 +45,9 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
       return next;
     });
   };
+
+  // Group F gets orange accent
+  const groupAccent = activeGroup === "F" ? "var(--orange)" : "var(--accent)";
 
   return (
     <div>
@@ -115,9 +120,9 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
                 style={{
                   padding: "5px 13px",
                   borderRadius: 20,
-                  border: "1px solid var(--border)",
-                  background: activeGroup === g ? "var(--accent)" : "var(--bg)",
-                  color: activeGroup === g ? "#fff" : "var(--text)",
+                  border: `1px solid ${activeGroup === g ? (g === "F" ? "var(--orange)" : "var(--accent)") : "var(--border)"}`,
+                  background: activeGroup === g ? (g === "F" ? "var(--orange)" : "var(--accent)") : "var(--bg)",
+                  color: activeGroup === g ? "#fff" : g === "F" ? "var(--orange)" : "var(--text)",
                   cursor: "pointer",
                   fontSize: 13,
                   fontWeight: 600,
@@ -142,7 +147,7 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
                 : res.label === "diff"
                 ? "rgba(255,193,7,.4)"
                 : res.label === "winner"
-                ? "rgba(88,166,255,.3)"
+                ? activeGroup === "F" ? "rgba(240,136,62,.4)" : "rgba(88,166,255,.3)"
                 : "rgba(248,81,73,.3)"
               : "var(--border)";
             return (
@@ -159,12 +164,16 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
                   <span style={{ fontSize: 10, color: "var(--muted)" }}>
                     {m.dt ? fmtDateTime(m.dt) : ""} · Ronde {m.round}
                   </span>
+                  {activeGroup === "F" && (
+                    <span style={{ fontSize: 10, color: "var(--orange)", fontWeight: 700 }}>🇳🇱 Groep F</span>
+                  )}
                 </div>
                 <div
                   style={{
                     ...S.card(),
                     padding: "9px 12px",
                     border: `1px solid ${borderColor}`,
+                    background: activeGroup === "F" ? "rgba(240,136,62,.04)" : "var(--card)",
                   }}
                 >
                   <div
@@ -266,12 +275,12 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
             return (
               <div style={{ marginTop: 10 }}>
                 {hasAdminData && (
-                  <div style={{ ...S.card(), marginBottom: 10 }}>
+                  <div style={{ ...S.card(), marginBottom: 10, border: activeGroup === "F" ? "1px solid rgba(240,136,62,.3)" : "1px solid var(--border)" }}>
                     <div
                       style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        color: "var(--green)",
+                        color: activeGroup === "F" ? "var(--orange)" : "var(--green)",
                         textTransform: "uppercase",
                         letterSpacing: "0.08em",
                         marginBottom: 6,
@@ -282,17 +291,16 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
                     <GroupStandingTable
                       group={activeGroup}
                       rows={adminRows}
-                      adminRows={adminRows}
                     />
                   </div>
                 )}
                 {predRows.some((r) => r.gp > 0) && (
-                  <div style={S.card()}>
+                  <div style={{ ...S.card(), border: activeGroup === "F" ? "1px solid rgba(240,136,62,.2)" : "1px solid var(--border)" }}>
                     <div
                       style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        color: "var(--accent)",
+                        color: activeGroup === "F" ? "var(--orange)" : "var(--accent)",
                         textTransform: "uppercase",
                         letterSpacing: "0.08em",
                         marginBottom: 6,
@@ -377,6 +385,7 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+        {/* Wereldkampioen */}
         <div style={S.card()}>
           <div
             style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}
@@ -411,6 +420,7 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
           </select>
         </div>
 
+        {/* Topscorer — volledige selectie, gesorteerd op kwal desc */}
         <div style={S.card()}>
           <div
             style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}
@@ -459,11 +469,13 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
           </select>
           {pred.topScorerCountry &&
             (() => {
-              const all = [
+              // Full squad sorted by kwal desc (ties broken alphabetically)
+              const allPlayers = [
                 ...(PLAYERS_BY_COUNTRY[pred.topScorerCountry] || []),
-              ].sort((a, b) => b.kwal - a.kwal);
-              const scorers = all.filter((p) => p.kwal > 0);
-              const others = all.filter((p) => p.kwal === 0);
+              ].sort((a, b) => {
+                if (b.kwal !== a.kwal) return b.kwal - a.kwal;
+                return a.name.localeCompare(b.name);
+              });
               return (
                 <div>
                   <select
@@ -485,20 +497,9 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
                     }}
                   >
                     <option value="">— kies een speler —</option>
-                    {scorers.length > 0 && (
-                      <option disabled>── Topscorers kwalificatie ──</option>
-                    )}
-                    {scorers.map((p) => (
+                    {allPlayers.map((p) => (
                       <option key={p.name} value={p.name}>
-                        {p.name} ({p.kwal} kwal. goals)
-                      </option>
-                    ))}
-                    {others.length > 0 && (
-                      <option disabled>── Overige spelers ──</option>
-                    )}
-                    {others.map((p) => (
-                      <option key={p.name} value={p.name}>
-                        {p.name}
+                        {p.name}{p.kwal > 0 ? ` (${p.kwal} kwal. goals)` : ""}
                       </option>
                     ))}
                   </select>
@@ -521,11 +522,11 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
                         <div style={{ fontSize: 11, color: "var(--muted)" }}>
                           {pred.topScorerCountry}
                           {(() => {
-                            const p = all.find(
+                            const pl = allPlayers.find(
                               (pl) => pl.name === pred.topScorer
                             );
-                            return p?.kwal > 0
-                              ? ` · ${p.kwal} kwal. doelpunten`
+                            return pl?.kwal > 0
+                              ? ` · ${pl.kwal} kwal. doelpunten`
                               : "";
                           })()}
                         </div>
@@ -548,6 +549,7 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
           )}
         </div>
 
+        {/* Hoe ver Nederland */}
         <div style={S.card()}>
           <div
             style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}
@@ -582,6 +584,48 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
           </select>
         </div>
 
+        {/* Meeste gele kaarten */}
+        <div style={S.card()}>
+          <div
+            style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}
+          >
+            🟨 Meeste gele kaarten{" "}
+            <span style={{ color: "var(--accent)", fontWeight: 700 }}>
+              +{PTS_EXTRA.yellowCards} pt
+            </span>
+          </div>
+          <div
+            style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}
+          >
+            Welk land heeft aan het einde van het toernooi de meeste gele
+            kaarten ontvangen?
+          </div>
+          <select
+            disabled={frozen}
+            value={pred.yellowCards || ""}
+            onChange={(e) => set(["yellowCards"], e.target.value)}
+            style={{
+              background: "var(--bg)",
+              color: "var(--text)",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
+              padding: "8px 12px",
+              fontSize: 14,
+              width: "100%",
+              opacity: frozen ? 0.6 : 1,
+              fontFamily: "var(--font)",
+            }}
+          >
+            <option value="">— selecteer land —</option>
+            {ALL_TEAMS.map((t) => (
+              <option key={t} value={t}>
+                {FLAG[t] || "🏳️"} {t}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Verrassing */}
         <div style={S.card()}>
           <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>
             🌟 Verrassing van het WK
@@ -655,6 +699,7 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
           )}
         </div>
 
+        {/* Topland eruit */}
         <div style={S.card()}>
           <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>
             💥 Welk topland haalt de KO-fase niet?{" "}
@@ -724,7 +769,6 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
     { key: "final", label: "Finale & 3e Plaats" },
   ];
   const [activeRound, setActiveRound] = useState("r16");
-  // Rich slot descriptors built fresh each render from current pred + admin data
   const richSlots = buildRichKOSlots(pred, state.results, state.koResults);
 
   const winnerCandidates = (homeDesc, awayDesc) => {
@@ -778,7 +822,6 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
         />
       )}
 
-      {/* Uitleg + puntenschema gecombineerd */}
       <div
         style={{
           ...S.card(),
@@ -1057,7 +1100,6 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
               )}
             </div>
 
-            {/* Teams */}
             <div
               style={{
                 display: "flex",
@@ -1113,7 +1155,6 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
               </div>
             </div>
 
-            {/* Official result when played */}
             {r && r.played && (
               <div
                 style={{
@@ -1153,7 +1194,6 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
               </div>
             )}
 
-            {/* Winner */}
             <div
               style={{ borderTop: "1px solid var(--border)", paddingTop: 10 }}
             >
@@ -1249,7 +1289,5 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
     </div>
   );
 }
-
-// ─── MY OVERVIEW ──────────────────────────────────────────────────────────────
 
 export { GroupPredictionsForm, ExtraPredictionsForm, KOPredictionsForm };
