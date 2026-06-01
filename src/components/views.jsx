@@ -1630,7 +1630,7 @@ function CompetitionsAdmin({ state, setState }) {
 
 // ─── ADMIN HOME ───────────────────────────────────────────────────────────────
 
-function AdminHome({ state }) {
+function AdminHome({ state, onUpdResult, onUpdKO }) {
   const KO_DATES = {
     r32: "2026-07-01",
     r16: "2026-07-05",
@@ -1831,8 +1831,11 @@ function AdminHome({ state }) {
         </div>
       ) : (
         last5.map((m) => {
-          const r = m.isKO ? state.koResults[m.id] : state.results[m.id];
+          const r = m.isKO
+            ? state.koResults[m.id] || {}
+            : state.results[m.id] || {};
           const isGroupF = !m.isKO && m.group === "F";
+          const played = !!r.played;
           return (
             <div
               key={m.id}
@@ -1855,7 +1858,7 @@ function AdminHome({ state }) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  marginBottom: 6,
+                  marginBottom: 8,
                 }}
               >
                 <span style={{ fontSize: 10, color: "var(--muted)" }}>
@@ -1891,54 +1894,97 @@ function AdminHome({ state }) {
                     ? m.homeSlot || "?"
                     : `${FLAG[m.home] || ""} ${m.home}`}
                 </span>
-                <div style={{ textAlign: "center", minWidth: 70 }}>
-                  {m.isKO ? (
-                    r?.winner ? (
-                      <div>
-                        <div
-                          style={{
-                            fontWeight: 900,
-                            fontSize: 15,
-                            color: "var(--green)",
-                          }}
-                        >
-                          {r.home90 !== undefined
-                            ? `${r.home90}–${r.away90}`
-                            : "–"}
-                        </div>
-                        <div
-                          style={{
-                            fontSize: 11,
-                            color: "var(--muted)",
-                            marginTop: 2,
-                          }}
-                        >
-                          ✓ {FLAG[r.winner] || ""} {r.winner}
-                        </div>
-                      </div>
-                    ) : (
-                      "–"
-                    )
-                  ) : (
-                    <span
-                      style={{
-                        fontWeight: 900,
-                        fontSize: 18,
-                        color: "var(--text)",
-                        background: "rgba(255,255,255,.07)",
-                        borderRadius: 6,
-                        padding: "2px 10px",
-                      }}
-                    >
-                      {r?.home}–{r?.away}
+                {m.isKO ? (
+                  <div
+                    style={{ display: "flex", gap: 4, alignItems: "center" }}
+                  >
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      value={r.home90 ?? ""}
+                      onChange={(e) => onUpdKO(m.id, "home90", e.target.value)}
+                      style={S.numInput}
+                    />
+                    <span style={{ color: "var(--muted)", fontWeight: 700 }}>
+                      –
                     </span>
-                  )}
-                </div>
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      value={r.away90 ?? ""}
+                      onChange={(e) => onUpdKO(m.id, "away90", e.target.value)}
+                      style={S.numInput}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    style={{ display: "flex", gap: 4, alignItems: "center" }}
+                  >
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      value={r.home ?? ""}
+                      onChange={(e) =>
+                        onUpdResult(m.id, "home", e.target.value)
+                      }
+                      style={S.numInput}
+                    />
+                    <span style={{ color: "var(--muted)", fontWeight: 700 }}>
+                      –
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      value={r.away ?? ""}
+                      onChange={(e) =>
+                        onUpdResult(m.id, "away", e.target.value)
+                      }
+                      style={S.numInput}
+                    />
+                  </div>
+                )}
                 <span style={{ flex: 1, fontWeight: 600 }}>
                   {m.isKO
                     ? m.awaySlot || "?"
                     : `${FLAG[m.away] || ""} ${m.away}`}
                 </span>
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <label
+                  style={{
+                    fontSize: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    cursor: "pointer",
+                    color: played
+                      ? isGroupF || m.isKO
+                        ? "var(--orange)"
+                        : "var(--accent)"
+                      : "var(--muted)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={played}
+                    onChange={(e) =>
+                      m.isKO
+                        ? onUpdKO(m.id, "played", e.target.checked)
+                        : onUpdResult(m.id, "played", e.target.checked)
+                    }
+                  />
+                  Gespeeld
+                </label>
               </div>
             </div>
           );
@@ -1971,6 +2017,19 @@ function AdminHome({ state }) {
       ) : (
         next5.map((m) => {
           const isGroupF = !m.isKO && m.group === "F";
+          const r = m.isKO
+            ? state.koResults[m.id] || {}
+            : state.results[m.id] || {};
+          const played = !!r.played;
+          const borderColor = played
+            ? isGroupF || m.isKO
+              ? "rgba(240,136,62,.4)"
+              : "rgba(88,166,255,.4)"
+            : isGroupF
+            ? "rgba(240,136,62,.3)"
+            : m.isKO
+            ? "rgba(240,136,62,.25)"
+            : "var(--border)";
           return (
             <div
               key={m.id}
@@ -1978,13 +2037,7 @@ function AdminHome({ state }) {
                 ...S.card(),
                 marginBottom: 8,
                 padding: "10px 14px",
-                border: `1px solid ${
-                  isGroupF
-                    ? "rgba(240,136,62,.3)"
-                    : m.isKO
-                    ? "rgba(240,136,62,.25)"
-                    : "var(--border)"
-                }`,
+                border: `1px solid ${borderColor}`,
                 background: isGroupF ? "rgba(240,136,62,.03)" : "var(--card)",
               }}
             >
@@ -1993,7 +2046,7 @@ function AdminHome({ state }) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  marginBottom: 6,
+                  marginBottom: 8,
                 }}
               >
                 <span style={{ fontSize: 10, color: "var(--muted)" }}>
@@ -2029,21 +2082,97 @@ function AdminHome({ state }) {
                     ? m.homeSlot || "?"
                     : `${FLAG[m.home] || ""} ${m.home}`}
                 </span>
-                <span
-                  style={{
-                    color: "var(--muted)",
-                    fontWeight: 700,
-                    minWidth: 20,
-                    textAlign: "center",
-                  }}
-                >
-                  vs
-                </span>
+                {m.isKO ? (
+                  <div
+                    style={{ display: "flex", gap: 4, alignItems: "center" }}
+                  >
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      value={r.home90 ?? ""}
+                      onChange={(e) => onUpdKO(m.id, "home90", e.target.value)}
+                      style={S.numInput}
+                    />
+                    <span style={{ color: "var(--muted)", fontWeight: 700 }}>
+                      –
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      value={r.away90 ?? ""}
+                      onChange={(e) => onUpdKO(m.id, "away90", e.target.value)}
+                      style={S.numInput}
+                    />
+                  </div>
+                ) : (
+                  <div
+                    style={{ display: "flex", gap: 4, alignItems: "center" }}
+                  >
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      value={r.home ?? ""}
+                      onChange={(e) =>
+                        onUpdResult(m.id, "home", e.target.value)
+                      }
+                      style={S.numInput}
+                    />
+                    <span style={{ color: "var(--muted)", fontWeight: 700 }}>
+                      –
+                    </span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={20}
+                      value={r.away ?? ""}
+                      onChange={(e) =>
+                        onUpdResult(m.id, "away", e.target.value)
+                      }
+                      style={S.numInput}
+                    />
+                  </div>
+                )}
                 <span style={{ flex: 1, fontWeight: 600 }}>
                   {m.isKO
                     ? m.awaySlot || "?"
                     : `${FLAG[m.away] || ""} ${m.away}`}
                 </span>
+              </div>
+              <div
+                style={{
+                  marginTop: 8,
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <label
+                  style={{
+                    fontSize: 12,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 4,
+                    cursor: "pointer",
+                    color: played
+                      ? isGroupF || m.isKO
+                        ? "var(--orange)"
+                        : "var(--accent)"
+                      : "var(--muted)",
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={played}
+                    onChange={(e) =>
+                      m.isKO
+                        ? onUpdKO(m.id, "played", e.target.checked)
+                        : onUpdResult(m.id, "played", e.target.checked)
+                    }
+                  />
+                  Gespeeld
+                </label>
               </div>
             </div>
           );
@@ -2128,7 +2257,9 @@ function AdminPanel({ state, setState }) {
         onSelect={setTab}
       />
 
-      {tab === "home" && <AdminHome state={state} />}
+      {tab === "home" && (
+        <AdminHome state={state} onUpdResult={updResult} onUpdKO={updKO} />
+      )}
 
       {tab === "fase" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
