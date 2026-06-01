@@ -845,8 +845,7 @@ function Rules() {
         <div style={{ fontSize: 13, color: "var(--muted)", lineHeight: 1.8 }}>
           Voor het WK vul je al jouw voorspellingen in via drie onderdelen:{" "}
           <strong style={{ color: "var(--text)" }}>Extra vragen</strong>,{" "}
-          <strong style={{ color: "var(--text)" }}>Groepsfase</strong> en —
-          zodra de admin dit openzet — de{" "}
+          <strong style={{ color: "var(--text)" }}>Groepsfase</strong> en de{" "}
           <strong style={{ color: "var(--text)" }}>KO-fase</strong>.
         </div>
       </div>

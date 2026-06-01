@@ -138,8 +138,8 @@ const SURPRISE_TEAMS = [
 ];
 
 const PTS_SURPRISE = {
-  "Groepsfase (niet verder)": 0, "Zestiende finale": 2, "Achtste finale": 5,
-  "Kwartfinale": 10, "Halve finale": 15, "3e Plaats": 18, "🏆 Wereldkampioen": 25,
+  "Groepsfase (niet verder)": 0, "Zestiende finale": 5, "Achtste finale": 10,
+  "Kwartfinale": 20, "Halve finale": 30, "3e Plaats": 40, "🏆 Wereldkampioen": 50,
 };
 
 const TOP_TEAMS = [
@@ -147,19 +147,17 @@ const TOP_TEAMS = [
   "Spanje", "Nederland", "België", "Duitsland", "Uruguay", "Colombia", "Marokko",
 ];
 
-const PTS_TOP_OUT = 10;
-
 const PTS_GROUP = { exact: 5, diff: 3, winner: 2 };
-const PTS_STANDING = { qualified: 2, qualifiedCorrectPos: 5 };
+const PTS_STANDING = { qualified: 4, qualifiedCorrectPos: 10 };
 const PTS_KO = {
-  r32:   { winner: 1, exact: 3 },
-  r16:   { winner: 2, exact: 4 },
-  qf:    { winner: 3, exact: 6 },
-  sf:    { winner: 4, exact: 8 },
-  "3rd": { winner: 4, exact: 8 },
-  final: { winner: 5, exact: 10 },
+  r32:   { winner: 3, exact: 5 },
+  r16:   { winner: 4, exact: 8 },
+  qf:    { winner: 5, exact: 12 },
+  sf:    { winner: 8, exact: 17 },
+  "3rd": { winner: 12, exact: 20 },
+  final: { winner: 15, exact: 25 },
 };
-const PTS_EXTRA = { champion: 25, topScorer: 8, nlStage: 8, yellowCards: 8, topOut: PTS_TOP_OUT };
+const PTS_EXTRA = { champion: 40, topScorer: 15, nlStage: 15, yellowCards: 15, topOut: 15 };
 
 const FLAG = {
   Mexico:"🇲🇽", "Zuid-Afrika":"🇿🇦", "Zuid-Korea":"🇰🇷", "Tsjechië":"🇨🇿",
