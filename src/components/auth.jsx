@@ -4,8 +4,10 @@ import { hash } from "../pouleEngine";
 import { S } from "../styles/ui";
 import { Alert } from "./common";
 
-// ─── AUTH SCREEN ──────────────────────────────────────────────────────────────
-function AuthScreen({ onLogin, users, competitions }) {
+function AuthScreen({ onLogin, users, competitions: allCompetitions }) {
+  // Only show competitions that are not hidden for registration
+  const competitions = allCompetitions.filter((c) => !c.hiddenRegistration);
+
   const [mode, setMode] = useState("login");
   const [name, setName] = useState("");
   const [pw, setPw] = useState("");
@@ -97,7 +99,6 @@ function AuthScreen({ onLogin, users, competitions }) {
           </div>
         </div>
         <div style={S.card()}>
-          {/* Tab toggle */}
           <div
             style={{
               display: "flex",
@@ -164,7 +165,6 @@ function AuthScreen({ onLogin, users, competitions }) {
               />
             )}
 
-            {/* Competitie-keuze bij registratie */}
             {mode === "register" && competitions.length > 0 && (
               <div>
                 <div
@@ -217,7 +217,23 @@ function AuthScreen({ onLogin, users, competitions }) {
               </div>
             )}
 
-            {mode === "register" && competitions.length === 0 && (
+            {mode === "register" &&
+              competitions.length === 0 &&
+              allCompetitions.length > 0 && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--muted)",
+                    fontStyle: "italic",
+                    padding: "6px 0",
+                  }}
+                >
+                  Er zijn op dit moment geen competities beschikbaar voor
+                  registratie.
+                </div>
+              )}
+
+            {mode === "register" && allCompetitions.length === 0 && (
               <div
                 style={{
                   fontSize: 12,
@@ -269,7 +285,6 @@ function AuthScreen({ onLogin, users, competitions }) {
   );
 }
 
-// ─── ADMIN LOGIN ──────────────────────────────────────────────────────────────
 function AdminLogin({ onSuccess, onCancel }) {
   const [pw, setPw] = useState("");
   const [err, setErr] = useState("");
