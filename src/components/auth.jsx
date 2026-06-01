@@ -1,69 +1,65 @@
-import React from "react";
-
-import { useState } from "react";
+import React, { useState } from "react";
 import { ADMIN_PW } from "../data/tournamentData";
 import { hash } from "../pouleEngine";
 import { S } from "../styles/ui";
 import { Alert } from "./common";
 
-function AuthScreen(props) {
-  var onLogin = props.onLogin;
-  var users = props.users;
-  var mode = useState("login");
-  var setMode = mode[1];
-  mode = mode[0];
-  var nameS = useState("");
-  var setName = nameS[1];
-  nameS = nameS[0];
-  var pwS = useState("");
-  var setPw = pwS[1];
-  pwS = pwS[0];
-  var pw2S = useState("");
-  var setPw2 = pw2S[1];
-  pw2S = pw2S[0];
-  var errS = useState("");
-  var setErr = errS[1];
-  errS = errS[0];
+// ─── AUTH SCREEN ──────────────────────────────────────────────────────────────
+function AuthScreen({ onLogin, users, competitions }) {
+  const [mode, setMode] = useState("login");
+  const [name, setName] = useState("");
+  const [pw, setPw] = useState("");
+  const [pw2, setPw2] = useState("");
+  const [selectedComps, setSelectedComps] = useState([]);
+  const [err, setErr] = useState("");
 
   function doLogin() {
     setErr("");
-    var u = users.filter(function (u2) {
-      return u2.name.toLowerCase() === nameS.trim().toLowerCase();
-    })[0];
+    const u = users.find(
+      (u) => u.name.toLowerCase() === name.trim().toLowerCase()
+    );
     if (!u) {
       setErr("Naam niet gevonden.");
       return;
     }
-    if (u.pwHash !== hash(pwS)) {
+    if (u.pwHash !== hash(pw)) {
       setErr("Fout wachtwoord.");
       return;
     }
     onLogin(u.id);
   }
+
   function doRegister() {
     setErr("");
-    if (!nameS.trim()) {
+    if (!name.trim()) {
       setErr("Vul een naam in.");
       return;
     }
-    if (pwS.length < 4) {
+    if (pw.length < 4) {
       setErr("Wachtwoord minimaal 4 tekens.");
       return;
     }
-    if (pwS !== pw2S) {
+    if (pw !== pw2) {
       setErr("Wachtwoorden komen niet overeen.");
       return;
     }
-    if (
-      users.filter(function (u) {
-        return u.name.toLowerCase() === nameS.trim().toLowerCase();
-      }).length
-    ) {
+    if (users.find((u) => u.name.toLowerCase() === name.trim().toLowerCase())) {
       setErr("Naam al in gebruik.");
       return;
     }
-    onLogin(null, { name: nameS.trim(), pw: pwS });
+    if (competitions.length > 0 && selectedComps.length === 0) {
+      setErr("Selecteer minimaal één competitie.");
+      return;
+    }
+    onLogin(null, { name: name.trim(), pw, competitionIds: selectedComps });
   }
+
+  function toggleComp(id) {
+    setSelectedComps((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    );
+  }
+
   return (
     <div
       style={{
@@ -101,6 +97,7 @@ function AuthScreen(props) {
           </div>
         </div>
         <div style={S.card()}>
+          {/* Tab toggle */}
           <div
             style={{
               display: "flex",
@@ -110,42 +107,40 @@ function AuthScreen(props) {
               padding: 3,
             }}
           >
-            {["login", "register"].map(function (m) {
-              return (
-                <button
-                  key={m}
-                  onClick={function () {
-                    setMode(m);
-                    setErr("");
-                  }}
-                  style={{
-                    flex: 1,
-                    padding: "8px",
-                    background: mode === m ? "var(--accent)" : "none",
-                    color: mode === m ? "#fff" : "var(--muted)",
-                    border: "none",
-                    borderRadius: 6,
-                    cursor: "pointer",
-                    fontWeight: 700,
-                    fontSize: 13,
-                    fontFamily: "var(--font)",
-                  }}
-                >
-                  {m === "login" ? "Inloggen" : "Registreren"}
-                </button>
-              );
-            })}
+            {["login", "register"].map((m) => (
+              <button
+                key={m}
+                onClick={() => {
+                  setMode(m);
+                  setErr("");
+                }}
+                style={{
+                  flex: 1,
+                  padding: "8px",
+                  background: mode === m ? "var(--accent)" : "none",
+                  color: mode === m ? "#fff" : "var(--muted)",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  fontWeight: 700,
+                  fontSize: 13,
+                  fontFamily: "var(--font)",
+                }}
+              >
+                {m === "login" ? "Inloggen" : "Registreren"}
+              </button>
+            ))}
           </div>
-          <Alert msg={errS} type="error" />
+
+          <Alert msg={err} type="error" />
+
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <input
               style={S.input}
               placeholder="Jouw naam"
-              value={nameS}
-              onChange={function (e) {
-                setName(e.target.value);
-              }}
-              onKeyDown={function (e) {
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => {
                 if (e.key === "Enter" && mode === "login") doLogin();
               }}
             />
@@ -153,11 +148,9 @@ function AuthScreen(props) {
               style={S.input}
               type="password"
               placeholder="Wachtwoord"
-              value={pwS}
-              onChange={function (e) {
-                setPw(e.target.value);
-              }}
-              onKeyDown={function (e) {
+              value={pw}
+              onChange={(e) => setPw(e.target.value)}
+              onKeyDown={(e) => {
                 if (e.key === "Enter" && mode === "login") doLogin();
               }}
             />
@@ -166,12 +159,78 @@ function AuthScreen(props) {
                 style={S.input}
                 type="password"
                 placeholder="Herhaal wachtwoord"
-                value={pw2S}
-                onChange={function (e) {
-                  setPw2(e.target.value);
-                }}
+                value={pw2}
+                onChange={(e) => setPw2(e.target.value)}
               />
             )}
+
+            {/* Competitie-keuze bij registratie */}
+            {mode === "register" && competitions.length > 0 && (
+              <div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--muted)",
+                    marginBottom: 8,
+                    marginTop: 4,
+                  }}
+                >
+                  Kies je competitie(s):
+                </div>
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 6 }}
+                >
+                  {competitions.map((c) => {
+                    const selected = selectedComps.includes(c.id);
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => toggleComp(c.id)}
+                        style={{
+                          padding: "9px 14px",
+                          borderRadius: 8,
+                          textAlign: "left",
+                          border: `2px solid ${
+                            selected ? "var(--accent)" : "var(--border)"
+                          }`,
+                          background: selected
+                            ? "rgba(88,166,255,.12)"
+                            : "var(--bg)",
+                          color: selected ? "var(--accent)" : "var(--text)",
+                          cursor: "pointer",
+                          fontSize: 13,
+                          fontWeight: selected ? 700 : 400,
+                          fontFamily: "var(--font)",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                        }}
+                      >
+                        <span style={{ fontSize: 16 }}>
+                          {selected ? "✓" : "○"}
+                        </span>
+                        {c.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {mode === "register" && competitions.length === 0 && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "var(--muted)",
+                  fontStyle: "italic",
+                  padding: "6px 0",
+                }}
+              >
+                Nog geen competities aangemaakt — de admin maakt competities aan
+                in het admin paneel.
+              </div>
+            )}
+
             <button
               style={{ ...S.btn(), marginTop: 4 }}
               onClick={mode === "login" ? doLogin : doRegister}
@@ -179,6 +238,7 @@ function AuthScreen(props) {
               {mode === "login" ? "Inloggen →" : "Account aanmaken →"}
             </button>
           </div>
+
           <div
             style={{
               marginTop: 14,
@@ -188,9 +248,7 @@ function AuthScreen(props) {
             }}
           >
             <button
-              onClick={function () {
-                onLogin("__admin__");
-              }}
+              onClick={() => onLogin("__admin__")}
               style={{
                 background: "none",
                 border: "1px solid var(--border)",
@@ -211,19 +269,16 @@ function AuthScreen(props) {
   );
 }
 
-function AdminLogin(props) {
-  var onSuccess = props.onSuccess;
-  var onCancel = props.onCancel;
-  var pwS = useState("");
-  var setPw = pwS[1];
-  pwS = pwS[0];
-  var errS = useState("");
-  var setErr = errS[1];
-  errS = errS[0];
+// ─── ADMIN LOGIN ──────────────────────────────────────────────────────────────
+function AdminLogin({ onSuccess, onCancel }) {
+  const [pw, setPw] = useState("");
+  const [err, setErr] = useState("");
+
   function go() {
-    if (pwS === ADMIN_PW) onSuccess();
+    if (pw === ADMIN_PW) onSuccess();
     else setErr("Fout wachtwoord.");
   }
+
   return (
     <div
       style={{
@@ -249,17 +304,15 @@ function AdminLogin(props) {
         >
           Admin toegang
         </div>
-        <Alert msg={errS} type="error" />
+        <Alert msg={err} type="error" />
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           <input
             style={S.input}
             type="password"
             placeholder="Admin wachtwoord"
-            value={pwS}
-            onChange={function (e) {
-              setPw(e.target.value);
-            }}
-            onKeyDown={function (e) {
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            onKeyDown={(e) => {
               if (e.key === "Enter") go();
             }}
           />
@@ -296,7 +349,5 @@ function AdminLogin(props) {
     </div>
   );
 }
-
-// ─── COMPARISON MODALS ────────────────────────────────────────────────────────
 
 export { AuthScreen, AdminLogin };

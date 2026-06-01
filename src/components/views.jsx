@@ -32,6 +32,8 @@ import { S } from "../styles/ui";
 import { Alert, SlotDisplay, TabBar } from "./common";
 import { SingleMatchCompare, PlayerCompare } from "./compare";
 
+// ─── MY OVERVIEW ─────────────────────────────────────────────────────────────
+
 function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
   const pred = user.predictions || {};
   const pts = calcPoints(user, state.results, state.koResults);
@@ -45,11 +47,9 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
   const [compareMatch, setCompareMatch] = useState(null);
   const [comparePlayer, setComparePlayer] = useState(null);
 
-  // ±5 matches around now — combine group + KO into one chronological list
   const sortedGroup = [...GROUP_MATCHES].sort((a, b) =>
     (a.dt || "").localeCompare(b.dt || "")
   );
-  // Assign approximate dates to KO matches (based on round)
   const KO_DATES = {
     r32: "2026-07-01",
     r16: "2026-07-05",
@@ -63,8 +63,6 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
     dt: KO_DATES[m.round] + "T20:00",
     isKO: true,
   }));
-
-  // Combine all matches
   const allMatches = [
     ...sortedGroup.map((m) => ({ ...m, isKO: false })),
     ...koMatchesAll,
@@ -78,8 +76,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
   const last5 = allPlayed.slice(-5);
   const next5 = allUpcoming.slice(0, 5);
 
-  function KOMatchRow(props) {
-    var m = props.m;
+  function KOMatchRow({ m }) {
     const pw = pred.koWinners?.[m.id];
     const ps = pred.koScores?.[m.id];
     const r = state.koResults[m.id];
@@ -245,8 +242,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
 
   const canCompareMatch = state.groupFrozen;
 
-  function MatchRow(props) {
-    var m = props.m;
+  function MatchRow({ m }) {
     const res = calcGroupMatchPts(pred.matches?.[m.id], state.results[m.id]);
     const r = state.results[m.id];
     const pm = pred.matches?.[m.id];
@@ -420,12 +416,11 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {!state.extraFrozen && (
+          {!state.extraFrozen ? (
             <button style={S.btn("var(--green)")} onClick={onEditExtra}>
               🔮 Extra vragen
             </button>
-          )}
-          {state.extraFrozen && (
+          ) : (
             <button
               style={{
                 ...S.btn("var(--card2)"),
@@ -436,12 +431,11 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
               👁️ Extra vragen
             </button>
           )}
-          {!state.groupFrozen && (
+          {!state.groupFrozen ? (
             <button style={S.btn()} onClick={onEditGroup}>
               ⚽ Groepsfase
             </button>
-          )}
-          {state.groupFrozen && (
+          ) : (
             <button
               style={{
                 ...S.btn("var(--card2)"),
@@ -452,22 +446,22 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
               👁️ Groepsfase
             </button>
           )}
-          {koAvailable && !state.koFrozen && (
-            <button style={S.btn("var(--orange)")} onClick={onEditKO}>
-              ⚔️ KO-fase
-            </button>
-          )}
-          {koAvailable && state.koFrozen && (
-            <button
-              style={{
-                ...S.btn("var(--card2)"),
-                border: "1px solid var(--border)",
-              }}
-              onClick={onEditKO}
-            >
-              👁️ KO-fase
-            </button>
-          )}
+          {koAvailable &&
+            (!state.koFrozen ? (
+              <button style={S.btn("var(--orange)")} onClick={onEditKO}>
+                ⚔️ KO-fase
+              </button>
+            ) : (
+              <button
+                style={{
+                  ...S.btn("var(--card2)"),
+                  border: "1px solid var(--border)",
+                }}
+                onClick={onEditKO}
+              >
+                👁️ KO-fase
+              </button>
+            ))}
         </div>
       </div>
 
@@ -524,7 +518,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
         </div>
       </div>
 
-      {/* Extra predictions */}
+      {/* Extra voorspellingen */}
       <div style={{ marginBottom: 22 }}>
         <div
           style={{
@@ -587,7 +581,6 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
                 type: "topout",
                 correct: topOutCorrect,
                 known: topOutKnown,
-                allOuts: topOuts,
               },
             ].map((item) => (
               <div
@@ -650,7 +643,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
                       fontWeight: 700,
                     }}
                   >
-                    {item.correct ? `+${PTS_TOP_OUT} ✓` : `✗`}
+                    {item.correct ? `+${PTS_TOP_OUT} ✓` : "✗"}
                   </div>
                 )}
               </div>
@@ -659,7 +652,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
         </div>
       </div>
 
-      {/* Recent + upcoming matches — group + KO unified */}
+      {/* Wedstrijden */}
       <div style={{ marginBottom: 22 }}>
         {last5.length > 0 && (
           <div style={{ marginBottom: 16 }}>
@@ -721,7 +714,6 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
         )}
       </div>
 
-      {/* Comparison modals */}
       {compareMatch && (
         <SingleMatchCompare
           match={compareMatch}
@@ -759,7 +751,6 @@ function Rules() {
       >
         📋 Spelregels & Puntenschema
       </div>
-
       <div style={{ ...S.card(), marginBottom: 14 }}>
         <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 10 }}>
           Hoe werkt het?
@@ -774,7 +765,6 @@ function Rules() {
           uitslagen.
         </div>
       </div>
-
       <div
         style={{
           fontWeight: 700,
@@ -794,7 +784,7 @@ function Rules() {
           ],
           [
             "⚽ Topscorer",
-            "Kies een land en vervolgens de speler die de meeste doelpunten scoort. Bovenaan staan de spelers met de meeste kwalificatiedoelpunten.",
+            "Kies een land en vervolgens de speler die de meeste doelpunten scoort.",
             PTS_EXTRA.topScorer,
           ],
           [
@@ -807,49 +797,39 @@ function Rules() {
             "Kies een van de 12 hoogst geklasseerde landen die toch niet verder komt dan de groepsfase.",
             PTS_EXTRA.topOut,
           ],
-        ].map(function (row) {
-          var title = row[0];
-          var desc = row[1];
-          var pts = row[2];
-          return (
+        ].map(([title, desc, pts]) => (
+          <div
+            key={title}
+            style={{
+              borderBottom: "1px solid var(--border)",
+              paddingBottom: 10,
+              marginBottom: 10,
+            }}
+          >
             <div
-              key={title}
               style={{
-                borderBottom: "1px solid var(--border)",
-                paddingBottom: 10,
-                marginBottom: 10,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 4,
               }}
             >
-              <div
+              <span style={{ fontWeight: 700, fontSize: 13 }}>{title}</span>
+              <span
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 4,
+                  color: "var(--accent)",
+                  fontWeight: 700,
+                  fontSize: 12,
                 }}
               >
-                <span style={{ fontWeight: 700, fontSize: 13 }}>{title}</span>
-                <span
-                  style={{
-                    color: "var(--accent)",
-                    fontWeight: 700,
-                    fontSize: 12,
-                  }}
-                >
-                  +{pts} pt
-                </span>
-              </div>
-              <div style={{ fontSize: 12, color: "var(--muted)" }}>{desc}</div>
+                +{pts} pt
+              </span>
             </div>
-          );
-        })}
-        {/* Verrassing — inline met punten per ronde */}
+            <div style={{ fontSize: 12, color: "var(--muted)" }}>{desc}</div>
+          </div>
+        ))}
         <div
-          style={{
-            borderBottom: "1px solid var(--border)",
-            paddingBottom: 10,
-            marginBottom: 0,
-          }}
+          style={{ borderBottom: "1px solid var(--border)", paddingBottom: 10 }}
         >
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>
             🌟 Verrassing van het WK
@@ -860,45 +840,38 @@ function Rules() {
           </div>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
             {Object.entries(PTS_SURPRISE)
-              .filter(function (e) {
-                return e[1] > 0;
-              })
-              .map(function (e) {
-                var s = e[0];
-                var p = e[1];
-                return (
-                  <div
-                    key={s}
+              .filter(([, v]) => v > 0)
+              .map(([s, p]) => (
+                <div
+                  key={s}
+                  style={{
+                    background: "rgba(88,166,255,.08)",
+                    border: "1px solid rgba(88,166,255,.2)",
+                    borderRadius: 6,
+                    padding: "4px 10px",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <span
                     style={{
-                      background: "rgba(88,166,255,.08)",
-                      border: "1px solid rgba(88,166,255,.2)",
-                      borderRadius: 6,
-                      padding: "4px 10px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      gap: 1,
+                      fontSize: 11,
+                      color: "var(--accent)",
+                      fontWeight: 700,
                     }}
                   >
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: "var(--accent)",
-                        fontWeight: 700,
-                      }}
-                    >
-                      +{p} pt
-                    </span>
-                    <span style={{ fontSize: 10, color: "var(--muted)" }}>
-                      {s === "🏆 Wereldkampioen" ? "Kampioen" : s}
-                    </span>
-                  </div>
-                );
-              })}
+                    +{p} pt
+                  </span>
+                  <span style={{ fontSize: 10, color: "var(--muted)" }}>
+                    {s === "🏆 Wereldkampioen" ? "Kampioen" : s}
+                  </span>
+                </div>
+              ))}
           </div>
         </div>
       </div>
-
       <div
         style={{
           fontWeight: 700,
@@ -912,56 +885,49 @@ function Rules() {
       <div style={{ ...S.card(), marginBottom: 14 }}>
         <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
           Per wedstrijd vul je een verwachte uitslag in. De categorie is mutueel
-          exclusief — je krijgt altijd de hoogste van toepassing zijnde score:
+          exclusief:
         </div>
         {[
           ["Exacte uitslag", "Bv. 2–1 is ook echt 2–1", PTS_GROUP.exact],
           [
             "Juist doelpuntenverschil",
-            "Bv. jij zegt 3–1, het wordt 2–0 — beide winst met 2 verschil",
+            "Bv. jij zegt 3–1, het wordt 2–0",
             PTS_GROUP.diff,
           ],
           [
             "Juiste winnaar of gelijkspel",
-            "Je hebt de juiste richting, maar doelpuntenverschil klopt niet",
+            "Je hebt de juiste richting, maar verschil klopt niet",
             PTS_GROUP.winner,
           ],
           ["Mis", "Fout resultaat — geen punten", 0],
-        ].map(function (row) {
-          var cat = row[0];
-          var desc = row[1];
-          var pts = row[2];
-          return (
+        ].map(([cat, desc, pts]) => (
+          <div
+            key={cat}
+            style={{
+              display: "flex",
+              gap: 10,
+              borderBottom: "1px solid var(--border)",
+              paddingBottom: 8,
+              marginBottom: 8,
+            }}
+          >
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700, fontSize: 13 }}>{cat}</div>
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>{desc}</div>
+            </div>
             <div
-              key={cat}
               style={{
-                display: "flex",
-                gap: 10,
-                borderBottom: "1px solid var(--border)",
-                paddingBottom: 8,
-                marginBottom: 8,
+                fontWeight: 900,
+                fontSize: 18,
+                color: pts > 0 ? "var(--accent)" : "var(--muted)",
+                minWidth: 40,
+                textAlign: "right",
               }}
             >
-              <div style={{ flex: 1 }}>
-                <div style={{ fontWeight: 700, fontSize: 13 }}>{cat}</div>
-                <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                  {desc}
-                </div>
-              </div>
-              <div
-                style={{
-                  fontWeight: 900,
-                  fontSize: 18,
-                  color: pts > 0 ? "var(--accent)" : "var(--muted)",
-                  minWidth: 40,
-                  textAlign: "right",
-                }}
-              >
-                {pts > 0 ? `+${pts}` : "-"}
-              </div>
+              {pts > 0 ? `+${pts}` : "-"}
             </div>
-          );
-        })}
+          </div>
+        ))}
         <div
           style={{
             fontSize: 12,
@@ -971,7 +937,7 @@ function Rules() {
             marginTop: 4,
           }}
         >
-          Groepsstand (automatisch berekend uit jouw uitslagen):
+          Groepsstand (automatisch berekend):
         </div>
         {[
           ["Team in jouw top-2 én gaat echt door", PTS_STANDING.qualified],
@@ -979,29 +945,24 @@ function Rules() {
             "Zelfde positie (#1 of #2 exact correct)",
             PTS_STANDING.qualifiedCorrectPos,
           ],
-        ].map(function (row) {
-          var desc = row[0];
-          var pts = row[1];
-          return (
-            <div
-              key={desc}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: 12,
-                padding: "3px 0",
-                borderBottom: "1px solid var(--border)",
-              }}
-            >
-              <span style={{ color: "var(--muted)" }}>{desc}</span>
-              <span style={{ fontWeight: 700, color: "var(--accent)" }}>
-                +{pts} pt
-              </span>
-            </div>
-          );
-        })}
+        ].map(([desc, pts]) => (
+          <div
+            key={desc}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 12,
+              padding: "3px 0",
+              borderBottom: "1px solid var(--border)",
+            }}
+          >
+            <span style={{ color: "var(--muted)" }}>{desc}</span>
+            <span style={{ fontWeight: 700, color: "var(--accent)" }}>
+              +{pts} pt
+            </span>
+          </div>
+        ))}
       </div>
-
       <div
         style={{
           fontWeight: 700,
@@ -1015,9 +976,7 @@ function Rules() {
       <div style={{ ...S.card(), marginBottom: 14 }}>
         <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
           Per KO-wedstrijd vul je de verwachte uitslag na 90 minuten in én wie
-          er wint (bij gelijkspel gaat het door via verlenging/penalty's — de
-          winnaar telt, niet de score na 90 min). Punten lopen op naarmate de
-          ronde later is:
+          er wint. Punten lopen op naarmate de ronde later is:
         </div>
         {[
           ["Zestiende finale", PTS_KO.r32],
@@ -1025,41 +984,35 @@ function Rules() {
           ["Kwartfinale", PTS_KO.qf],
           ["Halve finale", PTS_KO.sf],
           ["Finale", PTS_KO.final],
-        ].map(function (row) {
-          var ronde = row[0];
-          var schema = row[1];
-          return (
-            <div
-              key={ronde}
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                fontSize: 12,
-                padding: "5px 0",
-                borderBottom: "1px solid var(--border)",
-                alignItems: "center",
-              }}
-            >
-              <span style={{ color: "var(--muted)", fontWeight: 600 }}>
-                {ronde}
+        ].map(([ronde, schema]) => (
+          <div
+            key={ronde}
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              fontSize: 12,
+              padding: "5px 0",
+              borderBottom: "1px solid var(--border)",
+              alignItems: "center",
+            }}
+          >
+            <span style={{ color: "var(--muted)", fontWeight: 600 }}>
+              {ronde}
+            </span>
+            <div style={{ display: "flex", gap: 8 }}>
+              <span style={{ color: "var(--accent)" }}>
+                winnaar: <strong>+{schema.winner}</strong>
               </span>
-              <div style={{ display: "flex", gap: 8 }}>
-                <span style={{ color: "var(--accent)" }}>
-                  winnaar: <strong>+{schema.winner}</strong>
-                </span>
-                <span style={{ color: "var(--green)" }}>
-                  exacte stand: <strong>+{schema.exact}</strong>
-                </span>
-              </div>
+              <span style={{ color: "var(--green)" }}>
+                exacte stand: <strong>+{schema.exact}</strong>
+              </span>
             </div>
-          );
-        })}
+          </div>
+        ))}
         <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
-          💡 De exacte stand na 90 min is een bonus bovenop de winnaar-punten —
-          je kunt beide verdienen in dezelfde wedstrijd.
+          💡 De exacte stand na 90 min is een bonus bovenop de winnaar-punten.
         </div>
       </div>
-
       <div
         style={{
           ...S.card(),
@@ -1092,7 +1045,7 @@ function Rules() {
   );
 }
 
-// ─── STANDINGS (with clickable names) ────────────────────────────────────────
+// ─── STANDINGS ───────────────────────────────────────────────────────────────
 
 function Standings({ state, currentUserId, onCompare }) {
   const ranked = [...state.users]
@@ -1146,7 +1099,6 @@ function Standings({ state, currentUserId, onCompare }) {
                   : "var(--border)"
               }`,
               cursor: clickable ? "pointer" : "default",
-              transition: "opacity .15s",
             }}
           >
             <div style={{ fontSize: 20, width: 32, textAlign: "center" }}>
@@ -1179,14 +1131,106 @@ function Standings({ state, currentUserId, onCompare }) {
   );
 }
 
-// ─── STAND WITH COMPARE ───────────────────────────────────────────────────────
+// ─── STAND WITH COMPARE + COMPETITIE FILTER ──────────────────────────────────
 
 function StandWithCompare({ state, currentUser }) {
   const [comparePlayer, setComparePlayer] = useState(null);
+  const competitions = state.competitions || [];
+
+  // Standaard: eerste competitie van de ingelogde gebruiker, of "all"
+  const defaultComp = (() => {
+    if (!currentUser || competitions.length === 0) return "all";
+    const userComps = currentUser.competitionIds || [];
+    const first = competitions.find((c) => userComps.includes(c.id));
+    return first ? first.id : "all";
+  })();
+
+  const [selectedComp, setSelectedComp] = useState(defaultComp);
+
+  // Filter gebruikers op geselecteerde competitie
+  const filteredUsers =
+    selectedComp === "all"
+      ? state.users
+      : state.users.filter((u) =>
+          (u.competitionIds || []).includes(selectedComp)
+        );
+
+  const filteredState = { ...state, users: filteredUsers };
+
   return (
     <div>
+      {/* Competitie-selector — alleen tonen als er competities zijn */}
+      {competitions.length > 0 && (
+        <div style={{ marginBottom: 18 }}>
+          <div
+            style={{
+              fontSize: 11,
+              color: "var(--muted)",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              marginBottom: 8,
+              fontWeight: 700,
+            }}
+          >
+            Competitie
+          </div>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            <button
+              onClick={() => setSelectedComp("all")}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 20,
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "var(--font)",
+                border: `1px solid ${
+                  selectedComp === "all" ? "var(--accent)" : "var(--border)"
+                }`,
+                background:
+                  selectedComp === "all" ? "var(--accent)" : "var(--bg)",
+                color: selectedComp === "all" ? "#fff" : "var(--text)",
+              }}
+            >
+              🌍 Iedereen
+            </button>
+            {competitions.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setSelectedComp(c.id)}
+                style={{
+                  padding: "6px 14px",
+                  borderRadius: 20,
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: "pointer",
+                  fontFamily: "var(--font)",
+                  border: `1px solid ${
+                    selectedComp === c.id ? "var(--accent)" : "var(--border)"
+                  }`,
+                  background:
+                    selectedComp === c.id ? "var(--accent)" : "var(--bg)",
+                  color: selectedComp === c.id ? "#fff" : "var(--text)",
+                }}
+              >
+                {c.name}
+                <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.7 }}>
+                  (
+                  {
+                    state.users.filter((u) =>
+                      (u.competitionIds || []).includes(c.id)
+                    ).length
+                  }
+                  )
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <Standings
-        state={state}
+        state={filteredState}
         currentUserId={currentUser?.id}
         onCompare={setComparePlayer}
       />
@@ -1202,7 +1246,7 @@ function StandWithCompare({ state, currentUser }) {
   );
 }
 
-// ─── PASSWORD REVEAL (admin only) ────────────────────────────────────────────
+// ─── PASSWORD REVEAL ─────────────────────────────────────────────────────────
 
 function PwReveal({ u }) {
   const [show, setShow] = useState(false);
@@ -1243,7 +1287,250 @@ function PwReveal({ u }) {
   );
 }
 
-// ─── ADMIN PANEL ──────────────────────────────────────────────────────────────
+// ─── COMPETITIES ADMIN ───────────────────────────────────────────────────────
+
+function CompetitionsAdmin({ state, setState }) {
+  const [newName, setNewName] = useState("");
+  const competitions = state.competitions || [];
+
+  function addComp() {
+    if (!newName.trim()) return;
+    const id = "c_" + Date.now();
+    setState((s) => {
+      const ns = {
+        ...s,
+        competitions: [...(s.competitions || []), { id, name: newName.trim() }],
+      };
+      persist(ns);
+      return ns;
+    });
+    setNewName("");
+  }
+
+  function removeComp(id) {
+    if (
+      !confirm(
+        "Competitie verwijderen? Deelnemers blijven bestaan maar worden ontkoppeld."
+      )
+    )
+      return;
+    setState((s) => {
+      const ns = {
+        ...s,
+        competitions: (s.competitions || []).filter((c) => c.id !== id),
+        users: s.users.map((u) => ({
+          ...u,
+          competitionIds: (u.competitionIds || []).filter((cid) => cid !== id),
+        })),
+      };
+      persist(ns);
+      return ns;
+    });
+  }
+
+  function toggleUserInComp(userId, compId) {
+    setState((s) => {
+      const ns = {
+        ...s,
+        users: s.users.map((u) => {
+          if (u.id !== userId) return u;
+          const ids = u.competitionIds || [];
+          const next = ids.includes(compId)
+            ? ids.filter((id) => id !== compId)
+            : [...ids, compId];
+          return { ...u, competitionIds: next };
+        }),
+      };
+      persist(ns);
+      return ns;
+    });
+  }
+
+  return (
+    <div>
+      {/* Nieuwe competitie aanmaken */}
+      <div style={{ ...S.card(), marginBottom: 16 }}>
+        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 10 }}>
+          Nieuwe competitie aanmaken
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            style={{ ...S.input, flex: 1 }}
+            placeholder="Naam (bijv. Familie poule)"
+            value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") addComp();
+            }}
+          />
+          <button
+            style={{ ...S.btn("var(--green)"), whiteSpace: "nowrap" }}
+            onClick={addComp}
+          >
+            + Aanmaken
+          </button>
+        </div>
+      </div>
+
+      {competitions.length === 0 && (
+        <p style={{ color: "var(--muted)", fontSize: 13 }}>
+          Nog geen competities. Maak er een aan hierboven.
+        </p>
+      )}
+
+      {competitions.map((comp) => {
+        const members = state.users.filter((u) =>
+          (u.competitionIds || []).includes(comp.id)
+        );
+        const nonMembers = state.users.filter(
+          (u) => !(u.competitionIds || []).includes(comp.id)
+        );
+        return (
+          <div key={comp.id} style={{ ...S.card(), marginBottom: 14 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 12,
+                flexWrap: "wrap",
+                gap: 8,
+              }}
+            >
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 15 }}>{comp.name}</div>
+                <div
+                  style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}
+                >
+                  {members.length} deelnemer{members.length !== 1 ? "s" : ""}
+                </div>
+              </div>
+              <button
+                onClick={() => removeComp(comp.id)}
+                style={{
+                  background: "none",
+                  border: "1px solid var(--border)",
+                  borderRadius: 6,
+                  color: "var(--muted)",
+                  padding: "4px 10px",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontFamily: "var(--font)",
+                }}
+              >
+                🗑 Verwijderen
+              </button>
+            </div>
+
+            {members.length > 0 && (
+              <div style={{ marginBottom: 10 }}>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--muted)",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.07em",
+                    marginBottom: 6,
+                  }}
+                >
+                  Deelnemers
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {members.map((u) => (
+                    <div
+                      key={u.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        background: "rgba(88,166,255,.1)",
+                        border: "1px solid rgba(88,166,255,.3)",
+                        borderRadius: 20,
+                        padding: "4px 10px 4px 12px",
+                        fontSize: 13,
+                      }}
+                    >
+                      <span style={{ color: "var(--accent)", fontWeight: 600 }}>
+                        {u.name}
+                      </span>
+                      <button
+                        onClick={() => toggleUserInComp(u.id, comp.id)}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "var(--muted)",
+                          fontSize: 14,
+                          padding: "0 2px",
+                          lineHeight: 1,
+                        }}
+                        title="Verwijderen uit competitie"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {nonMembers.length > 0 && (
+              <div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "var(--muted)",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.07em",
+                    marginBottom: 6,
+                  }}
+                >
+                  Toevoegen
+                </div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                  {nonMembers.map((u) => (
+                    <button
+                      key={u.id}
+                      onClick={() => toggleUserInComp(u.id, comp.id)}
+                      style={{
+                        background: "var(--bg)",
+                        border: "1px solid var(--border)",
+                        borderRadius: 20,
+                        padding: "4px 12px",
+                        fontSize: 13,
+                        color: "var(--text)",
+                        cursor: "pointer",
+                        fontFamily: "var(--font)",
+                      }}
+                    >
+                      + {u.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {state.users.length === 0 && (
+              <div
+                style={{
+                  fontSize: 12,
+                  color: "var(--muted)",
+                  fontStyle: "italic",
+                }}
+              >
+                Nog geen geregistreerde gebruikers.
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── ADMIN PANEL ─────────────────────────────────────────────────────────────
 
 function AdminPanel({ state, setState }) {
   const [tab, setTab] = useState("fase");
@@ -1315,6 +1602,10 @@ function AdminPanel({ state, setState }) {
       <TabBar
         tabs={[
           { id: "fase", label: "🔒 Bevriezen" },
+          {
+            id: "competitions",
+            label: `🏆 Competities (${(state.competitions || []).length})`,
+          },
           { id: "users", label: `👥 Deelnemers (${state.users.length})` },
           { id: "results", label: "📊 Groepsuitslagen" },
           { id: "ko", label: "⚔️ KO-uitslagen" },
@@ -1344,7 +1635,7 @@ function AdminPanel({ state, setState }) {
               key: "koOpen",
               icon: "⚔️",
               label: "KO-fase openen",
-              desc: "Deelnemers kunnen KO-voorspellingen invullen (ook halverwege de groepsfase)",
+              desc: "Deelnemers kunnen KO-voorspellingen invullen",
               invert: true,
             },
             {
@@ -1353,12 +1644,7 @@ function AdminPanel({ state, setState }) {
               label: "KO-fase",
               desc: "Deelnemers kunnen KO-voorspellingen niet meer aanpassen",
             },
-          ].map(function (item) {
-            var key = item.key;
-            var icon = item.icon;
-            var label = item.label;
-            var desc = item.desc;
-            var invert = item.invert;
+          ].map(({ key, icon, label, desc, invert }) => {
             const active = state[key];
             return (
               <div
@@ -1425,6 +1711,11 @@ function AdminPanel({ state, setState }) {
         </div>
       )}
 
+      {/* ── COMPETITIES ── */}
+      {tab === "competitions" && (
+        <CompetitionsAdmin state={state} setState={setState} />
+      )}
+
       {/* ── DEELNEMERS ── */}
       {tab === "users" && (
         <div>
@@ -1434,45 +1725,36 @@ function AdminPanel({ state, setState }) {
           {state.users.map((u) => {
             const pts = calcPoints(u, state.results, state.koResults);
             const p = u.predictions || {};
-
-            // Groepsfase progress: count filled matches out of 72
-            const groupTotal = GROUP_MATCHES.length; // 72
             const groupFilled = GROUP_MATCHES.filter(
               (m) =>
                 p.matches?.[m.id]?.home !== undefined &&
                 p.matches[m.id].home !== ""
             ).length;
-            const groupDone = groupFilled === groupTotal;
-            const groupStarted = groupFilled > 0;
-
-            // Extra vragen: 5 fields
-            const extraFields = [
+            const extraFilled = [
               !!p.champion,
               !!p.topScorer,
               !!p.nlStage,
               !!p.surpriseTeam,
               !!p.topOut,
-            ];
-            const extraFilled = extraFields.filter(Boolean).length;
-            const extraTotal = extraFields.length;
-            const extraDone = extraFilled === extraTotal;
-            const extraStarted = extraFilled > 0;
-
-            // KO: count filled winners out of 32 matches
-            const koTotal = KO_STRUCTURE.length;
+            ].filter(Boolean).length;
             const koFilled = KO_STRUCTURE.filter(
               (m) => p.koWinners?.[m.id]
             ).length;
-            const koDone = koFilled === koTotal;
-            const koStarted = koFilled > 0;
+            const userComps = (u.competitionIds || [])
+              .map(
+                (cid) =>
+                  (state.competitions || []).find((c) => c.id === cid)?.name
+              )
+              .filter(Boolean);
 
-            function StatusPill(props) {
-              var label = props.label;
-              var filled = props.filled;
-              var total = props.total;
-              var done = props.done;
-              var started = props.started;
-              var available = props.available;
+            function StatusPill({
+              label,
+              filled,
+              total,
+              done,
+              started,
+              available,
+            }) {
               if (!available)
                 return (
                   <span
@@ -1497,7 +1779,6 @@ function AdminPanel({ state, setState }) {
                 : started
                 ? "rgba(240,136,62,.12)"
                 : "rgba(255,255,255,.04)";
-              const icon = done ? "✓" : started ? "…" : "○";
               return (
                 <span
                   style={{
@@ -1509,7 +1790,7 @@ function AdminPanel({ state, setState }) {
                     fontWeight: done ? 700 : 400,
                   }}
                 >
-                  {icon} {label} {filled}/{total}
+                  {done ? "✓" : started ? "…" : "○"} {label} {filled}/{total}
                 </span>
               );
             }
@@ -1522,7 +1803,7 @@ function AdminPanel({ state, setState }) {
                     alignItems: "center",
                     gap: 10,
                     flexWrap: "wrap",
-                    marginBottom: 8,
+                    marginBottom: 6,
                   }}
                 >
                   <div style={{ flex: 1, fontWeight: 700, fontSize: 14 }}>
@@ -1573,29 +1854,55 @@ function AdminPanel({ state, setState }) {
                     ✕
                   </button>
                 </div>
+                {userComps.length > 0 && (
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: 4,
+                      flexWrap: "wrap",
+                      marginBottom: 6,
+                    }}
+                  >
+                    {userComps.map((name) => (
+                      <span
+                        key={name}
+                        style={{
+                          fontSize: 11,
+                          background: "rgba(88,166,255,.1)",
+                          border: "1px solid rgba(88,166,255,.2)",
+                          borderRadius: 10,
+                          padding: "1px 8px",
+                          color: "var(--accent)",
+                        }}
+                      >
+                        {name}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
                   <StatusPill
                     label="Extra"
                     filled={extraFilled}
-                    total={extraTotal}
-                    done={extraDone}
-                    started={extraStarted}
+                    total={5}
+                    done={extraFilled === 5}
+                    started={extraFilled > 0}
                     available={true}
                   />
                   <StatusPill
                     label="Groepsfase"
                     filled={groupFilled}
-                    total={groupTotal}
-                    done={groupDone}
-                    started={groupStarted}
+                    total={GROUP_MATCHES.length}
+                    done={groupFilled === GROUP_MATCHES.length}
+                    started={groupFilled > 0}
                     available={true}
                   />
                   <StatusPill
                     label="KO-fase"
                     filled={koFilled}
-                    total={koTotal}
-                    done={koDone}
-                    started={koStarted}
+                    total={KO_STRUCTURE.length}
+                    done={koFilled === KO_STRUCTURE.length}
+                    started={koFilled > 0}
                     available={state.koOpen || state.fase === "ko"}
                   />
                 </div>
@@ -1635,8 +1942,6 @@ function AdminPanel({ state, setState }) {
               </button>
             ))}
           </div>
-
-          {/* Auto-derived group standing */}
           {(() => {
             const adminS = deriveGroupStandingsFromResults(state.results);
             const s = adminS[activeGroup];
@@ -1650,11 +1955,9 @@ function AdminPanel({ state, setState }) {
                     color: "var(--muted)",
                   }}
                 >
-                  Nog geen wedstrijden gespeeld in Groep {activeGroup} — stand
-                  wordt automatisch berekend.
+                  Nog geen wedstrijden gespeeld in Groep {activeGroup}.
                 </div>
               );
-            // Auto-sync GW / GR into results when all 6 group matches are played
             const allPlayed = GROUP_MATCHES.filter(
               (m) => m.group === activeGroup
             ).every((m) => state.results[m.id]?.played);
@@ -1663,7 +1966,6 @@ function AdminPanel({ state, setState }) {
               s.winner &&
               state.results[`GW_${activeGroup}`] !== s.winner
             ) {
-              // side-effect in render — use setTimeout to avoid setState during render
               setTimeout(
                 () =>
                   setState((prev) => {
@@ -1696,7 +1998,7 @@ function AdminPanel({ state, setState }) {
                   📊 Huidige stand Groep {activeGroup}
                   {allPlayed && (
                     <span style={{ marginLeft: 8, color: "var(--accent)" }}>
-                      ✓ Volledig gespeeld — top 2 automatisch bepaald
+                      ✓ Volledig gespeeld
                     </span>
                   )}
                 </div>
@@ -1761,22 +2063,11 @@ function AdminPanel({ state, setState }) {
                         {i === 0 ? "①" : i === 1 ? "②" : "○"}
                       </span>
                       {FLAG[r.team]} {r.team}
-                      {i === 0 && (
+                      {i < 2 && (
                         <span
                           style={{
                             fontSize: 10,
-                            color: "var(--green)",
-                            marginLeft: 4,
-                          }}
-                        >
-                          → KO
-                        </span>
-                      )}
-                      {i === 1 && (
-                        <span
-                          style={{
-                            fontSize: 10,
-                            color: "var(--accent)",
+                            color: i === 0 ? "var(--green)" : "var(--accent)",
                             marginLeft: 4,
                           }}
                         >
@@ -1832,7 +2123,6 @@ function AdminPanel({ state, setState }) {
               </div>
             );
           })()}
-
           {GROUP_MATCHES.filter((m) => m.group === activeGroup).map((m) => {
             const r = state.results[m.id] || {};
             return (
@@ -1922,29 +2212,22 @@ function AdminPanel({ state, setState }) {
       {tab === "ko" && (
         <div>
           <Alert
-            msg="Vul de uitslag na 90 minuten in plus de officiële winnaar (na evt. verlenging/strafschoppen). Landen worden automatisch afgeleid uit de groepsstand."
+            msg="Vul de uitslag na 90 minuten in plus de officiële winnaar (na evt. verlenging/strafschoppen)."
             type="info"
           />
           {KO_STRUCTURE.map((m) => {
             const r = state.koResults[m.id] || {};
-            // Build rich slot descriptors from admin results (same as participant view but using koResults for winner)
             const adminCtx = {
               adminStandings: deriveGroupStandingsFromResults(state.results),
               adminComplete: groupsAllFilled((id) => {
                 const res = state.results[id];
                 return res?.played ? res : null;
               }),
-              userStandings: null,
-              userComplete: null,
               userKoWinners: Object.fromEntries(
-                KO_STRUCTURE.map(function (km) {
-                  return [
-                    km.id,
-                    state.koResults[km.id] && state.koResults[km.id].winner,
-                  ];
-                }).filter(function (e) {
-                  return e[1];
-                })
+                KO_STRUCTURE.map((km) => [
+                  km.id,
+                  state.koResults[km.id]?.winner,
+                ]).filter(([, v]) => v)
               ),
               adminKoResults: state.koResults,
             };
@@ -1989,8 +2272,6 @@ function AdminPanel({ state, setState }) {
                 >
                   {m.label}
                 </div>
-
-                {/* Teams */}
                 <div
                   style={{
                     display: "flex",
@@ -2029,8 +2310,6 @@ function AdminPanel({ state, setState }) {
                     <SlotDisplay desc={awayDesc} align="left" size={13} />
                   </div>
                 </div>
-
-                {/* Winner + played */}
                 <div
                   style={{
                     display: "flex",
@@ -2248,7 +2527,6 @@ function AdminPanel({ state, setState }) {
               ))}
             </select>
           </div>
-          {/* Auto-derived: toplands and surprises */}
           {(() => {
             const topOuts = deriveTopOuts(state.results);
             const surpriseProgress = SURPRISE_TEAMS.map((team) => ({
@@ -2268,15 +2546,6 @@ function AdminPanel({ state, setState }) {
                     }}
                   >
                     💥 Toplands uitgeschakeld in groepsfase (automatisch)
-                  </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "var(--muted)",
-                      marginBottom: 8,
-                    }}
-                  >
-                    Wordt bepaald zodra alle groepswedstrijden gespeeld zijn.
                   </div>
                   {topOuts.length === 0 ? (
                     <span
@@ -2321,16 +2590,6 @@ function AdminPanel({ state, setState }) {
                   >
                     🌟 Verrassing-landen in KO-fase (automatisch)
                   </div>
-                  <div
-                    style={{
-                      fontSize: 11,
-                      color: "var(--muted)",
-                      marginBottom: 8,
-                    }}
-                  >
-                    Punten worden automatisch berekend op basis van
-                    KO-uitslagen.
-                  </div>
                   {surpriseProgress.length === 0 ? (
                     <span
                       style={{
@@ -2349,39 +2608,32 @@ function AdminPanel({ state, setState }) {
                         gap: 6,
                       }}
                     >
-                      {surpriseProgress.map(function (sp) {
-                        var team = sp.team;
-                        var stage = sp.stage;
-                        return (
-                          <div
-                            key={team}
-                            style={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 10,
-                              fontSize: 13,
-                            }}
+                      {surpriseProgress.map(({ team, stage }) => (
+                        <div
+                          key={team}
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                            fontSize: 13,
+                          }}
+                        >
+                          <span style={{ fontWeight: 700 }}>
+                            {FLAG[team] || "🏳️"} {team}
+                          </span>
+                          <span style={{ color: "var(--muted)" }}>→</span>
+                          <span
+                            style={{ color: "var(--accent)", fontWeight: 700 }}
                           >
-                            <span style={{ fontWeight: 700 }}>
-                              {FLAG[team] || "🏳️"} {team}
-                            </span>
-                            <span style={{ color: "var(--muted)" }}>→</span>
-                            <span
-                              style={{
-                                color: "var(--accent)",
-                                fontWeight: 700,
-                              }}
-                            >
-                              {stage}
-                            </span>
-                            <span
-                              style={{ color: "var(--green)", fontWeight: 700 }}
-                            >
-                              +{PTS_SURPRISE[stage] || 0} pt
-                            </span>
-                          </div>
-                        );
-                      })}
+                            {stage}
+                          </span>
+                          <span
+                            style={{ color: "var(--green)", fontWeight: 700 }}
+                          >
+                            +{PTS_SURPRISE[stage] || 0} pt
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -2393,7 +2645,5 @@ function AdminPanel({ state, setState }) {
     </div>
   );
 }
-
-// ─── APP ROOT ─────────────────────────────────────────────────────────────────
 
 export { MyOverview, Rules, Standings, StandWithCompare, PwReveal, AdminPanel };

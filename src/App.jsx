@@ -1,5 +1,4 @@
-import React from "react";
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { load, persist, hash, blank } from "./pouleEngine";
 import { AuthScreen, AdminLogin } from "./components/auth";
 import {
@@ -14,7 +13,6 @@ import {
   AdminPanel,
 } from "./components/views";
 
-// ─── LAADSCHERM ───────────────────────────────────────────────────────────────
 function LoadingScreen() {
   return (
     <div
@@ -36,7 +34,6 @@ function LoadingScreen() {
   );
 }
 
-// ─── FOUTSCHERM ───────────────────────────────────────────────────────────────
 function ErrorScreen({ onRetry }) {
   return (
     <div
@@ -81,9 +78,7 @@ function ErrorScreen({ onRetry }) {
   );
 }
 
-// ─── HOOFDAPP ─────────────────────────────────────────────────────────────────
 export default function App() {
-  // loadStatus: 'loading' | 'ready' | 'error'
   const [loadStatus, setLoadStatus] = useState("loading");
   const [state, setState] = useState(null);
   const [session, setSession] = useState(null);
@@ -91,7 +86,6 @@ export default function App() {
   const [adminStep, setAdminStep] = useState(false);
   const [mainTab, setMainTab] = useState("overview");
 
-  // ── Data laden bij opstarten ───────────────────────────────────────────────
   const loadState = useCallback(async () => {
     setLoadStatus("loading");
     try {
@@ -108,8 +102,6 @@ export default function App() {
     loadState();
   }, [loadState]);
 
-  // ── Opslaan wrapper (async, maar UI hoeft niet te wachten) ────────────────
-  // setState + persist tegelijk: UI update direct, opslaan op achtergrond
   const setAndPersist = useCallback((updater) => {
     setState((prev) => {
       const next = typeof updater === "function" ? updater(prev) : updater;
@@ -118,7 +110,6 @@ export default function App() {
     });
   }, []);
 
-  // ── Laad- en foutschermen ─────────────────────────────────────────────────
   if (loadStatus === "loading") return <LoadingScreen />;
   if (loadStatus === "error") return <ErrorScreen onRetry={loadState} />;
 
@@ -127,7 +118,6 @@ export default function App() {
       ? state.users.find((u) => u.id === session)
       : null;
 
-  // ── Login handlers ─────────────────────────────────────────────────────────
   const handleLogin = (userId, newUser) => {
     if (userId === "__admin__") {
       setAdminStep(true);
@@ -142,6 +132,8 @@ export default function App() {
         pwPlain: newUser.pw,
         predictions: {},
         locked: false,
+        // Sla de geselecteerde competities op
+        competitionIds: newUser.competitionIds || [],
       };
       setAndPersist((s) => ({ ...s, users: [...s.users, user] }));
       setSession(id);
@@ -168,7 +160,6 @@ export default function App() {
     setMainTab("overview");
   };
 
-  // ── Gedeelde stijlen ──────────────────────────────────────────────────────
   const fonts = (
     <link
       href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700;900&display=swap"
@@ -177,22 +168,21 @@ export default function App() {
   );
   const styleTag = (
     <style>{`
-      :root {
-        --bg: #0d1117; --card: #161b22; --card2: #1c2330; --border: #30363d;
-        --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --gold: #D4AF37;
-        --green: #3fb950; --red: #f85149; --orange: #f0883e;
-        --font: 'Barlow', sans-serif; --font-display: 'Bebas Neue', cursive;
-      }
-      * { box-sizing: border-box; }
-      input::placeholder { color: var(--muted); }
-      select option { background: #161b22; }
-      input[type=number]::-webkit-inner-spin-button { opacity: 1; }
-      ::-webkit-scrollbar { width: 5px; }
-      ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-    `}</style>
+    :root {
+      --bg: #0d1117; --card: #161b22; --card2: #1c2330; --border: #30363d;
+      --text: #e6edf3; --muted: #8b949e; --accent: #58a6ff; --gold: #D4AF37;
+      --green: #3fb950; --red: #f85149; --orange: #f0883e;
+      --font: 'Barlow', sans-serif; --font-display: 'Bebas Neue', cursive;
+    }
+    * { box-sizing: border-box; }
+    input::placeholder { color: var(--muted); }
+    select option { background: #161b22; }
+    input[type=number]::-webkit-inner-spin-button { opacity: 1; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  `}</style>
   );
 
-  // ── Admin login scherm ────────────────────────────────────────────────────
   if (adminStep && !session) {
     return (
       <div
@@ -216,7 +206,6 @@ export default function App() {
     );
   }
 
-  // ── Login scherm ──────────────────────────────────────────────────────────
   if (!session) {
     return (
       <div
@@ -229,7 +218,12 @@ export default function App() {
       >
         {styleTag}
         {fonts}
-        <AuthScreen onLogin={handleLogin} users={state.users} />
+        {/* Geef competitions door aan AuthScreen voor registratie-keuze */}
+        <AuthScreen
+          onLogin={handleLogin}
+          users={state.users}
+          competitions={state.competitions || []}
+        />
       </div>
     );
   }
@@ -239,7 +233,6 @@ export default function App() {
     ? state.users.find((u) => u.id === session)
     : null;
 
-  // ── Hoofdlayout ───────────────────────────────────────────────────────────
   return (
     <div
       style={{
@@ -427,7 +420,7 @@ export default function App() {
         )}
       </div>
 
-      {/* UITLOG KNOP */}
+      {/* UITLOG */}
       <div style={{ position: "fixed", bottom: 16, right: 16, zIndex: 100 }}>
         <button
           onClick={logout}
