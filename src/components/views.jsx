@@ -1199,7 +1199,8 @@ function Standings({ state, currentUserId, onCompare }) {
 
 function StandWithCompare({ state, currentUser }) {
   const [comparePlayer, setComparePlayer] = useState(null);
-  const competitions = state.competitions || [];
+  // Only show competitions that are not hidden
+  const competitions = (state.competitions || []).filter((c) => !c.hidden);
   const defaultComp = (() => {
     if (!currentUser || competitions.length === 0) return null;
     const first = competitions.find((c) =>
