@@ -794,7 +794,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
     JSON.parse(JSON.stringify(user.predictions || {}))
   );
   const [saved, setSaved] = useState(false);
-  const [activeRound, setActiveRound] = useState("r16");
+  const [activeRound, setActiveRound] = useState("r32");
 
   // Per-ronde frozen logica
   const frozenRounds = state.koFrozenRounds || {};

@@ -427,43 +427,6 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
             Positie #{rank} van {state.users.length} · {pts} punten
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          {!state.extraFrozen ? (
-            <button style={S.btn("var(--green)")} onClick={onEditExtra}>
-              🔮 Extra vragen
-            </button>
-          ) : (
-            <button
-              style={{
-                ...S.btn("var(--card2)"),
-                border: "1px solid var(--border)",
-              }}
-              onClick={onEditExtra}
-            >
-              👁️ Extra vragen
-            </button>
-          )}
-          {!state.groupFrozen ? (
-            <button style={S.btn()} onClick={onEditGroup}>
-              ⚽ Groepsfase
-            </button>
-          ) : (
-            <button
-              style={{
-                ...S.btn("var(--card2)"),
-                border: "1px solid var(--border)",
-              }}
-              onClick={onEditGroup}
-            >
-              👁️ Groepsfase
-            </button>
-          )}
-          {koAvailable && (
-            <button style={S.btn("var(--orange)")} onClick={onEditKO}>
-              ⚔️ KO-fase
-            </button>
-          )}
-        </div>
       </div>
 
       <div
@@ -471,7 +434,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
           gap: 10,
-          marginBottom: 22,
+          marginBottom: 16,
         }}
       >
         <div style={{ ...S.card(), textAlign: "center" }}>
@@ -519,6 +482,183 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
         </div>
       </div>
 
+      {/* Grote navigatieknoppen met voortgang */}
+      {(() => {
+        const extraFilled = [
+          !!pred.champion,
+          !!pred.topScorer,
+          !!pred.nlStage,
+          !!pred.yellowCards,
+          !!pred.surpriseTeam,
+          !!pred.topOut,
+        ].filter(Boolean).length;
+        const extraTotal = 6;
+        const groupFilled = GROUP_MATCHES.filter(
+          (m) =>
+            pred.matches?.[m.id]?.home !== undefined &&
+            pred.matches[m.id].home !== ""
+        ).length;
+        const groupTotal = GROUP_MATCHES.length;
+        const koFilled = KO_STRUCTURE.filter(
+          (m) => pred.koWinners?.[m.id]
+        ).length;
+        const koTotal = KO_STRUCTURE.length;
+
+        const NavCard = ({
+          icon,
+          label,
+          filled,
+          total,
+          frozen,
+          available,
+          barColor,
+          onClick,
+        }) => {
+          const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
+          const done = filled === total && available;
+          const started = filled > 0 && available;
+          return (
+            <div
+              onClick={available ? onClick : undefined}
+              style={{
+                ...S.card(),
+                cursor: available ? "pointer" : "default",
+                border: `1px solid ${
+                  done
+                    ? "rgba(63,185,80,.4)"
+                    : started
+                    ? "rgba(88,166,255,.25)"
+                    : "var(--border)"
+                }`,
+                background: done ? "rgba(63,185,80,.05)" : "var(--card)",
+                padding: "14px 16px",
+                opacity: available ? 1 : 0.5,
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 6,
+                }}
+              >
+                <span style={{ fontSize: 20 }}>{icon}</span>
+                {frozen && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: "var(--orange)",
+                      background: "rgba(240,136,62,.12)",
+                      borderRadius: 4,
+                      padding: "1px 6px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    🔒 bevroren
+                  </span>
+                )}
+                {!available && (
+                  <span style={{ fontSize: 10, color: "var(--muted)" }}>
+                    niet open
+                  </span>
+                )}
+              </div>
+              <div
+                style={{
+                  fontWeight: 700,
+                  fontSize: 14,
+                  color: "var(--text)",
+                  marginBottom: 4,
+                }}
+              >
+                {label}
+              </div>
+              {available ? (
+                <>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: done
+                        ? "var(--green)"
+                        : started
+                        ? barColor
+                        : "var(--muted)",
+                      fontWeight: done ? 700 : 400,
+                      marginBottom: 6,
+                    }}
+                  >
+                    {filled}/{total} {done ? "✓ compleet" : "ingevuld"}
+                  </div>
+                  <div
+                    style={{
+                      height: 4,
+                      borderRadius: 2,
+                      background: "var(--border)",
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: "100%",
+                        width: `${pct}%`,
+                        background: done ? "var(--green)" : barColor,
+                        borderRadius: 2,
+                      }}
+                    />
+                  </div>
+                </>
+              ) : (
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                  Nog niet beschikbaar
+                </div>
+              )}
+            </div>
+          );
+        };
+
+        return (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 10,
+              marginBottom: 22,
+            }}
+          >
+            <NavCard
+              icon="🔮"
+              label="Extra vragen"
+              filled={extraFilled}
+              total={extraTotal}
+              frozen={state.extraFrozen}
+              available={true}
+              barColor="var(--green)"
+              onClick={onEditExtra}
+            />
+            <NavCard
+              icon="⚽"
+              label="Groepsfase"
+              filled={groupFilled}
+              total={groupTotal}
+              frozen={state.groupFrozen}
+              available={true}
+              barColor="var(--accent)"
+              onClick={onEditGroup}
+            />
+            <NavCard
+              icon="⚔️"
+              label="KO-fase"
+              filled={koFilled}
+              total={koTotal}
+              frozen={false}
+              available={koAvailable}
+              barColor="var(--orange)"
+              onClick={onEditKO}
+            />
+          </div>
+        );
+      })()}
+
       <div style={{ marginBottom: 22 }}>
         <div
           style={{
@@ -532,7 +672,9 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
         >
           Extra voorspellingen
         </div>
-        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+        <div
+          style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}
+        >
           {(() => {
             const surpriseStage = pred.surpriseTeam
               ? deriveSurpriseStage(pred.surpriseTeam, state.koResults)
@@ -604,10 +746,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
                 known: topOutKnown,
               },
             ].map((item) => (
-              <div
-                key={item.label}
-                style={{ ...S.card(), flex: 1, minWidth: 120 }}
-              >
+              <div key={item.label} style={{ ...S.card() }}>
                 <div
                   style={{
                     fontSize: 11,
