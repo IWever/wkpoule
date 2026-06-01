@@ -1,5 +1,4 @@
-import React from "react";
-import { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   GROUP_MATCHES,
   ALL_TEAMS,
@@ -37,21 +36,29 @@ import { SingleMatchCompare, PlayerCompare } from "./compare";
 // ─── HELPER: bereken rang van user in een competitie ─────────────────────────
 
 function calcPrimaryComp(user, state) {
-  const competitions = (state.competitions || []).filter((c) => !c.hidden);
-  if (!user || competitions.length === 0) return null;
-  const userCompIds = user.competitionIds || [];
-  const comp = competitions.find((c) => userCompIds.includes(c.id));
-  if (!comp) return null;
-  const members = state.users.filter((u) =>
-    (u.competitionIds || []).includes(comp.id)
+  const comps = (state.competitions || []).filter(
+    (c) => !c.hidden && (user?.competitionIds || []).includes(c.id)
   );
-  const ranked = [...members].sort(
-    (a, b) =>
-      calcPoints(b, state.results, state.koResults) -
-      calcPoints(a, state.results, state.koResults)
-  );
-  const userRank = ranked.findIndex((u) => u.id === user.id) + 1;
-  return { comp, userRank, size: members.length };
+  if (!user || comps.length === 0) return null;
+
+  return comps
+    .map((c) => {
+      const members = state.users.filter((u) =>
+        (u.competitionIds || []).includes(c.id)
+      );
+      const ranked = [...members]
+        .map((u) => ({
+          ...u,
+          pts: calcPoints(u, state.results, state.koResults),
+        }))
+        .sort((a, b) => b.pts - a.pts);
+      const userRank = ranked.findIndex((u) => u.id === user.id) + 1;
+      return { comp: c, size: members.length, userRank };
+    })
+    .sort((a, b) => {
+      if (b.size !== a.size) return b.size - a.size;
+      return a.userRank - b.userRank;
+    })[0];
 }
 
 // ─── MY OVERVIEW ─────────────────────────────────────────────────────────────
@@ -1381,21 +1388,35 @@ function Standings({ state, currentUserId, onCompare }) {
 
 function StandWithCompare({ state, currentUser }) {
   const [comparePlayer, setComparePlayer] = useState(null);
-  const competitions = (state.competitions || []).filter((c) => !c.hidden);
-  const defaultComp = (() => {
-    if (!currentUser || competitions.length === 0) return null;
-    const first = competitions.find((c) =>
-      (currentUser.competitionIds || []).includes(c.id)
-    );
-    return first ? first.id : competitions[0]?.id || null;
-  })();
+  const competitions = (state.competitions || []).filter(
+    (c) => !c.hidden && (currentUser?.competitionIds || []).includes(c.id)
+  );
+  const primaryComp = calcPrimaryComp(currentUser, state);
+  const defaultComp = primaryComp?.comp?.id || competitions[0]?.id || null;
   const [selectedComp, setSelectedComp] = useState(defaultComp);
+
+  useEffect(() => {
+    const hasValidSelection = competitions.some((c) => c.id === selectedComp);
+    if (competitions.length === 0) {
+      if (selectedComp !== null) setSelectedComp(null);
+      return;
+    }
+    if (!hasValidSelection && defaultComp) {
+      setSelectedComp(defaultComp);
+    }
+  }, [competitions, defaultComp, selectedComp]);
+
+  const activeCompId = competitions.some((c) => c.id === selectedComp)
+    ? selectedComp
+    : defaultComp;
+
   const filteredUsers =
-    !selectedComp || competitions.length === 0
+    competitions.length === 0
       ? state.users
       : state.users.filter((u) =>
-          (u.competitionIds || []).includes(selectedComp)
+          (u.competitionIds || []).includes(activeCompId)
         );
+
   return (
     <div>
       {competitions.length > 0 && (
@@ -1425,11 +1446,11 @@ function StandWithCompare({ state, currentUser }) {
                   cursor: "pointer",
                   fontFamily: "var(--font)",
                   border: `1px solid ${
-                    selectedComp === c.id ? "var(--accent)" : "var(--border)"
+                    activeCompId === c.id ? "var(--accent)" : "var(--border)"
                   }`,
                   background:
-                    selectedComp === c.id ? "var(--accent)" : "var(--bg)",
-                  color: selectedComp === c.id ? "#fff" : "var(--text)",
+                    activeCompId === c.id ? "var(--accent)" : "var(--bg)",
+                  color: activeCompId === c.id ? "#fff" : "var(--text)",
                 }}
               >
                 {c.name}
