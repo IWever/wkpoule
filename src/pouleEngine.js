@@ -88,6 +88,14 @@ function blank() {
     extraFrozen: false,
     koOpen: false,
     koFrozen: false,
+    koFrozenRounds: {
+      r32: false,
+      r16: false,
+      qf: false,
+      sf: false,
+      "3rd": false,
+      final: false,
+    },
     competitions: [],
   };
 }
@@ -486,7 +494,11 @@ function calcPoints(user, results, koResults) {
     pts += PTS_EXTRA.nlStage;
 
   // Extra: gele kaarten
-  if (p.yellowCards && results["YELLOW_CARDS"] && p.yellowCards === results["YELLOW_CARDS"])
+  if (
+    p.yellowCards &&
+    results["YELLOW_CARDS"] &&
+    p.yellowCards === results["YELLOW_CARDS"]
+  )
     pts += PTS_EXTRA.yellowCards;
 
   // Extra: verrassing

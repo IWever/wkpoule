@@ -458,22 +458,11 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
               👁️ Groepsfase
             </button>
           )}
-          {koAvailable &&
-            (!state.koFrozen ? (
-              <button style={S.btn("var(--orange)")} onClick={onEditKO}>
-                ⚔️ KO-fase
-              </button>
-            ) : (
-              <button
-                style={{
-                  ...S.btn("var(--card2)"),
-                  border: "1px solid var(--border)",
-                }}
-                onClick={onEditKO}
-              >
-                👁️ KO-fase
-              </button>
-            ))}
+          {koAvailable && (
+            <button style={S.btn("var(--orange)")} onClick={onEditKO}>
+              ⚔️ KO-fase
+            </button>
+          )}
         </div>
       </div>
 
@@ -868,7 +857,7 @@ function Rules() {
           ],
           [
             "⚽ Topscorer",
-            "Kies een land en vervolgens de speler die de meeste doelpunten scoort. De volledige selectie is beschikbaar, gesorteerd op doelpunten in de kwalificatie.",
+            "Kies een land en vervolgens de speler die de meeste doelpunten scoort.",
             PTS_EXTRA.topScorer,
           ],
           [
@@ -1099,6 +1088,7 @@ function Rules() {
           daarna worden ze bevroren.
         </div>
         <div>✦ KO-voorspellingen open zodra de admin dit aanzet.</div>
+        <div>✦ Elke KO-ronde kan apart bevroren worden.</div>
         <div>✦ Groep F (Nederland) heeft een oranje accent.</div>
         <div>
           ✦ Klik op een wedstrijd of deelnemer in de stand om te vergelijken.
@@ -1198,7 +1188,6 @@ function Standings({ state, currentUserId, onCompare }) {
 
 function StandWithCompare({ state, currentUser }) {
   const [comparePlayer, setComparePlayer] = useState(null);
-  // Only show competitions that are not hidden
   const competitions = (state.competitions || []).filter((c) => !c.hidden);
   const defaultComp = (() => {
     if (!currentUser || competitions.length === 0) return null;
@@ -1208,7 +1197,6 @@ function StandWithCompare({ state, currentUser }) {
     return first ? first.id : competitions[0]?.id || null;
   })();
   const [selectedComp, setSelectedComp] = useState(defaultComp);
-  // When no competitions exist, show all users. Otherwise filter by selected competition.
   const filteredUsers =
     !selectedComp || competitions.length === 0
       ? state.users
@@ -1458,7 +1446,6 @@ function CompetitionsAdmin({ state, setState }) {
                       return ns;
                     })
                   }
-                  title="Zichtbaarheid in de stand"
                   style={{
                     background: comp.hidden
                       ? "rgba(240,136,62,.12)"
@@ -1494,7 +1481,6 @@ function CompetitionsAdmin({ state, setState }) {
                       return ns;
                     })
                   }
-                  title="Zichtbaarheid bij registratie"
                   style={{
                     background: comp.hiddenRegistration
                       ? "rgba(240,136,62,.12)"
@@ -1656,6 +1642,19 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
   const last5 = allPlayed.slice(-5).reverse();
   const next5 = allUpcoming.slice(0, 5);
   const totalMatches = GROUP_MATCHES.length + KO_STRUCTURE.length;
+
+  const frozenRounds = state.koFrozenRounds || {};
+  const frozenRoundLabels = {
+    r32: "Zestiende finales",
+    r16: "Achtste finales",
+    qf: "Kwartfinales",
+    sf: "Halve finales",
+    "3rd": "3e Plaats",
+    final: "Finale",
+  };
+  const anyKoFrozen =
+    Object.values(frozenRounds).some(Boolean) || state.koFrozen;
+
   return (
     <div>
       <div
@@ -1754,7 +1753,6 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
             { label: "Groepsfase", key: "groupFrozen", icon: "⚽" },
             { label: "Extra vragen", key: "extraFrozen", icon: "🔮" },
             { label: "KO open", key: "koOpen", icon: "⚔️", invert: true },
-            { label: "KO bevroren", key: "koFrozen", icon: "🔒" },
           ].map(({ label, key, icon, invert }) => {
             const active = state[key];
             const isGood = invert ? active : !active;
@@ -1802,8 +1800,51 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
               </div>
             );
           })}
+          {/* KO ronde statussen */}
+          {Object.entries(frozenRoundLabels).map(([key, label]) => {
+            const frozen = !!frozenRounds[key];
+            return (
+              <div
+                key={key}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: !frozen
+                    ? "rgba(63,185,80,.1)"
+                    : "rgba(248,81,73,.08)",
+                  border: `1px solid ${
+                    !frozen ? "rgba(63,185,80,.3)" : "rgba(248,81,73,.2)"
+                  }`,
+                  borderRadius: 8,
+                  padding: "6px 12px",
+                  fontSize: 12,
+                }}
+              >
+                <span>⚔️</span>
+                <span
+                  style={{
+                    fontWeight: 600,
+                    color: !frozen ? "var(--green)" : "var(--red)",
+                  }}
+                >
+                  {label}
+                </span>
+                <span
+                  style={{
+                    color: !frozen ? "var(--green)" : "var(--red)",
+                    fontSize: 11,
+                  }}
+                >
+                  {frozen ? "✗ bevroren" : "✓ open"}
+                </span>
+              </div>
+            );
+          })}
         </div>
       </div>
+
+      {/* Laatste / volgende wedstrijden — zelfde als voor */}
       <div
         style={{
           fontSize: 12,
@@ -2020,15 +2061,6 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
             ? state.koResults[m.id] || {}
             : state.results[m.id] || {};
           const played = !!r.played;
-          const borderColor = played
-            ? isGroupF || m.isKO
-              ? "rgba(240,136,62,.4)"
-              : "rgba(88,166,255,.4)"
-            : isGroupF
-            ? "rgba(240,136,62,.3)"
-            : m.isKO
-            ? "rgba(240,136,62,.25)"
-            : "var(--border)";
           return (
             <div
               key={m.id}
@@ -2036,7 +2068,17 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
                 ...S.card(),
                 marginBottom: 8,
                 padding: "10px 14px",
-                border: `1px solid ${borderColor}`,
+                border: `1px solid ${
+                  played
+                    ? isGroupF || m.isKO
+                      ? "rgba(240,136,62,.4)"
+                      : "rgba(88,166,255,.4)"
+                    : isGroupF
+                    ? "rgba(240,136,62,.3)"
+                    : m.isKO
+                    ? "rgba(240,136,62,.25)"
+                    : "var(--border)"
+                }`,
                 background: isGroupF ? "rgba(240,136,62,.03)" : "var(--card)",
               }}
             >
@@ -2226,6 +2268,15 @@ function AdminPanel({ state, setState }) {
     });
   };
 
+  const frozenRounds = state.koFrozenRounds || {};
+
+  const toggleKORound = (roundKey) => {
+    const current = !!frozenRounds[roundKey];
+    const next = { ...frozenRounds, [roundKey]: !current };
+    const anyFrozen = Object.values(next).some(Boolean);
+    upd({ koFrozenRounds: next, koFrozen: anyFrozen });
+  };
+
   return (
     <div>
       <div
@@ -2262,6 +2313,7 @@ function AdminPanel({ state, setState }) {
 
       {tab === "fase" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* Groepsfase & extra */}
           {[
             {
               key: "groupFrozen",
@@ -2281,12 +2333,6 @@ function AdminPanel({ state, setState }) {
               label: "KO-fase openen",
               desc: "Deelnemers kunnen KO-voorspellingen invullen",
               invert: true,
-            },
-            {
-              key: "koFrozen",
-              icon: "⚔️",
-              label: "KO-fase",
-              desc: "Deelnemers kunnen KO-voorspellingen niet meer aanpassen",
             },
           ].map(({ key, icon, label, desc, invert }) => {
             const active = state[key];
@@ -2352,6 +2398,67 @@ function AdminPanel({ state, setState }) {
               </div>
             );
           })}
+
+          {/* KO per ronde bevriezen */}
+          <div style={{ ...S.card(), marginTop: 4 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+              ⚔️ KO-fase — per ronde bevriezen
+            </div>
+            <div
+              style={{
+                fontSize: 12,
+                color: "var(--muted)",
+                marginBottom: 16,
+                lineHeight: 1.6,
+              }}
+            >
+              Bevroren rondes kunnen niet meer worden aangepast door deelnemers.
+              Zet een ronde open vóór die wedstrijden beginnen en bevroren zodra
+              ze gespeeld zijn.
+            </div>
+            {[
+              { key: "r32", label: "Zestiende finales", date: "1 jul" },
+              { key: "r16", label: "Achtste finales", date: "5 jul" },
+              { key: "qf", label: "Kwartfinales", date: "10 jul" },
+              { key: "sf", label: "Halve finales", date: "14 jul" },
+              { key: "3rd", label: "3e Plaats", date: "18 jul" },
+              { key: "final", label: "Finale", date: "19 jul" },
+            ].map(({ key, label, date }) => {
+              const frozen = !!frozenRounds[key];
+              return (
+                <div
+                  key={key}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 0",
+                    borderBottom: "1px solid var(--border)",
+                  }}
+                >
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{label}</div>
+                    <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                      {date}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => toggleKORound(key)}
+                    style={{
+                      ...S.btn(frozen ? "var(--red)" : "var(--green)"),
+                      padding: "7px 18px",
+                      fontSize: 12,
+                      border: `1px solid ${
+                        frozen ? "var(--red)" : "var(--green)"
+                      }`,
+                    }}
+                  >
+                    {frozen ? "🔒 Bevroren" : "🔓 Open"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 

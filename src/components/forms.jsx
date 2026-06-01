@@ -46,7 +46,6 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
     });
   };
 
-  // Group F gets orange accent
   const groupAccent = activeGroup === "F" ? "var(--orange)" : "var(--accent)";
 
   return (
@@ -120,9 +119,25 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
                 style={{
                   padding: "5px 13px",
                   borderRadius: 20,
-                  border: `1px solid ${activeGroup === g ? (g === "F" ? "var(--orange)" : "var(--accent)") : "var(--border)"}`,
-                  background: activeGroup === g ? (g === "F" ? "var(--orange)" : "var(--accent)") : "var(--bg)",
-                  color: activeGroup === g ? "#fff" : g === "F" ? "var(--orange)" : "var(--text)",
+                  border: `1px solid ${
+                    activeGroup === g
+                      ? g === "F"
+                        ? "var(--orange)"
+                        : "var(--accent)"
+                      : "var(--border)"
+                  }`,
+                  background:
+                    activeGroup === g
+                      ? g === "F"
+                        ? "var(--orange)"
+                        : "var(--accent)"
+                      : "var(--bg)",
+                  color:
+                    activeGroup === g
+                      ? "#fff"
+                      : g === "F"
+                      ? "var(--orange)"
+                      : "var(--text)",
                   cursor: "pointer",
                   fontSize: 13,
                   fontWeight: 600,
@@ -147,7 +162,9 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
                 : res.label === "diff"
                 ? "rgba(255,193,7,.4)"
                 : res.label === "winner"
-                ? activeGroup === "F" ? "rgba(240,136,62,.4)" : "rgba(88,166,255,.3)"
+                ? activeGroup === "F"
+                  ? "rgba(240,136,62,.4)"
+                  : "rgba(88,166,255,.3)"
                 : "rgba(248,81,73,.3)"
               : "var(--border)";
             return (
@@ -165,7 +182,15 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
                     {m.dt ? fmtDateTime(m.dt) : ""} · Ronde {m.round}
                   </span>
                   {activeGroup === "F" && (
-                    <span style={{ fontSize: 10, color: "var(--orange)", fontWeight: 700 }}>🇳🇱 Groep F</span>
+                    <span
+                      style={{
+                        fontSize: 10,
+                        color: "var(--orange)",
+                        fontWeight: 700,
+                      }}
+                    >
+                      🇳🇱 Groep F
+                    </span>
                   )}
                 </div>
                 <div
@@ -173,7 +198,10 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
                     ...S.card(),
                     padding: "9px 12px",
                     border: `1px solid ${borderColor}`,
-                    background: activeGroup === "F" ? "rgba(240,136,62,.04)" : "var(--card)",
+                    background:
+                      activeGroup === "F"
+                        ? "rgba(240,136,62,.04)"
+                        : "var(--card)",
                   }}
                 >
                   <div
@@ -263,7 +291,6 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
               </div>
             );
           })}
-          {/* Live standing tables */}
           {(() => {
             const predStanding = deriveGroupStandings(pred);
             const adminStanding = deriveGroupStandingsFromResults(
@@ -275,12 +302,24 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
             return (
               <div style={{ marginTop: 10 }}>
                 {hasAdminData && (
-                  <div style={{ ...S.card(), marginBottom: 10, border: activeGroup === "F" ? "1px solid rgba(240,136,62,.3)" : "1px solid var(--border)" }}>
+                  <div
+                    style={{
+                      ...S.card(),
+                      marginBottom: 10,
+                      border:
+                        activeGroup === "F"
+                          ? "1px solid rgba(240,136,62,.3)"
+                          : "1px solid var(--border)",
+                    }}
+                  >
                     <div
                       style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        color: activeGroup === "F" ? "var(--orange)" : "var(--green)",
+                        color:
+                          activeGroup === "F"
+                            ? "var(--orange)"
+                            : "var(--green)",
                         textTransform: "uppercase",
                         letterSpacing: "0.08em",
                         marginBottom: 6,
@@ -288,19 +327,27 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
                     >
                       📊 Huidige stand (gespeelde wedstrijden)
                     </div>
-                    <GroupStandingTable
-                      group={activeGroup}
-                      rows={adminRows}
-                    />
+                    <GroupStandingTable group={activeGroup} rows={adminRows} />
                   </div>
                 )}
                 {predRows.some((r) => r.gp > 0) && (
-                  <div style={{ ...S.card(), border: activeGroup === "F" ? "1px solid rgba(240,136,62,.2)" : "1px solid var(--border)" }}>
+                  <div
+                    style={{
+                      ...S.card(),
+                      border:
+                        activeGroup === "F"
+                          ? "1px solid rgba(240,136,62,.2)"
+                          : "1px solid var(--border)",
+                    }}
+                  >
                     <div
                       style={{
                         fontSize: 11,
                         fontWeight: 700,
-                        color: activeGroup === "F" ? "var(--orange)" : "var(--accent)",
+                        color:
+                          activeGroup === "F"
+                            ? "var(--orange)"
+                            : "var(--accent)",
                         textTransform: "uppercase",
                         letterSpacing: "0.08em",
                         marginBottom: 6,
@@ -420,7 +467,7 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
           </select>
         </div>
 
-        {/* Topscorer — volledige selectie, gesorteerd op kwal desc */}
+        {/* Topscorer */}
         <div style={S.card()}>
           <div
             style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}
@@ -469,7 +516,6 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
           </select>
           {pred.topScorerCountry &&
             (() => {
-              // Full squad sorted by kwal desc (ties broken alphabetically)
               const allPlayers = [
                 ...(PLAYERS_BY_COUNTRY[pred.topScorerCountry] || []),
               ].sort((a, b) => {
@@ -499,7 +545,8 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
                     <option value="">— kies een speler —</option>
                     {allPlayers.map((p) => (
                       <option key={p.name} value={p.name}>
-                        {p.name}{p.kwal > 0 ? ` (${p.kwal} kwal. goals)` : ""}
+                        {p.name}
+                        {p.kwal > 0 ? ` (${p.kwal} kwal. goals)` : ""}
                       </option>
                     ))}
                   </select>
@@ -586,9 +633,7 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
 
         {/* Meeste gele kaarten */}
         <div style={S.card()}>
-          <div
-            style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}
-          >
+          <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>
             🟨 Meeste gele kaarten{" "}
             <span style={{ color: "var(--accent)", fontWeight: 700 }}>
               +{PTS_EXTRA.yellowCards} pt
@@ -749,7 +794,18 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
     JSON.parse(JSON.stringify(user.predictions || {}))
   );
   const [saved, setSaved] = useState(false);
-  const frozen = state.koFrozen;
+  const [activeRound, setActiveRound] = useState("r16");
+
+  // Per-ronde frozen logica
+  const frozenRounds = state.koFrozenRounds || {};
+  const isRoundFrozen = (roundKey) => !!frozenRounds[roundKey];
+  // Voor de "Finale & 3e Plaats" tab: bevroren als beide bevroren zijn
+  const activeRoundFrozen =
+    activeRound === "final"
+      ? isRoundFrozen("final") && isRoundFrozen("3rd")
+      : isRoundFrozen(activeRound);
+  // Fallback: als koFrozenRounds leeg/afwezig is, val terug op legacy koFrozen
+  const legacyFrozen = state.koFrozen && Object.keys(frozenRounds).length === 0;
 
   const set = (path, val) => {
     setPred((p) => {
@@ -768,7 +824,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
     { key: "sf", label: "Halve finales" },
     { key: "final", label: "Finale & 3e Plaats" },
   ];
-  const [activeRound, setActiveRound] = useState("r16");
+
   const richSlots = buildRichKOSlots(pred, state.results, state.koResults);
 
   const winnerCandidates = (homeDesc, awayDesc) => {
@@ -790,7 +846,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
         }}
       >
         <div style={{ fontWeight: 700, fontSize: 16 }}>
-          ⚔️ {frozen ? "KO-voorspellingen (bevroren)" : "KO-fase voorspellen"}
+          ⚔️ KO-fase voorspellen
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           {saved && (
@@ -815,9 +871,10 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
           </button>
         </div>
       </div>
-      {frozen && (
+
+      {(activeRoundFrozen || legacyFrozen) && (
         <Alert
-          msg="De KO-fase is bevroren. Je kunt je voorspellingen nog bekijken."
+          msg="Deze ronde is bevroren. Je kunt je voorspellingen nog bekijken maar niet meer wijzigen."
           type="warn"
         />
       )}
@@ -986,27 +1043,43 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
         </div>
       </div>
 
+      {/* Ronde-tabs met bevriezingsindicator */}
       <div
         style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 18 }}
       >
-        {rounds.map((r) => (
-          <button
-            key={r.key}
-            onClick={() => setActiveRound(r.key)}
-            style={{
-              padding: "6px 14px",
-              borderRadius: 20,
-              border: "1px solid var(--border)",
-              background: activeRound === r.key ? "var(--accent)" : "var(--bg)",
-              color: activeRound === r.key ? "#fff" : "var(--text)",
-              cursor: "pointer",
-              fontSize: 13,
-              fontWeight: 600,
-            }}
-          >
-            {r.label}
-          </button>
-        ))}
+        {rounds.map((r) => {
+          const tabFrozen =
+            r.key === "final"
+              ? isRoundFrozen("final") && isRoundFrozen("3rd")
+              : isRoundFrozen(r.key);
+          const isActive = activeRound === r.key;
+          return (
+            <button
+              key={r.key}
+              onClick={() => setActiveRound(r.key)}
+              style={{
+                padding: "6px 14px",
+                borderRadius: 20,
+                border: `1px solid ${
+                  isActive ? "var(--accent)" : "var(--border)"
+                }`,
+                background: isActive ? "var(--accent)" : "var(--bg)",
+                color: isActive ? "#fff" : "var(--text)",
+                cursor: "pointer",
+                fontSize: 13,
+                fontWeight: 600,
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              {r.label}
+              {(tabFrozen || legacyFrozen) && (
+                <span style={{ fontSize: 10 }}>🔒</span>
+              )}
+            </button>
+          );
+        })}
       </div>
 
       {KO_STRUCTURE.filter(
@@ -1015,6 +1088,9 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
           (activeRound === "final" &&
             (m.round === "final" || m.round === "3rd"))
       ).map((m) => {
+        // Per-wedstrijd frozen: gebruik de ronde van díe wedstrijd
+        const matchFrozen = legacyFrozen || !!frozenRounds[m.round];
+
         const homeDesc = richSlots[m.id]?.home;
         const awayDesc = richSlots[m.id]?.away;
         const predWinner = pred.koWinners?.[m.id];
@@ -1060,16 +1136,31 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
                 marginBottom: 12,
               }}
             >
-              <div
-                style={{
-                  fontSize: 12,
-                  color: "var(--muted)",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.07em",
-                }}
-              >
-                {m.label}
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--muted)",
+                    fontWeight: 600,
+                    textTransform: "uppercase",
+                    letterSpacing: "0.07em",
+                  }}
+                >
+                  {m.label}
+                </div>
+                {matchFrozen && (
+                  <span
+                    style={{
+                      fontSize: 10,
+                      color: "var(--orange)",
+                      background: "rgba(240,136,62,.12)",
+                      borderRadius: 4,
+                      padding: "1px 6px",
+                    }}
+                  >
+                    🔒 bevroren
+                  </span>
+                )}
               </div>
               {r && r.played && (
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -1121,7 +1212,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
               >
                 <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
                   <input
-                    disabled={frozen}
+                    disabled={matchFrozen}
                     type="number"
                     min={0}
                     max={20}
@@ -1129,13 +1220,13 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
                     onChange={(e) =>
                       set(["koScores", m.id, "home"], e.target.value)
                     }
-                    style={{ ...S.numInput, opacity: frozen ? 0.6 : 1 }}
+                    style={{ ...S.numInput, opacity: matchFrozen ? 0.6 : 1 }}
                   />
                   <span style={{ color: "var(--muted)", fontWeight: 700 }}>
                     –
                   </span>
                   <input
-                    disabled={frozen}
+                    disabled={matchFrozen}
                     type="number"
                     min={0}
                     max={20}
@@ -1143,7 +1234,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
                     onChange={(e) =>
                       set(["koScores", m.id, "away"], e.target.value)
                     }
-                    style={{ ...S.numInput, opacity: frozen ? 0.6 : 1 }}
+                    style={{ ...S.numInput, opacity: matchFrozen ? 0.6 : 1 }}
                   />
                 </div>
                 <div style={{ fontSize: 10, color: "var(--muted)" }}>
@@ -1207,9 +1298,9 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
                   {candidates.map((t) => (
                     <button
                       key={t}
-                      disabled={frozen}
+                      disabled={matchFrozen}
                       onClick={() =>
-                        !frozen &&
+                        !matchFrozen &&
                         set(["koWinners", m.id], predWinner === t ? "" : t)
                       }
                       style={{
@@ -1225,7 +1316,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
                             ? "rgba(88,166,255,.15)"
                             : "var(--bg)",
                         color: "var(--text)",
-                        cursor: frozen ? "default" : "pointer",
+                        cursor: matchFrozen ? "default" : "pointer",
                         fontSize: 13,
                         fontWeight: predWinner === t ? 700 : 400,
                         fontFamily: "var(--font)",
@@ -1233,6 +1324,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 4,
+                        opacity: matchFrozen ? 0.7 : 1,
                       }}
                     >
                       {FLAG[t] || "🏳️"} {t}
@@ -1256,7 +1348,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
                     </div>
                   )}
                   <select
-                    disabled={frozen}
+                    disabled={matchFrozen}
                     value={predWinner || ""}
                     onChange={(e) => set(["koWinners", m.id], e.target.value)}
                     style={{
@@ -1269,7 +1361,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
                       borderRadius: 6,
                       padding: "6px 10px",
                       fontSize: 13,
-                      opacity: frozen ? 0.6 : 1,
+                      opacity: matchFrozen ? 0.6 : 1,
                       fontFamily: "var(--font)",
                     }}
                   >

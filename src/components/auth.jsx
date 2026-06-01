@@ -358,7 +358,7 @@ function AdminLogin({ onSuccess, onCancel }) {
             textAlign: "center",
           }}
         >
-          Demo: {ADMIN_PW}
+          Bij vragen of suggesties, whatsapp Ingmar
         </p>
       </div>
     </div>
