@@ -1645,12 +1645,17 @@ function AdminHome({ state }) {
     dt: KO_DATES[m.round] + "T20:00",
     isKO: true,
   }));
-  const allPlayed = [...groupMatches, ...koMatches]
-    .filter((m) =>
-      m.isKO ? state.koResults[m.id]?.played : state.results[m.id]?.played
-    )
-    .sort((a, b) => (a.dt || "").localeCompare(b.dt || ""));
+  const allMatches = [...groupMatches, ...koMatches].sort((a, b) =>
+    (a.dt || "").localeCompare(b.dt || "")
+  );
+  const allPlayed = allMatches.filter((m) =>
+    m.isKO ? state.koResults[m.id]?.played : state.results[m.id]?.played
+  );
+  const allUpcoming = allMatches.filter((m) =>
+    m.isKO ? !state.koResults[m.id]?.played : !state.results[m.id]?.played
+  );
   const last5 = allPlayed.slice(-5).reverse();
+  const next5 = allUpcoming.slice(0, 5);
   const totalMatches = GROUP_MATCHES.length + KO_STRUCTURE.length;
   return (
     <div>
@@ -1819,6 +1824,7 @@ function AdminHome({ state }) {
             color: "var(--muted)",
             fontSize: 13,
             textAlign: "center",
+            marginBottom: 18,
           }}
         >
           Nog geen wedstrijden gespeeld.
@@ -1928,6 +1934,111 @@ function AdminHome({ state }) {
                     </span>
                   )}
                 </div>
+                <span style={{ flex: 1, fontWeight: 600 }}>
+                  {m.isKO
+                    ? m.awaySlot || "?"
+                    : `${FLAG[m.away] || ""} ${m.away}`}
+                </span>
+              </div>
+            </div>
+          );
+        })
+      )}
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: "var(--accent)",
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          marginBottom: 10,
+          marginTop: 22,
+        }}
+      >
+        Volgende wedstrijden
+      </div>
+      {next5.length === 0 ? (
+        <div
+          style={{
+            ...S.card(),
+            color: "var(--muted)",
+            fontSize: 13,
+            textAlign: "center",
+          }}
+        >
+          Geen komende wedstrijden meer.
+        </div>
+      ) : (
+        next5.map((m) => {
+          const isGroupF = !m.isKO && m.group === "F";
+          return (
+            <div
+              key={m.id}
+              style={{
+                ...S.card(),
+                marginBottom: 8,
+                padding: "10px 14px",
+                border: `1px solid ${
+                  isGroupF
+                    ? "rgba(240,136,62,.3)"
+                    : m.isKO
+                    ? "rgba(240,136,62,.25)"
+                    : "var(--border)"
+                }`,
+                background: isGroupF ? "rgba(240,136,62,.03)" : "var(--card)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 6,
+                }}
+              >
+                <span style={{ fontSize: 10, color: "var(--muted)" }}>
+                  {m.dt ? fmtDateTime(m.dt) : ""}
+                </span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 700,
+                    color:
+                      m.isKO || isGroupF ? "var(--orange)" : "var(--accent)",
+                    background:
+                      m.isKO || isGroupF
+                        ? "rgba(240,136,62,.1)"
+                        : "rgba(88,166,255,.1)",
+                    borderRadius: 4,
+                    padding: "1px 6px",
+                  }}
+                >
+                  {m.isKO ? m.label : `Groep ${m.group} · R${m.round}`}
+                </span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  fontSize: 13,
+                }}
+              >
+                <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>
+                  {m.isKO
+                    ? m.homeSlot || "?"
+                    : `${FLAG[m.home] || ""} ${m.home}`}
+                </span>
+                <span
+                  style={{
+                    color: "var(--muted)",
+                    fontWeight: 700,
+                    minWidth: 20,
+                    textAlign: "center",
+                  }}
+                >
+                  vs
+                </span>
                 <span style={{ flex: 1, fontWeight: 600 }}>
                   {m.isKO
                     ? m.awaySlot || "?"
