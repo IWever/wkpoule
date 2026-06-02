@@ -5,7 +5,6 @@ import {
   PTS_KO,
   PTS_EXTRA,
   PTS_SURPRISE,
-  DEADLINES,
 } from "../../data/tournamentData";
 import { S } from "../../styles/ui";
 
@@ -41,34 +40,24 @@ function DeadlinesCard() {
   const rows = [
     {
       label: "Extra vragen & Groepsfase ronde 1",
-      dt: DEADLINES.groepsfaseR1.dt,
       desc: "vóór aanvang eerste wedstrijd (11 jun 21:00)",
     },
     {
+      label: "Groepsfase ronde 2",
+      desc: "vóór aanvang eerste wedstrijd ronde 2 (18 jun 18:00)",
+    },
+    {
+      label: "Groepsfase ronde 3",
+      desc: "vóór aanvang eerste wedstrijd ronde 3 (24 jun 21:00)",
+    },
+    {
       label: "Zestiende finales",
-      dt: DEADLINES.koR32.dt,
-      desc: "vóór aanvang zestiende finales (28 jun 21:00)",
+      desc: "vóór aanvang zestiende finales (1 jul)",
     },
-    {
-      label: "Achtste finales",
-      dt: DEADLINES.koR16.dt,
-      desc: "vóór aanvang achtste finales (4 jul 19:00)",
-    },
-    {
-      label: "Kwartfinales",
-      dt: DEADLINES.koQF.dt,
-      desc: "vóór aanvang kwartfinales (9 jul 22:00)",
-    },
-    {
-      label: "Halve finales",
-      dt: DEADLINES.koSF.dt,
-      desc: "vóór aanvang halve finales (14 jul 21:00 )",
-    },
-    {
-      label: "Finale en 3e plaats",
-      dt: DEADLINES.koFinal.dt,
-      desc: "vóór aanvang finale (18 jul 23:00)",
-    },
+    { label: "Achtste finales", desc: "vóór aanvang achtste finales (5 jul)" },
+    { label: "Kwartfinales", desc: "vóór aanvang kwartfinales (10 jul)" },
+    { label: "Halve finales", desc: "vóór aanvang halve finales (14 jul)" },
+    { label: "Finale", desc: "vóór aanvang finale (19 jul)" },
   ];
 
   return (
@@ -84,8 +73,7 @@ function DeadlinesCard() {
           }}
         >
           Elke speelronde sluit op het moment dat de eerste wedstrijd van die
-          ronde begint. Je kunt voorspellingen daarna alleen nog aanpassen voor
-          rondes die nog niet bevroren zijn.
+          ronde begint.
         </div>
         {rows.map(({ label, desc }, i) => (
           <div
@@ -220,9 +208,8 @@ function ExtraQuestionsRules() {
             🌟 Verrassing van het WK
           </div>
           <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
-            Kies een van de 12 laagst geklasseerde landen. Punten op basis van
-            hoe ver dit land de KO-fase haalt. De 3e plek levert evenveel punten
-            op als de halve finale.
+            Kies een van de 12 laagst geklasseerde landen. De 3e plek levert
+            evenveel punten op als de halve finale.
           </div>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
             {[
@@ -269,7 +256,6 @@ function GroupPhaseRules() {
     <>
       <SubTitle>⚽ Groepsfase</SubTitle>
       <div style={{ ...S.card(), marginBottom: 14 }}>
-        {/* Match result scoring */}
         <div
           style={{
             fontSize: 12,
@@ -324,7 +310,6 @@ function GroupPhaseRules() {
           </div>
         ))}
 
-        {/* Group standings scoring — extra duidelijk */}
         <div
           style={{
             fontSize: 12,
@@ -362,8 +347,8 @@ function GroupPhaseRules() {
               <div
                 style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}
               >
-                Jouw voorspelde top-2 bevat een team dat ook echt doorkomt (maar
-                niet op de juiste plek)
+                Jouw voorspelde top-2 bevat een team dat doorkomt (maar niet op
+                de juiste plek)
               </div>
             </div>
             <div
@@ -394,7 +379,7 @@ function GroupPhaseRules() {
               <div
                 style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}
               >
-                Jouw #1 is ook echt #1, of jouw #2 is ook echt #2 in de groep
+                Jouw #1 is ook echt #1, of jouw #2 is ook echt #2
               </div>
             </div>
             <div
@@ -489,8 +474,8 @@ function TipsCard() {
         bevroren worden.
       </div>
       <div>
-        ✦ Groep F (Nederland) heeft een oranje accent. Nederland zelf staat in
-        oranje en dikgedrukt.
+        ✦ Groep F (Nederland) heeft een oranje accent. Nederland staat in oranje
+        en dikgedrukt.
       </div>
       <div>
         ✦ Bij verrassing: 3e plek levert evenveel punten op als halve finale (30
