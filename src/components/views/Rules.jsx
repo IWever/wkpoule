@@ -40,24 +40,22 @@ function DeadlinesCard() {
   const rows = [
     {
       label: "Extra vragen & Groepsfase ronde 1",
-      desc: "vóór aanvang eerste wedstrijd (11 jun 21:00)",
-    },
-    {
-      label: "Groepsfase ronde 2",
-      desc: "vóór aanvang eerste wedstrijd ronde 2 (18 jun 18:00)",
-    },
-    {
-      label: "Groepsfase ronde 3",
-      desc: "vóór aanvang eerste wedstrijd ronde 3 (24 jun 21:00)",
+      desc: "vóór aanvang eerste wedstrijd (11 juni 21:00)",
     },
     {
       label: "Zestiende finales",
-      desc: "vóór aanvang zestiende finales (1 jul)",
+      desc: "vóór aanvang zestiende finales (28 juni 21:00)",
     },
-    { label: "Achtste finales", desc: "vóór aanvang achtste finales (5 jul)" },
-    { label: "Kwartfinales", desc: "vóór aanvang kwartfinales (10 jul)" },
-    { label: "Halve finales", desc: "vóór aanvang halve finales (14 jul)" },
-    { label: "Finale", desc: "vóór aanvang finale (19 jul)" },
+    {
+      label: "Achtste finales",
+      desc: "vóór aanvang achtste finales (4 jul 19:00)",
+    },
+    { label: "Kwartfinales", desc: "vóór aanvang kwartfinales (9 juli 22:00)" },
+    {
+      label: "Halve finales",
+      desc: "vóór aanvang halve finales (14 juli 21:00)",
+    },
+    { label: "Finale", desc: "vóór aanvang finale (18 juli 21:00)" },
   ];
 
   return (
