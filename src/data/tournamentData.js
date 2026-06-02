@@ -17,6 +17,70 @@ const GROUPS = {
 };
 const ALL_TEAMS = Object.values(GROUPS).flat();
 
+// ─── DEADLINES ────────────────────────────────────────────────────────────────
+// Deadline = aanvang eerste wedstrijd van die speelronde
+const DEADLINES = {
+  extraVragen: {
+    label: "Extra vragen",
+    dt: "2026-06-11T21:00",
+    desc: "vóór aanvang eerste groepswedstrijd",
+  },
+  groepsfaseR1: {
+    label: "Groepsfase ronde 1",
+    dt: "2026-06-11T21:00",
+    desc: "vóór aanvang ronde 1",
+  },
+  groepsfaseR2: {
+    label: "Groepsfase ronde 2",
+    dt: "2026-06-18T18:00",
+    desc: "vóór aanvang ronde 2",
+  },
+  groepsfaseR3: {
+    label: "Groepsfase ronde 3",
+    dt: "2026-06-24T21:00",
+    desc: "vóór aanvang ronde 3",
+  },
+  koR32: {
+    label: "Zestiende finales",
+    dt: "2026-07-01T00:00",
+    desc: "vóór aanvang zestiende finales",
+  },
+  koR16: {
+    label: "Achtste finales",
+    dt: "2026-07-05T00:00",
+    desc: "vóór aanvang achtste finales",
+  },
+  koQF: {
+    label: "Kwartfinales",
+    dt: "2026-07-10T00:00",
+    desc: "vóór aanvang kwartfinales",
+  },
+  koSF: {
+    label: "Halve finales",
+    dt: "2026-07-14T00:00",
+    desc: "vóór aanvang halve finales",
+  },
+  ko3rd: {
+    label: "3e Plaats",
+    dt: "2026-07-18T00:00",
+    desc: "vóór aanvang troostfinale",
+  },
+  koFinal: {
+    label: "Finale",
+    dt: "2026-07-19T00:00",
+    desc: "vóór aanvang finale",
+  },
+};
+
+function getNextDeadline() {
+  const now = new Date();
+  const upcoming = Object.values(DEADLINES)
+    .map((d) => ({ ...d, date: new Date(d.dt) }))
+    .filter((d) => d.date > now)
+    .sort((a, b) => a.date - b.date);
+  return upcoming[0] || null;
+}
+
 const GROUP_MATCHES = [
   {
     id: "A1",
@@ -848,14 +912,15 @@ const SURPRISE_TEAMS = [
   "Zuid-Afrika",
 ];
 
+// Verrassing punten: 3e plek verwijderd, halve finale 30, wereldkampioen 40
 const PTS_SURPRISE = {
   "Groepsfase (niet verder)": 0,
   "Zestiende finale": 5,
   "Achtste finale": 10,
   Kwartfinale: 20,
   "Halve finale": 30,
-  "3e Plaats": 40,
-  "🏆 Wereldkampioen": 50,
+  "3e Plaats": 30, // zelfde als halve finale (geen bonus)
+  "🏆 Wereldkampioen": 40,
 };
 
 const TOP_TEAMS = [
@@ -884,7 +949,7 @@ const PTS_KO = {
   final: { winner: 15, exact: 25 },
 };
 
-const PTS_TOP_OUT = 10;
+const PTS_TOP_OUT = 15;
 
 const PTS_EXTRA = {
   champion: 40,
@@ -977,4 +1042,6 @@ export {
   ADMIN_PW,
   KEY,
   SESSION_KEY,
+  DEADLINES,
+  getNextDeadline,
 };

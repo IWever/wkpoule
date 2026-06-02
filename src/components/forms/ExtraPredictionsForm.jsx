@@ -31,18 +31,6 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
     });
   }
 
-  const selectStyle = (highlighted) => ({
-    background: "var(--bg)",
-    color: "var(--text)",
-    border: `1px solid ${highlighted ? "var(--accent)" : "var(--border)"}`,
-    borderRadius: 6,
-    padding: "8px 12px",
-    fontSize: 14,
-    width: "100%",
-    opacity: frozen ? 0.6 : 1,
-    fontFamily: "var(--font)",
-  });
-
   return (
     <div>
       <FormHeader
@@ -59,44 +47,18 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <ChampionCard
-          pred={pred}
-          frozen={frozen}
-          set={set}
-          selectStyle={selectStyle}
-        />
+        <ChampionCard pred={pred} frozen={frozen} set={set} />
         <TopScorerCard
           pred={pred}
           frozen={frozen}
           set={set}
           setPred={setPred}
           onSave={onSave}
-          selectStyle={selectStyle}
         />
-        <NlStageCard
-          pred={pred}
-          frozen={frozen}
-          set={set}
-          selectStyle={selectStyle}
-        />
-        <YellowCardsCard
-          pred={pred}
-          frozen={frozen}
-          set={set}
-          selectStyle={selectStyle}
-        />
-        <SurpriseTeamCard
-          pred={pred}
-          frozen={frozen}
-          set={set}
-          selectStyle={selectStyle}
-        />
-        <TopOutCard
-          pred={pred}
-          frozen={frozen}
-          set={set}
-          selectStyle={selectStyle}
-        />
+        <NlStageCard pred={pred} frozen={frozen} set={set} />
+        <YellowCardsCard pred={pred} frozen={frozen} set={set} />
+        <SurpriseTeamCard pred={pred} frozen={frozen} set={set} />
+        <TopOutCard pred={pred} frozen={frozen} set={set} />
       </div>
     </div>
   );
@@ -159,7 +121,7 @@ function TeamSelect({ value, onChange, disabled, placeholder, teams }) {
   );
 }
 
-function ChampionCard({ pred, frozen, set, selectStyle }) {
+function ChampionCard({ pred, frozen, set }) {
   return (
     <QuestionCard label="🏆 Wereldkampioen" pts={PTS_EXTRA.champion}>
       <TeamSelect
@@ -173,7 +135,7 @@ function ChampionCard({ pred, frozen, set, selectStyle }) {
   );
 }
 
-function TopScorerCard({ pred, frozen, set, setPred, onSave, selectStyle }) {
+function TopScorerCard({ pred, frozen, set, setPred, onSave }) {
   const allPlayers = pred.topScorerCountry
     ? [...(PLAYERS_BY_COUNTRY[pred.topScorerCountry] || [])].sort((a, b) =>
         b.kwal !== a.kwal ? b.kwal - a.kwal : a.name.localeCompare(b.name)
@@ -342,7 +304,7 @@ function SurpriseTeamCard({ pred, frozen, set }) {
   return (
     <QuestionCard
       label="🌟 Verrassing van het WK"
-      description="Kies een van de 12 laagst geklasseerde landen. Punten op basis van hoe ver dit land de KO-fase haalt."
+      description="Kies een van de 12 laagst geklasseerde landen. Punten op basis van hoe ver dit land de KO-fase haalt. De 3e plek levert evenveel op als de halve finale (30 pt)."
     >
       <TeamSelect
         value={pred.surpriseTeam}
@@ -357,23 +319,27 @@ function SurpriseTeamCard({ pred, frozen, set }) {
           <div
             style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}
           >
-            {Object.entries(PTS_SURPRISE)
-              .filter(([, v]) => v > 0)
-              .map(([stage, p]) => (
-                <span
-                  key={stage}
-                  style={{
-                    background: "rgba(88,166,255,.1)",
-                    borderRadius: 4,
-                    padding: "2px 7px",
-                    fontSize: 11,
-                    color: "var(--accent)",
-                    fontWeight: 700,
-                  }}
-                >
-                  {stage === "🏆 Wereldkampioen" ? "🏆 Kampioen" : stage}: +{p}
-                </span>
-              ))}
+            {[
+              ["Zestiende finale", PTS_SURPRISE["Zestiende finale"]],
+              ["Achtste finale", PTS_SURPRISE["Achtste finale"]],
+              ["Kwartfinale", PTS_SURPRISE["Kwartfinale"]],
+              ["Halve finale", PTS_SURPRISE["Halve finale"]],
+              ["🏆 Kampioen", PTS_SURPRISE["🏆 Wereldkampioen"]],
+            ].map(([stage, p]) => (
+              <span
+                key={stage}
+                style={{
+                  background: "rgba(88,166,255,.1)",
+                  borderRadius: 4,
+                  padding: "2px 7px",
+                  fontSize: 11,
+                  color: "var(--accent)",
+                  fontWeight: 700,
+                }}
+              >
+                {stage}: +{p}
+              </span>
+            ))}
           </div>
         </div>
       )}

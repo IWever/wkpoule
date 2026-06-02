@@ -54,7 +54,6 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
         active="groups"
         onSelect={() => {}}
       />
-
       <GroupSelector active={activeGroup} onSelect={setActiveGroup} />
 
       <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
@@ -182,6 +181,22 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
       : "rgba(248,81,73,.3)"
     : "var(--border)";
 
+  // In Group F: Netherlands name is orange+bold, no NL flag badge
+  const renderTeamName = (team) => {
+    if (isGroupF && team === "Nederland") {
+      return (
+        <span style={{ color: "var(--orange)", fontWeight: 900 }}>
+          {FLAG[team]} {team}
+        </span>
+      );
+    }
+    return (
+      <>
+        {FLAG[team]} {team}
+      </>
+    );
+  };
+
   return (
     <div style={{ marginBottom: 8 }}>
       <div
@@ -196,13 +211,7 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
         <span style={{ fontSize: 10, color: "var(--muted)" }}>
           {m.dt ? fmtDateTime(m.dt) : ""} · Ronde {m.round}
         </span>
-        {isGroupF && (
-          <span
-            style={{ fontSize: 10, color: "var(--orange)", fontWeight: 700 }}
-          >
-            🇳🇱 Groep F
-          </span>
-        )}
+        {/* No NL flag badge for Group F — just style the name */}
       </div>
 
       <div
@@ -222,7 +231,7 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
               fontWeight: 600,
             }}
           >
-            {FLAG[m.home]} {m.home}
+            {renderTeamName(m.home)}
           </span>
           <input
             disabled={frozen}
@@ -244,7 +253,7 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
             style={S.numInput}
           />
           <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>
-            {FLAG[m.away]} {m.away}
+            {renderTeamName(m.away)}
           </span>
         </div>
 
