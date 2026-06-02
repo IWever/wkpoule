@@ -27,7 +27,9 @@ function TabBar({ tabs, active, onSelect }) {
             fontWeight: active === t.id ? 700 : 400,
             color: active === t.id ? "var(--accent)" : "var(--muted)",
             borderBottom:
-              active === t.id ? "2px solid var(--accent)" : "2px solid transparent",
+              active === t.id
+                ? "2px solid var(--accent)"
+                : "2px solid transparent",
             marginBottom: -2,
             whiteSpace: "nowrap",
           }}
@@ -69,7 +71,8 @@ function Alert({ msg, type = "info" }) {
 // ─── FLAG + TEAM NAME ─────────────────────────────────────────────────────────
 
 function FlagTeam({ team, size = 13 }) {
-  if (!team) return <span style={{ color: "var(--muted)", fontSize: size }}>?</span>;
+  if (!team)
+    return <span style={{ color: "var(--muted)", fontSize: size }}>?</span>;
   return (
     <span style={{ fontSize: size }}>
       {FLAG[team] || "🏳️"} {team}
@@ -81,7 +84,8 @@ function FlagTeam({ team, size = 13 }) {
 // Renders a KO-bracket slot description (team / two candidates / label)
 
 function SlotDisplay({ desc, align = "left", size = 14 }) {
-  if (!desc) return <span style={{ color: "var(--muted)", fontSize: size }}>?</span>;
+  if (!desc)
+    return <span style={{ color: "var(--muted)", fontSize: size }}>?</span>;
 
   if (desc.type === "team") {
     return (
@@ -104,15 +108,21 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
           gap: 1,
         }}
       >
-        <span>{FLAG[desc.teams[0]] || "🏳️"} {desc.teams[0]}</span>
+        <span>
+          {FLAG[desc.teams[0]] || "🏳️"} {desc.teams[0]}
+        </span>
         <span style={{ color: "var(--muted)", fontSize: size - 3 }}>of</span>
-        <span>{FLAG[desc.teams[1]] || "🏳️"} {desc.teams[1]}</span>
+        <span>
+          {FLAG[desc.teams[1]] || "🏳️"} {desc.teams[1]}
+        </span>
       </span>
     );
   }
 
   return (
-    <span style={{ fontSize: size - 2, color: "var(--muted)", fontStyle: "italic" }}>
+    <span
+      style={{ fontSize: size - 2, color: "var(--muted)", fontStyle: "italic" }}
+    >
       {desc.label}
     </span>
   );
@@ -170,7 +180,11 @@ function GroupStandingTable({ rows }) {
             <span
               style={{
                 color:
-                  i === 0 ? "var(--gold)" : i === 1 ? "var(--muted)" : "var(--border)",
+                  i === 0
+                    ? "var(--gold)"
+                    : i === 1
+                    ? "var(--muted)"
+                    : "var(--border)",
                 fontWeight: 700,
                 width: 14,
               }}
@@ -179,17 +193,33 @@ function GroupStandingTable({ rows }) {
             </span>
             {FLAG[r.team]} {r.team}
           </span>
-          <span style={{ textAlign: "center", color: "var(--muted)" }}>{r.gp}</span>
-          <span style={{ textAlign: "center", fontWeight: 700, color: "var(--accent)" }}>
+          <span style={{ textAlign: "center", color: "var(--muted)" }}>
+            {r.gp}
+          </span>
+          <span
+            style={{
+              textAlign: "center",
+              fontWeight: 700,
+              color: "var(--accent)",
+            }}
+          >
             {r.pts}
           </span>
-          <span style={{ textAlign: "center", color: "var(--green)" }}>{r.gf}</span>
-          <span style={{ textAlign: "center", color: "var(--red)" }}>{r.ga}</span>
+          <span style={{ textAlign: "center", color: "var(--green)" }}>
+            {r.gf}
+          </span>
+          <span style={{ textAlign: "center", color: "var(--red)" }}>
+            {r.ga}
+          </span>
           <span
             style={{
               textAlign: "center",
               color:
-                r.gd > 0 ? "var(--green)" : r.gd < 0 ? "var(--red)" : "var(--muted)",
+                r.gd > 0
+                  ? "var(--green)"
+                  : r.gd < 0
+                  ? "var(--red)"
+                  : "var(--muted)",
               fontWeight: r.gd !== 0 ? 700 : 400,
             }}
           >
@@ -221,4 +251,11 @@ function FrozenBadge() {
   );
 }
 
-export { TabBar, Alert, FlagTeam, SlotDisplay, GroupStandingTable, FrozenBadge };
+export {
+  TabBar,
+  Alert,
+  FlagTeam,
+  SlotDisplay,
+  GroupStandingTable,
+  FrozenBadge,
+};

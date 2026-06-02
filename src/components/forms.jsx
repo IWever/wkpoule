@@ -1,3 +1,3 @@
-export { GroupPredictionsForm } from "./GroupPredictionsForm";
-export { ExtraPredictionsForm } from "./ExtraPredictionsForm";
-export { KOPredictionsForm } from "./KOPredictionsForm";
+export { GroupPredictionsForm } from "./forms/GroupPredictionsForm";
+export { ExtraPredictionsForm } from "./forms/ExtraPredictionsForm";
+export { KOPredictionsForm } from "./forms/KOPredictionsForm";
