@@ -227,9 +227,9 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
   while (topScorerCountries.length < 3) topScorerCountries.push("");
 
   const rankLabels = [
-    { rank: 1, pts: PTS_TOPSCORER_RANK[1], label: "1e topscoorder" },
-    { rank: 2, pts: PTS_TOPSCORER_RANK[2], label: "2e topscoorder" },
-    { rank: 3, pts: PTS_TOPSCORER_RANK[3], label: "3e topscoorder" },
+    { label: "Topscoorder" },
+    { label: "Topscoorder" },
+    { label: "Topscoorder" },
   ];
 
   return (
@@ -284,35 +284,7 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
                   gap: 8,
                   marginBottom: 8,
                 }}
-              >
-                <span
-                  style={{
-                    background: player ? "var(--accent)" : "var(--border)",
-                    color: "#fff",
-                    borderRadius: 4,
-                    padding: "2px 8px",
-                    fontSize: 11,
-                    fontWeight: 700,
-                    minWidth: 20,
-                    textAlign: "center",
-                  }}
-                >
-                  {rank}e
-                </span>
-                <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                  {label}
-                </span>
-                <span
-                  style={{
-                    marginLeft: "auto",
-                    fontSize: 12,
-                    color: "var(--accent)",
-                    fontWeight: 700,
-                  }}
-                >
-                  +{pts} pt
-                </span>
-              </div>
+              ></div>
 
               {/* Country selector */}
               <select
