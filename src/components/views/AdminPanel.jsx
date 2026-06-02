@@ -10,7 +10,7 @@ import {
   PLAYERS_BY_COUNTRY,
   FLAG,
   GROUPS,
-} from "../data/tournamentData";
+} from "../../data/tournamentData";
 import {
   calcPoints,
   deriveGroupStandingsFromResults,
@@ -20,9 +20,9 @@ import {
   deriveTopOuts,
   persist,
   fmtDateTime,
-} from "../pouleEngine";
-import { S } from "../styles/ui";
-import { Alert, SlotDisplay, TabBar } from "./common";
+} from "../../pouleEngine";
+import { S } from "../../styles/ui";
+import { Alert, SlotDisplay, TabBar } from "../common";
 
 const KO_DATES = {
   r32: "2026-07-01",

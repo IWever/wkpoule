@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GROUP_MATCHES, FLAG } from "../data/tournamentData";
+import { GROUP_MATCHES, FLAG } from "../../data/tournamentData";
 import {
   deepSet,
   deriveGroupStandings,
@@ -7,13 +7,15 @@ import {
   calcGroupMatchPts,
   fmtDateTime,
 } from "../pouleEngine";
-import { S } from "../styles/ui";
-import { Alert, TabBar, GroupStandingTable } from "./common";
+import { S } from "../../styles/ui";
+import { Alert, TabBar, GroupStandingTable } from "../common";
 
 const GROUP_LETTERS = "ABCDEFGHIJKL".split("");
 
 function GroupPredictionsForm({ user, state, onSave, onBack }) {
-  const [pred, setPred] = useState(() => JSON.parse(JSON.stringify(user.predictions || {})));
+  const [pred, setPred] = useState(() =>
+    JSON.parse(JSON.stringify(user.predictions || {}))
+  );
   const [activeGroup, setActiveGroup] = useState("A");
   const [saved, setSaved] = useState(false);
   const frozen = state.groupFrozen;
@@ -31,7 +33,11 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
   return (
     <div>
       <FormHeader
-        title={frozen ? "Jouw voorspellingen voor de groepsfase (bevroren)" : "Groepsfase invullen"}
+        title={
+          frozen
+            ? "Jouw voorspellingen voor de groepsfase (bevroren)"
+            : "Groepsfase invullen"
+        }
         icon="📝"
         saved={saved}
         onBack={onBack}
@@ -43,12 +49,17 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
         />
       )}
 
-      <TabBar tabs={[{ id: "groups", label: "Groepsfase" }]} active="groups" onSelect={() => {}} />
+      <TabBar
+        tabs={[{ id: "groups", label: "Groepsfase" }]}
+        active="groups"
+        onSelect={() => {}}
+      />
 
       <GroupSelector active={activeGroup} onSelect={setActiveGroup} />
 
       <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
-        Vul de verwachte uitslag in (na 90 min + blessuretijd). De top-2 wordt automatisch afgeleid uit jouw scores.
+        Vul de verwachte uitslag in (na 90 min + blessuretijd). De top-2 wordt
+        automatisch afgeleid uit jouw scores.
       </div>
 
       {GROUP_MATCHES.filter((m) => m.group === activeGroup).map((m) => (
@@ -86,11 +97,26 @@ function FormHeader({ title, icon, saved, onBack }) {
         gap: 10,
       }}
     >
-      <div style={{ fontWeight: 700, fontSize: 16 }}>{icon} {title}</div>
+      <div style={{ fontWeight: 700, fontSize: 16 }}>
+        {icon} {title}
+      </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {saved && <span style={{ fontSize: 12, color: "var(--green)" }}>✓ Opgeslagen</span>}
+        {saved && (
+          <span style={{ fontSize: 12, color: "var(--green)" }}>
+            ✓ Opgeslagen
+          </span>
+        )}
         <button
-          style={{ background: "none", border: "1px solid var(--border)", borderRadius: 8, padding: "8px 14px", color: "var(--muted)", cursor: "pointer", fontSize: 13, fontFamily: "var(--font)" }}
+          style={{
+            background: "none",
+            border: "1px solid var(--border)",
+            borderRadius: 8,
+            padding: "8px 14px",
+            color: "var(--muted)",
+            cursor: "pointer",
+            fontSize: 13,
+            fontFamily: "var(--font)",
+          }}
           onClick={onBack}
         >
           ← Terug
@@ -102,7 +128,9 @@ function FormHeader({ title, icon, saved, onBack }) {
 
 function GroupSelector({ active, onSelect }) {
   return (
-    <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 14 }}>
+    <div
+      style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 14 }}
+    >
       {GROUP_LETTERS.map((g) => {
         const isActive = active === g;
         const isF = g === "F";
@@ -113,8 +141,18 @@ function GroupSelector({ active, onSelect }) {
             style={{
               padding: "5px 13px",
               borderRadius: 20,
-              border: `1px solid ${isActive ? (isF ? "var(--orange)" : "var(--accent)") : "var(--border)"}`,
-              background: isActive ? (isF ? "var(--orange)" : "var(--accent)") : "var(--bg)",
+              border: `1px solid ${
+                isActive
+                  ? isF
+                    ? "var(--orange)"
+                    : "var(--accent)"
+                  : "var(--border)"
+              }`,
+              background: isActive
+                ? isF
+                  ? "var(--orange)"
+                  : "var(--accent)"
+                : "var(--bg)",
               color: isActive ? "#fff" : isF ? "var(--orange)" : "var(--text)",
               cursor: "pointer",
               fontSize: 13,
@@ -133,19 +171,38 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
   const res = calcGroupMatchPts(pred.matches?.[m.id], r);
 
   const borderColor = res
-    ? res.label === "exact" ? "rgba(63,185,80,.5)"
-      : res.label === "diff" ? "rgba(255,193,7,.4)"
-      : res.label === "winner" ? (isGroupF ? "rgba(240,136,62,.4)" : "rgba(88,166,255,.3)")
+    ? res.label === "exact"
+      ? "rgba(63,185,80,.5)"
+      : res.label === "diff"
+      ? "rgba(255,193,7,.4)"
+      : res.label === "winner"
+      ? isGroupF
+        ? "rgba(240,136,62,.4)"
+        : "rgba(88,166,255,.3)"
       : "rgba(248,81,73,.3)"
     : "var(--border)";
 
   return (
     <div style={{ marginBottom: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2, paddingLeft: 2 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 2,
+          paddingLeft: 2,
+        }}
+      >
         <span style={{ fontSize: 10, color: "var(--muted)" }}>
           {m.dt ? fmtDateTime(m.dt) : ""} · Ronde {m.round}
         </span>
-        {isGroupF && <span style={{ fontSize: 10, color: "var(--orange)", fontWeight: 700 }}>🇳🇱 Groep F</span>}
+        {isGroupF && (
+          <span
+            style={{ fontSize: 10, color: "var(--orange)", fontWeight: 700 }}
+          >
+            🇳🇱 Groep F
+          </span>
+        )}
       </div>
 
       <div
@@ -157,7 +214,14 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ flex: 1, fontSize: 13, textAlign: "right", fontWeight: 600 }}>
+          <span
+            style={{
+              flex: 1,
+              fontSize: 13,
+              textAlign: "right",
+              fontWeight: 600,
+            }}
+          >
             {FLAG[m.home]} {m.home}
           </span>
           <input
@@ -196,12 +260,30 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
               borderTop: "1px solid var(--border)",
             }}
           >
-            <span style={{ fontSize: 11, color: "var(--muted)" }}>Uitslag:</span>
-            <span style={{ fontWeight: 700, fontSize: 13, color: "var(--text)", background: "rgba(255,255,255,.06)", borderRadius: 4, padding: "1px 8px" }}>
+            <span style={{ fontSize: 11, color: "var(--muted)" }}>
+              Uitslag:
+            </span>
+            <span
+              style={{
+                fontWeight: 700,
+                fontSize: 13,
+                color: "var(--text)",
+                background: "rgba(255,255,255,.06)",
+                borderRadius: 4,
+                padding: "1px 8px",
+              }}
+            >
               {r.home}–{r.away}
             </span>
             {res && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: res.pts > 0 ? "var(--green)" : "var(--red)", marginLeft: 4 }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: res.pts > 0 ? "var(--green)" : "var(--red)",
+                  marginLeft: 4,
+                }}
+              >
                 {res.pts > 0 ? `+${res.pts} pt` : "✗"}
               </span>
             )}
@@ -227,10 +309,21 @@ function GroupStandingPreviews({ activeGroup, pred, results }) {
           style={{
             ...S.card(),
             marginBottom: 10,
-            border: isGroupF ? "1px solid rgba(240,136,62,.3)" : "1px solid var(--border)",
+            border: isGroupF
+              ? "1px solid rgba(240,136,62,.3)"
+              : "1px solid var(--border)",
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 700, color: isGroupF ? "var(--orange)" : "var(--green)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: isGroupF ? "var(--orange)" : "var(--green)",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              marginBottom: 6,
+            }}
+          >
             📊 Huidige stand (gespeelde wedstrijden)
           </div>
           <GroupStandingTable rows={adminRows} />
@@ -240,10 +333,21 @@ function GroupStandingPreviews({ activeGroup, pred, results }) {
         <div
           style={{
             ...S.card(),
-            border: isGroupF ? "1px solid rgba(240,136,62,.2)" : "1px solid var(--border)",
+            border: isGroupF
+              ? "1px solid rgba(240,136,62,.2)"
+              : "1px solid var(--border)",
           }}
         >
-          <div style={{ fontSize: 11, fontWeight: 700, color: isGroupF ? "var(--orange)" : "var(--accent)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 6 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: isGroupF ? "var(--orange)" : "var(--accent)",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              marginBottom: 6,
+            }}
+          >
             🔮 Jouw voorspelde eindstand
           </div>
           <GroupStandingTable rows={predRows} />

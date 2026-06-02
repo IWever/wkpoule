@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { calcPoints } from "../pouleEngine";
-import { S } from "../styles/ui";
-import { PlayerCompare } from "./compare";
+import { calcPoints } from "../../pouleEngine";
+import { S } from "../../styles/ui";
+import { PlayerCompare } from "../compare";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -13,14 +13,21 @@ export function calcPrimaryComp(user, state) {
 
   return comps
     .map((c) => {
-      const members = state.users.filter((u) => (u.competitionIds || []).includes(c.id));
+      const members = state.users.filter((u) =>
+        (u.competitionIds || []).includes(c.id)
+      );
       const ranked = [...members]
-        .map((u) => ({ ...u, pts: calcPoints(u, state.results, state.koResults) }))
+        .map((u) => ({
+          ...u,
+          pts: calcPoints(u, state.results, state.koResults),
+        }))
         .sort((a, b) => b.pts - a.pts);
       const userRank = ranked.findIndex((u) => u.id === user.id) + 1;
       return { comp: c, size: members.length, userRank };
     })
-    .sort((a, b) => (b.size !== a.size ? b.size - a.size : a.userRank - b.userRank))[0];
+    .sort((a, b) =>
+      b.size !== a.size ? b.size - a.size : a.userRank - b.userRank
+    )[0];
 }
 
 // ─── STANDINGS ────────────────────────────────────────────────────────────────
@@ -33,7 +40,16 @@ function Standings({ state, currentUserId, onCompare }) {
 
   return (
     <div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
+      <div
+        style={{
+          fontSize: 13,
+          fontWeight: 700,
+          color: "var(--accent)",
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          marginBottom: 8,
+        }}
+      >
         🏅 Tussenstand
       </div>
       {canCompare && (
@@ -41,7 +57,9 @@ function Standings({ state, currentUserId, onCompare }) {
           Klik op een naam om te vergelijken.
         </div>
       )}
-      {ranked.length === 0 && <p style={{ color: "var(--muted)" }}>Nog geen deelnemers.</p>}
+      {ranked.length === 0 && (
+        <p style={{ color: "var(--muted)" }}>Nog geen deelnemers.</p>
+      )}
       {ranked.map((u, i) => {
         const isMe = u.id === currentUserId;
         const clickable = canCompare && !isMe;
@@ -70,8 +88,17 @@ function StandingRow({ user: u, rank: i, isMe, clickable, onCompare }) {
         gap: 14,
         ...S.card(),
         marginBottom: 8,
-        background: i === 0 ? "linear-gradient(135deg,rgba(212,175,55,.12),rgba(212,175,55,.04))" : "var(--card)",
-        border: `1px solid ${isMe ? "var(--accent)" : i === 0 ? "rgba(212,175,55,.35)" : "var(--border)"}`,
+        background:
+          i === 0
+            ? "linear-gradient(135deg,rgba(212,175,55,.12),rgba(212,175,55,.04))"
+            : "var(--card)",
+        border: `1px solid ${
+          isMe
+            ? "var(--accent)"
+            : i === 0
+            ? "rgba(212,175,55,.35)"
+            : "var(--border)"
+        }`,
         cursor: clickable ? "pointer" : "default",
       }}
     >
@@ -79,10 +106,20 @@ function StandingRow({ user: u, rank: i, isMe, clickable, onCompare }) {
         {["🥇", "🥈", "🥉"][i] || `#${i + 1}`}
       </div>
       <div style={{ flex: 1, fontWeight: isMe ? 700 : 600 }}>
-        {u.name}{isMe ? " 👈" : ""}
+        {u.name}
+        {isMe ? " 👈" : ""}
       </div>
-      {clickable && <div style={{ fontSize: 11, color: "var(--muted)" }}>vergelijk →</div>}
-      <div style={{ fontSize: 26, fontWeight: 900, color: i === 0 ? "var(--gold)" : "var(--accent)", fontFamily: "var(--font-display)" }}>
+      {clickable && (
+        <div style={{ fontSize: 11, color: "var(--muted)" }}>vergelijk →</div>
+      )}
+      <div
+        style={{
+          fontSize: 26,
+          fontWeight: 900,
+          color: i === 0 ? "var(--gold)" : "var(--accent)",
+          fontFamily: "var(--font-display)",
+        }}
+      >
         {u.pts}
       </div>
       <div style={{ fontSize: 11, color: "var(--muted)" }}>pts</div>
@@ -118,7 +155,9 @@ function StandWithCompare({ state, currentUser }) {
   const filteredUsers =
     competitions.length === 0
       ? state.users
-      : state.users.filter((u) => (u.competitionIds || []).includes(activeCompId));
+      : state.users.filter((u) =>
+          (u.competitionIds || []).includes(activeCompId)
+        );
 
   return (
     <div>
@@ -150,12 +189,23 @@ function StandWithCompare({ state, currentUser }) {
 function CompetitionFilter({ competitions, state, activeCompId, onSelect }) {
   return (
     <div style={{ marginBottom: 18 }}>
-      <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8, fontWeight: 700 }}>
+      <div
+        style={{
+          fontSize: 11,
+          color: "var(--muted)",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          marginBottom: 8,
+          fontWeight: 700,
+        }}
+      >
         Competitie
       </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {competitions.map((c) => {
-          const memberCount = state.users.filter((u) => (u.competitionIds || []).includes(c.id)).length;
+          const memberCount = state.users.filter((u) =>
+            (u.competitionIds || []).includes(c.id)
+          ).length;
           const active = activeCompId === c.id;
           return (
             <button
@@ -168,13 +218,17 @@ function CompetitionFilter({ competitions, state, activeCompId, onSelect }) {
                 fontWeight: 600,
                 cursor: "pointer",
                 fontFamily: "var(--font)",
-                border: `1px solid ${active ? "var(--accent)" : "var(--border)"}`,
+                border: `1px solid ${
+                  active ? "var(--accent)" : "var(--border)"
+                }`,
                 background: active ? "var(--accent)" : "var(--bg)",
                 color: active ? "#fff" : "var(--text)",
               }}
             >
               {c.name}
-              <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.7 }}>({memberCount})</span>
+              <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.7 }}>
+                ({memberCount})
+              </span>
             </button>
           );
         })}

@@ -8,7 +8,7 @@ import {
   PTS_TOP_OUT,
   FLAG,
   TEAM_GROUP,
-} from "../data/tournamentData";
+} from "../../data/tournamentData";
 import {
   calcPoints,
   calcGroupMatchPts,
@@ -16,10 +16,10 @@ import {
   deriveSurpriseStage,
   deriveTopOuts,
   fmtDateTime,
-} from "../pouleEngine";
-import { S } from "../styles/ui";
-import { SingleMatchCompare, PlayerCompare } from "./compare";
-import { calcPrimaryComp } from "./Standings";
+} from "../../pouleEngine";
+import { S } from "../../styles/ui";
+import { SingleMatchCompare, PlayerCompare } from "../compare";
+import { calcPrimaryComp } from "../Standings";
 
 const KO_DATES = {
   r32: "2026-07-01",
