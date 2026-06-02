@@ -34,70 +34,6 @@ function Rules() {
   );
 }
 
-// ─── DEADLINES CARD ───────────────────────────────────────────────────────────
-
-function DeadlinesCard() {
-  const rows = [
-    {
-      label: "Extra vragen & Groepsfase ronde 1",
-      desc: "vóór aanvang eerste wedstrijd (11 juni 21:00)",
-    },
-    {
-      label: "Zestiende finales",
-      desc: "vóór aanvang zestiende finales (28 juni 21:00)",
-    },
-    {
-      label: "Achtste finales",
-      desc: "vóór aanvang achtste finales (4 jul 19:00)",
-    },
-    { label: "Kwartfinales", desc: "vóór aanvang kwartfinales (9 juli 22:00)" },
-    {
-      label: "Halve finales",
-      desc: "vóór aanvang halve finales (14 juli 21:00)",
-    },
-    { label: "Finale", desc: "vóór aanvang finale (18 juli 21:00)" },
-  ];
-
-  return (
-    <>
-      <SubTitle>⏰ Deadlines</SubTitle>
-      <div style={{ ...S.card(), marginBottom: 14 }}>
-        <div
-          style={{
-            fontSize: 12,
-            color: "var(--muted)",
-            marginBottom: 12,
-            lineHeight: 1.6,
-          }}
-        >
-          Elke speelronde sluit op het moment dat de eerste wedstrijd van die
-          ronde begint.
-        </div>
-        {rows.map(({ label, desc }, i) => (
-          <div
-            key={label}
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 10,
-              paddingBottom: 8,
-              marginBottom: 8,
-              borderBottom:
-                i < rows.length - 1 ? "1px solid var(--border)" : "none",
-            }}
-          >
-            <span style={{ fontSize: 16, marginTop: 1 }}>📅</span>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13 }}>{label}</div>
-              <div style={{ fontSize: 11, color: "var(--muted)" }}>{desc}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
-
 // ─── SECTION COMPONENTS ───────────────────────────────────────────────────────
 
 function SectionTitle({ children }) {
@@ -449,6 +385,70 @@ function KOPhaseRules() {
   );
 }
 
+// ─── DEADLINES CARD ───────────────────────────────────────────────────────────
+
+function DeadlinesCard() {
+  const rows = [
+    {
+      label: "Extra vragen & Groepsfase ronde 1",
+      desc: "vóór aanvang eerste wedstrijd (11 juni 21:00)",
+    },
+    {
+      label: "Zestiende finales",
+      desc: "vóór aanvang zestiende finales (28 juni 21:00)",
+    },
+    {
+      label: "Achtste finales",
+      desc: "vóór aanvang achtste finales (4 jul 19:00)",
+    },
+    { label: "Kwartfinales", desc: "vóór aanvang kwartfinales (9 juli 22:00)" },
+    {
+      label: "Halve finales",
+      desc: "vóór aanvang halve finales (14 juli 21:00)",
+    },
+    { label: "Finale", desc: "vóór aanvang finale (18 juli 21:00)" },
+  ];
+
+  return (
+    <>
+      <SubTitle>⏰ Deadlines</SubTitle>
+      <div style={{ ...S.card(), marginBottom: 14 }}>
+        <div
+          style={{
+            fontSize: 12,
+            color: "var(--muted)",
+            marginBottom: 12,
+            lineHeight: 1.6,
+          }}
+        >
+          Elke speelronde sluit op het moment dat de eerste wedstrijd van die
+          ronde begint.
+        </div>
+        {rows.map(({ label, desc }, i) => (
+          <div
+            key={label}
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 10,
+              paddingBottom: 8,
+              marginBottom: 8,
+              borderBottom:
+                i < rows.length - 1 ? "1px solid var(--border)" : "none",
+            }}
+          >
+            <span style={{ fontSize: 16, marginTop: 1 }}>📅</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13 }}>{label}</div>
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>{desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
 function TipsCard() {
   return (
     <div
@@ -467,20 +467,10 @@ function TipsCard() {
         ✦ Extra vragen en groepsfase sluiten vóór de eerste wedstrijd van elke
         speelronde.
       </div>
+      <div>✦ KO-voorspellingen worden per ronde ingevoerd.</div>
       <div>
-        ✦ KO-voorspellingen open zodra de admin dit aanzet; elke ronde kan apart
-        bevroren worden.
-      </div>
-      <div>
-        ✦ Groep F (Nederland) heeft een oranje accent. Nederland staat in oranje
-        en dikgedrukt.
-      </div>
-      <div>
-        ✦ Bij verrassing: 3e plek levert evenveel punten op als halve finale (30
-        pt).
-      </div>
-      <div>
-        ✦ Klik op een wedstrijd of deelnemer in de stand om te vergelijken.
+        ✦ Klik op een wedstrijd of deelnemer in de stand om te vergelijken. Dit
+        is mogelijk wanneer de invoer is bevroren.
       </div>
     </div>
   );
