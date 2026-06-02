@@ -885,7 +885,7 @@ const PTS_KO = {
 };
 const PTS_TOP_OUT = 10;
 const PTS_EXTRA = {
-  champion: 40,
+  champion: 50,
   // topscorer punten zijn per rank: rank1=15, rank2=10, rank3=5
   topScorer: 15, // max (rank 1)
   nlStage: 15,
