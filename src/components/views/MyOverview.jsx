@@ -8,10 +8,7 @@ import {
   PTS_TOP_OUT,
   FLAG,
   TEAM_GROUP,
-<<<<<<< HEAD
   getNextDeadline,
-=======
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
 } from "../../data/tournamentData";
 import {
   calcPoints,
@@ -37,7 +34,6 @@ const KO_DATES = {
 function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
   const pred = user.predictions || {};
   const pts = calcPoints(user, state.results, state.koResults);
-<<<<<<< HEAD
   const primaryComp = calcPrimaryComp(user, state);
 
   const koAvailable = state.koOpen || state.fase === "ko";
@@ -63,35 +59,6 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
 
       <WelcomeHeader user={user} compRank={compRank} pts={pts} />
       <StatCards pts={pts} compRank={compRank} />
-=======
-  const ranked = [...state.users].sort(
-    (a, b) =>
-      calcPoints(b, state.results, state.koResults) -
-      calcPoints(a, state.results, state.koResults)
-  );
-  const rank = ranked.findIndex((u) => u.id === user.id) + 1;
-  const koAvailable = state.koOpen || state.fase === "ko";
-  const [compareMatch, setCompareMatch] = useState(null);
-  const [comparePlayer, setComparePlayer] = useState(null);
-  const primaryComp = calcPrimaryComp(user, state);
-
-  const { last5, next5 } = buildMatchTimeline(state);
-
-  return (
-    <div>
-      <WelcomeHeader
-        user={user}
-        rank={rank}
-        total={state.users.length}
-        pts={pts}
-      />
-      <StatCards
-        rank={rank}
-        total={state.users.length}
-        pts={pts}
-        primaryComp={primaryComp}
-      />
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
       <NavCards
         pred={pred}
         state={state}
@@ -130,7 +97,6 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
   );
 }
 
-<<<<<<< HEAD
 // ─── DEADLINE BANNER ──────────────────────────────────────────────────────────
 
 function DeadlineBanner({ deadline }) {
@@ -184,11 +150,6 @@ function DeadlineBanner({ deadline }) {
 // ─── WELCOME HEADER ───────────────────────────────────────────────────────────
 
 function WelcomeHeader({ user, compRank, pts }) {
-=======
-// ─── WELCOME HEADER ───────────────────────────────────────────────────────────
-
-function WelcomeHeader({ user, rank, total, pts }) {
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
   return (
     <div
       style={{
@@ -200,58 +161,43 @@ function WelcomeHeader({ user, rank, total, pts }) {
         gap: 10,
       }}
     >
-<<<<<<< HEAD
-      <div style={{ fontSize: 22, fontWeight: 900 }}>Hoi, {user.name}! 👋</div>
-=======
       <div>
         <div style={{ fontSize: 22, fontWeight: 900 }}>
           Hoi, {user.name}! 👋
         </div>
-        <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>
-          Positie #{rank} van {total} · {pts} punten
-        </div>
+        {compRank ? (
+          <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>
+            #{compRank.rank} van {compRank.total} in {compRank.name} · {pts}{" "}
+            punten
+          </div>
+        ) : (
+          <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>
+            {pts} punten
+          </div>
+        )}
       </div>
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
     </div>
   );
 }
 
 // ─── STAT CARDS ───────────────────────────────────────────────────────────────
 
-<<<<<<< HEAD
 function StatCards({ pts, compRank }) {
-=======
-function StatCards({ rank, total, pts, primaryComp }) {
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
   return (
     <div
       style={{
         display: "grid",
-<<<<<<< HEAD
         gridTemplateColumns: compRank ? "1fr 1fr" : "1fr",
-=======
-        gridTemplateColumns: primaryComp ? "1fr 1fr 1fr" : "1fr 1fr",
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
         gap: 10,
         marginBottom: 16,
       }}
     >
-<<<<<<< HEAD
       <StatCard value={`${pts} pts`} label="Jouw score" />
       {compRank && (
         <StatCard
           value={`#${compRank.rank}`}
           sub={`van ${compRank.total}`}
           label={compRank.name}
-=======
-      <StatCard value={`#${rank}`} sub={`van ${total}`} label="Totaal" />
-      <StatCard value={`${pts} pts`} label="Jouw score" />
-      {primaryComp && (
-        <StatCard
-          value={`#${primaryComp.userRank}`}
-          sub={`van ${primaryComp.size}`}
-          label={primaryComp.comp.name}
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
           color="var(--gold)"
         />
       )}
@@ -322,10 +268,6 @@ function NavCards({
         total={6}
         frozen={state.extraFrozen}
         available
-<<<<<<< HEAD
-=======
-        barColor="var(--green)"
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
         onClick={onEditExtra}
       />
       <NavCard
@@ -335,10 +277,6 @@ function NavCards({
         total={GROUP_MATCHES.length}
         frozen={state.groupFrozen}
         available
-<<<<<<< HEAD
-=======
-        barColor="var(--accent)"
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
         onClick={onEditGroup}
       />
       <NavCard
@@ -346,21 +284,14 @@ function NavCards({
         label="KO-fase"
         filled={koFilled}
         total={KO_STRUCTURE.length}
-<<<<<<< HEAD
-        frozen={true}
-        available={koAvailable}
-=======
         frozen={false}
         available={koAvailable}
-        barColor="var(--orange)"
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
         onClick={onEditKO}
       />
     </div>
   );
 }
 
-<<<<<<< HEAD
 function NavCard({ icon, label, filled, total, frozen, available, onClick }) {
   const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
   const done = filled === total && available;
@@ -396,40 +327,14 @@ function NavCard({ icon, label, filled, total, frozen, available, onClick }) {
     textColor = "var(--orange)";
   }
 
-=======
-function NavCard({
-  icon,
-  label,
-  filled,
-  total,
-  frozen,
-  available,
-  barColor,
-  onClick,
-}) {
-  const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
-  const done = filled === total && available;
-  const started = filled > 0 && available;
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
   return (
     <div
       onClick={available ? onClick : undefined}
       style={{
         ...S.card(),
         cursor: available ? "pointer" : "default",
-<<<<<<< HEAD
         border: `1px solid ${borderColor}`,
         background: bgColor,
-=======
-        border: `1px solid ${
-          done
-            ? "rgba(63,185,80,.4)"
-            : started
-            ? "rgba(88,166,255,.25)"
-            : "var(--border)"
-        }`,
-        background: done ? "rgba(63,185,80,.05)" : "var(--card)",
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
         padding: "14px 16px",
         opacity: available ? 1 : 0.5,
       }}
@@ -447,13 +352,8 @@ function NavCard({
           <span
             style={{
               fontSize: 10,
-<<<<<<< HEAD
               color: "var(--accent)",
               background: "rgba(88,166,255,.12)",
-=======
-              color: "var(--orange)",
-              background: "rgba(240,136,62,.12)",
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
               borderRadius: 4,
               padding: "1px 6px",
               fontWeight: 700,
@@ -481,25 +381,13 @@ function NavCard({
           <div
             style={{
               fontSize: 12,
-<<<<<<< HEAD
               color: textColor,
-=======
-              color: done
-                ? "var(--green)"
-                : started
-                ? barColor
-                : "var(--muted)",
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
               fontWeight: done ? 700 : 400,
               marginBottom: 6,
             }}
           >
-<<<<<<< HEAD
             {filled}/{total}{" "}
             {done ? "✓ compleet" : frozen ? "bevroren" : "ingevuld"}
-=======
-            {filled}/{total} {done ? "✓ compleet" : "ingevuld"}
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
           </div>
           <div
             style={{ height: 4, borderRadius: 2, background: "var(--border)" }}
@@ -508,11 +396,7 @@ function NavCard({
               style={{
                 height: "100%",
                 width: `${pct}%`,
-<<<<<<< HEAD
                 background: barColor,
-=======
-                background: done ? "var(--green)" : barColor,
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
                 borderRadius: 2,
               }}
             />
@@ -543,21 +427,15 @@ function ExtraPredictionsGrid({ pred, state }) {
     pred.yellowCards === state.results["YELLOW_CARDS"];
   const yellowKnown = !!state.results["YELLOW_CARDS"];
 
-<<<<<<< HEAD
   // Champion group letter
   const championGroup = pred.champion ? TEAM_GROUP[pred.champion] : null;
 
-=======
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
   const items = [
     {
       label: "🏆 Kampioen",
       value: pred.champion,
       pts: PTS_EXTRA.champion,
-<<<<<<< HEAD
       groupLetter: championGroup,
-=======
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
       actual: state.koResults["FINAL"]?.winner,
       known: state.koResults["FINAL"]?.played,
       type: "simple",
@@ -705,26 +583,14 @@ function ExtraCardResult({ item }) {
     </span>
   );
 
-<<<<<<< HEAD
   if (item.type === "simple" && item.known)
     return item.value === item.actual ? good : bad;
-=======
-  if (item.type === "simple" && item.known) {
-    return item.value === item.actual ? good : bad;
-  }
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
   if (item.type === "topscorer" && item.known) {
     const winners = Array.isArray(item.actual) ? item.actual : [item.actual];
     return winners.includes(item.value) ? good : bad;
   }
-<<<<<<< HEAD
   if (item.type === "yellowcards" && item.known)
     return item.correct ? good : bad;
-=======
-  if (item.type === "yellowcards" && item.known) {
-    return item.correct ? good : bad;
-  }
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
   if (item.type === "surprise" && item.stage) {
     return (
       <span
@@ -782,10 +648,6 @@ function buildMatchTimeline(state) {
   const allUpcoming = allMatches.filter((m) =>
     m.isKO ? !state.koResults[m.id]?.played : !state.results[m.id]?.played
   );
-<<<<<<< HEAD
-=======
-
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
   return { last5: allPlayed.slice(-5), next5: allUpcoming.slice(0, 5) };
 }
 
@@ -895,7 +757,6 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
       "mis"
     : null;
 
-<<<<<<< HEAD
   // For group F: Netherlands name is orange+bold, no NL flag badge
   const homeLabel =
     isGroupF && m.home === "Nederland" ? (
@@ -914,8 +775,6 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
       `${FLAG[m.away]} ${m.away}`
     );
 
-=======
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
   return (
     <div
       onClick={canCompare ? onClick : undefined}
@@ -965,11 +824,7 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
         style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}
       >
         <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>
-<<<<<<< HEAD
           {homeLabel}
-=======
-          {FLAG[m.home]} {m.home}
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
         </span>
         <div
           style={{
@@ -1029,13 +884,7 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
             </span>
           )}
         </div>
-<<<<<<< HEAD
         <span style={{ flex: 1, fontWeight: 600 }}>{awayLabel}</span>
-=======
-        <span style={{ flex: 1, fontWeight: 600 }}>
-          {FLAG[m.away]} {m.away}
-        </span>
->>>>>>> 44892e769cd3f2bf4863001d00116314a4c3db28
         {res && (
           <span
             style={{
