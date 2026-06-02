@@ -19,7 +19,7 @@ import {
 } from "../../pouleEngine";
 import { S } from "../../styles/ui";
 import { SingleMatchCompare, PlayerCompare } from "../compare";
-import { calcPrimaryComp } from "../Standings";
+import { calcPrimaryComp } from "./Standings";
 
 const KO_DATES = {
   r32: "2026-07-01",
@@ -48,8 +48,18 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
 
   return (
     <div>
-      <WelcomeHeader user={user} rank={rank} total={state.users.length} pts={pts} />
-      <StatCards rank={rank} total={state.users.length} pts={pts} primaryComp={primaryComp} />
+      <WelcomeHeader
+        user={user}
+        rank={rank}
+        total={state.users.length}
+        pts={pts}
+      />
+      <StatCards
+        rank={rank}
+        total={state.users.length}
+        pts={pts}
+        primaryComp={primaryComp}
+      />
       <NavCards
         pred={pred}
         state={state}
@@ -92,9 +102,20 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
 
 function WelcomeHeader({ user, rank, total, pts }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 10 }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 20,
+        flexWrap: "wrap",
+        gap: 10,
+      }}
+    >
       <div>
-        <div style={{ fontSize: 22, fontWeight: 900 }}>Hoi, {user.name}! 👋</div>
+        <div style={{ fontSize: 22, fontWeight: 900 }}>
+          Hoi, {user.name}! 👋
+        </div>
         <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>
           Positie #{rank} van {total} · {pts} punten
         </div>
@@ -107,7 +128,14 @@ function WelcomeHeader({ user, rank, total, pts }) {
 
 function StatCards({ rank, total, pts, primaryComp }) {
   return (
-    <div style={{ display: "grid", gridTemplateColumns: primaryComp ? "1fr 1fr 1fr" : "1fr 1fr", gap: 10, marginBottom: 16 }}>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: primaryComp ? "1fr 1fr 1fr" : "1fr 1fr",
+        gap: 10,
+        marginBottom: 16,
+      }}
+    >
       <StatCard value={`#${rank}`} sub={`van ${total}`} label="Totaal" />
       <StatCard value={`${pts} pts`} label="Jouw score" />
       {primaryComp && (
@@ -128,7 +156,17 @@ function StatCard({ value, sub, label, color = "var(--accent)" }) {
       <div style={{ fontFamily: "var(--font-display)", fontSize: 28, color }}>
         {value} {sub && <span style={{ fontSize: 18 }}>{sub}</span>}
       </div>
-      <div style={{ fontSize: 11, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+      <div
+        style={{
+          fontSize: 11,
+          color: "var(--muted)",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
         {label}
       </div>
     </div>
@@ -137,21 +175,81 @@ function StatCard({ value, sub, label, color = "var(--accent)" }) {
 
 // ─── NAVIGATION CARDS ─────────────────────────────────────────────────────────
 
-function NavCards({ pred, state, koAvailable, onEditGroup, onEditExtra, onEditKO }) {
-  const extraFilled = [!!pred.champion, !!pred.topScorer, !!pred.nlStage, !!pred.yellowCards, !!pred.surpriseTeam, !!pred.topOut].filter(Boolean).length;
-  const groupFilled = GROUP_MATCHES.filter((m) => pred.matches?.[m.id]?.home !== undefined && pred.matches[m.id].home !== "").length;
+function NavCards({
+  pred,
+  state,
+  koAvailable,
+  onEditGroup,
+  onEditExtra,
+  onEditKO,
+}) {
+  const extraFilled = [
+    !!pred.champion,
+    !!pred.topScorer,
+    !!pred.nlStage,
+    !!pred.yellowCards,
+    !!pred.surpriseTeam,
+    !!pred.topOut,
+  ].filter(Boolean).length;
+  const groupFilled = GROUP_MATCHES.filter(
+    (m) =>
+      pred.matches?.[m.id]?.home !== undefined && pred.matches[m.id].home !== ""
+  ).length;
   const koFilled = KO_STRUCTURE.filter((m) => pred.koWinners?.[m.id]).length;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10, marginBottom: 22 }}>
-      <NavCard icon="🔮" label="Extra vragen" filled={extraFilled} total={6} frozen={state.extraFrozen} available barColor="var(--green)" onClick={onEditExtra} />
-      <NavCard icon="⚽" label="Groepsfase" filled={groupFilled} total={GROUP_MATCHES.length} frozen={state.groupFrozen} available barColor="var(--accent)" onClick={onEditGroup} />
-      <NavCard icon="⚔️" label="KO-fase" filled={koFilled} total={KO_STRUCTURE.length} frozen={false} available={koAvailable} barColor="var(--orange)" onClick={onEditKO} />
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr 1fr",
+        gap: 10,
+        marginBottom: 22,
+      }}
+    >
+      <NavCard
+        icon="🔮"
+        label="Extra vragen"
+        filled={extraFilled}
+        total={6}
+        frozen={state.extraFrozen}
+        available
+        barColor="var(--green)"
+        onClick={onEditExtra}
+      />
+      <NavCard
+        icon="⚽"
+        label="Groepsfase"
+        filled={groupFilled}
+        total={GROUP_MATCHES.length}
+        frozen={state.groupFrozen}
+        available
+        barColor="var(--accent)"
+        onClick={onEditGroup}
+      />
+      <NavCard
+        icon="⚔️"
+        label="KO-fase"
+        filled={koFilled}
+        total={KO_STRUCTURE.length}
+        frozen={false}
+        available={koAvailable}
+        barColor="var(--orange)"
+        onClick={onEditKO}
+      />
     </div>
   );
 }
 
-function NavCard({ icon, label, filled, total, frozen, available, barColor, onClick }) {
+function NavCard({
+  icon,
+  label,
+  filled,
+  total,
+  frozen,
+  available,
+  barColor,
+  onClick,
+}) {
   const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
   const done = filled === total && available;
   const started = filled > 0 && available;
@@ -161,29 +259,88 @@ function NavCard({ icon, label, filled, total, frozen, available, barColor, onCl
       style={{
         ...S.card(),
         cursor: available ? "pointer" : "default",
-        border: `1px solid ${done ? "rgba(63,185,80,.4)" : started ? "rgba(88,166,255,.25)" : "var(--border)"}`,
+        border: `1px solid ${
+          done
+            ? "rgba(63,185,80,.4)"
+            : started
+            ? "rgba(88,166,255,.25)"
+            : "var(--border)"
+        }`,
         background: done ? "rgba(63,185,80,.05)" : "var(--card)",
         padding: "14px 16px",
         opacity: available ? 1 : 0.5,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 6,
+        }}
+      >
         <span style={{ fontSize: 20 }}>{icon}</span>
-        {frozen && <span style={{ fontSize: 10, color: "var(--orange)", background: "rgba(240,136,62,.12)", borderRadius: 4, padding: "1px 6px", fontWeight: 700 }}>🔒 bevroren</span>}
-        {!available && <span style={{ fontSize: 10, color: "var(--muted)" }}>niet open</span>}
+        {frozen && (
+          <span
+            style={{
+              fontSize: 10,
+              color: "var(--orange)",
+              background: "rgba(240,136,62,.12)",
+              borderRadius: 4,
+              padding: "1px 6px",
+              fontWeight: 700,
+            }}
+          >
+            🔒 bevroren
+          </span>
+        )}
+        {!available && (
+          <span style={{ fontSize: 10, color: "var(--muted)" }}>niet open</span>
+        )}
       </div>
-      <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)", marginBottom: 4 }}>{label}</div>
+      <div
+        style={{
+          fontWeight: 700,
+          fontSize: 14,
+          color: "var(--text)",
+          marginBottom: 4,
+        }}
+      >
+        {label}
+      </div>
       {available ? (
         <>
-          <div style={{ fontSize: 12, color: done ? "var(--green)" : started ? barColor : "var(--muted)", fontWeight: done ? 700 : 400, marginBottom: 6 }}>
+          <div
+            style={{
+              fontSize: 12,
+              color: done
+                ? "var(--green)"
+                : started
+                ? barColor
+                : "var(--muted)",
+              fontWeight: done ? 700 : 400,
+              marginBottom: 6,
+            }}
+          >
             {filled}/{total} {done ? "✓ compleet" : "ingevuld"}
           </div>
-          <div style={{ height: 4, borderRadius: 2, background: "var(--border)" }}>
-            <div style={{ height: "100%", width: `${pct}%`, background: done ? "var(--green)" : barColor, borderRadius: 2 }} />
+          <div
+            style={{ height: 4, borderRadius: 2, background: "var(--border)" }}
+          >
+            <div
+              style={{
+                height: "100%",
+                width: `${pct}%`,
+                background: done ? "var(--green)" : barColor,
+                borderRadius: 2,
+              }}
+            />
           </div>
         </>
       ) : (
-        <div style={{ fontSize: 12, color: "var(--muted)" }}>Nog niet beschikbaar</div>
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>
+          Nog niet beschikbaar
+        </div>
       )}
     </div>
   );
@@ -192,30 +349,88 @@ function NavCard({ icon, label, filled, total, frozen, available, barColor, onCl
 // ─── EXTRA PREDICTIONS GRID ───────────────────────────────────────────────────
 
 function ExtraPredictionsGrid({ pred, state }) {
-  const surpriseStage = pred.surpriseTeam ? deriveSurpriseStage(pred.surpriseTeam, state.koResults) : null;
+  const surpriseStage = pred.surpriseTeam
+    ? deriveSurpriseStage(pred.surpriseTeam, state.koResults)
+    : null;
   const surprisePts = surpriseStage ? PTS_SURPRISE[surpriseStage] || 0 : null;
   const topOuts = deriveTopOuts(state.results);
   const topOutCorrect = pred.topOut && topOuts.includes(pred.topOut);
   const topOutKnown = topOuts.length > 0;
-  const yellowCorrect = pred.yellowCards && state.results["YELLOW_CARDS"] && pred.yellowCards === state.results["YELLOW_CARDS"];
+  const yellowCorrect =
+    pred.yellowCards &&
+    state.results["YELLOW_CARDS"] &&
+    pred.yellowCards === state.results["YELLOW_CARDS"];
   const yellowKnown = !!state.results["YELLOW_CARDS"];
 
   const items = [
-    { label: "🏆 Kampioen", value: pred.champion, pts: PTS_EXTRA.champion, actual: state.koResults["FINAL"]?.winner, known: state.koResults["FINAL"]?.played, type: "simple" },
-    { label: "⚽️ Topscorer", value: pred.topScorer, pts: PTS_EXTRA.topScorer, actual: state.results["TOP_SCORER"], known: !!state.results["TOP_SCORER"], type: "topscorer" },
-    { label: "🇳🇱 Nederland", value: pred.nlStage, pts: PTS_EXTRA.nlStage, actual: state.results["NL_STAGE"], known: !!state.results["NL_STAGE"], type: "simple" },
-    { label: "🟨 Gele kaarten", value: pred.yellowCards, pts: PTS_EXTRA.yellowCards, correct: yellowCorrect, known: yellowKnown, type: "yellowcards" },
-    { label: "🌟 Verrassing", value: pred.surpriseTeam, groupLetter: pred.surpriseTeam ? TEAM_GROUP[pred.surpriseTeam] : null, type: "surprise", stage: surpriseStage, stagePts: surprisePts },
-    { label: "💥 Topland uit", value: pred.topOut, groupLetter: pred.topOut ? TEAM_GROUP[pred.topOut] : null, type: "topout", correct: topOutCorrect, known: topOutKnown },
+    {
+      label: "🏆 Kampioen",
+      value: pred.champion,
+      pts: PTS_EXTRA.champion,
+      actual: state.koResults["FINAL"]?.winner,
+      known: state.koResults["FINAL"]?.played,
+      type: "simple",
+    },
+    {
+      label: "⚽️ Topscorer",
+      value: pred.topScorer,
+      pts: PTS_EXTRA.topScorer,
+      actual: state.results["TOP_SCORER"],
+      known: !!state.results["TOP_SCORER"],
+      type: "topscorer",
+    },
+    {
+      label: "🇳🇱 Nederland",
+      value: pred.nlStage,
+      pts: PTS_EXTRA.nlStage,
+      actual: state.results["NL_STAGE"],
+      known: !!state.results["NL_STAGE"],
+      type: "simple",
+    },
+    {
+      label: "🟨 Gele kaarten",
+      value: pred.yellowCards,
+      pts: PTS_EXTRA.yellowCards,
+      correct: yellowCorrect,
+      known: yellowKnown,
+      type: "yellowcards",
+    },
+    {
+      label: "🌟 Verrassing",
+      value: pred.surpriseTeam,
+      groupLetter: pred.surpriseTeam ? TEAM_GROUP[pred.surpriseTeam] : null,
+      type: "surprise",
+      stage: surpriseStage,
+      stagePts: surprisePts,
+    },
+    {
+      label: "💥 Topland uit",
+      value: pred.topOut,
+      groupLetter: pred.topOut ? TEAM_GROUP[pred.topOut] : null,
+      type: "topout",
+      correct: topOutCorrect,
+      known: topOutKnown,
+    },
   ];
 
   return (
     <div style={{ marginBottom: 22 }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 10 }}>
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: "var(--accent)",
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+          marginBottom: 10,
+        }}
+      >
         Extra voorspellingen
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {items.map((item) => <ExtraCard key={item.label} item={item} />)}
+        {items.map((item) => (
+          <ExtraCard key={item.label} item={item} />
+        ))}
       </div>
     </div>
   );
@@ -224,18 +439,47 @@ function ExtraPredictionsGrid({ pred, state }) {
 function ExtraCard({ item }) {
   return (
     <div style={S.card()}>
-      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+      <div
+        style={{
+          fontSize: 11,
+          color: "var(--muted)",
+          marginBottom: 4,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: 4,
+        }}
+      >
         <span>{item.label}</span>
         {item.groupLetter && (
-          <span style={{ fontSize: 10, fontWeight: 700, color: item.groupLetter === "F" ? "var(--orange)" : "var(--muted)", background: item.groupLetter === "F" ? "rgba(240,136,62,.12)" : "rgba(255,255,255,.06)", borderRadius: 4, padding: "1px 5px" }}>
+          <span
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color:
+                item.groupLetter === "F" ? "var(--orange)" : "var(--muted)",
+              background:
+                item.groupLetter === "F"
+                  ? "rgba(240,136,62,.12)"
+                  : "rgba(255,255,255,.06)",
+              borderRadius: 4,
+              padding: "1px 5px",
+            }}
+          >
             Gr. {item.groupLetter}
           </span>
         )}
       </div>
       <div style={{ fontWeight: 700, fontSize: 13 }}>
-        {item.value
-          ? FLAG[item.value] ? `${FLAG[item.value]} ${item.value}` : item.value
-          : <span style={{ color: "var(--muted)" }}>–</span>}
+        {item.value ? (
+          FLAG[item.value] ? (
+            `${FLAG[item.value]} ${item.value}`
+          ) : (
+            item.value
+          )
+        ) : (
+          <span style={{ color: "var(--muted)" }}>–</span>
+        )}
       </div>
       <ExtraCardResult item={item} />
     </div>
@@ -243,8 +487,32 @@ function ExtraCard({ item }) {
 }
 
 function ExtraCardResult({ item }) {
-  const good = <span style={{ fontSize: 12, marginTop: 4, color: "var(--green)", fontWeight: 700, display: "block" }}>+{item.pts} ✓</span>;
-  const bad = <span style={{ fontSize: 12, marginTop: 4, color: "var(--red)", fontWeight: 700, display: "block" }}>✗</span>;
+  const good = (
+    <span
+      style={{
+        fontSize: 12,
+        marginTop: 4,
+        color: "var(--green)",
+        fontWeight: 700,
+        display: "block",
+      }}
+    >
+      +{item.pts} ✓
+    </span>
+  );
+  const bad = (
+    <span
+      style={{
+        fontSize: 12,
+        marginTop: 4,
+        color: "var(--red)",
+        fontWeight: 700,
+        display: "block",
+      }}
+    >
+      ✗
+    </span>
+  );
 
   if (item.type === "simple" && item.known) {
     return item.value === item.actual ? good : bad;
@@ -257,10 +525,36 @@ function ExtraCardResult({ item }) {
     return item.correct ? good : bad;
   }
   if (item.type === "surprise" && item.stage) {
-    return <span style={{ fontSize: 11, marginTop: 4, color: "var(--accent)", fontWeight: 700, display: "block" }}>{item.stage} → +{item.stagePts} pt</span>;
+    return (
+      <span
+        style={{
+          fontSize: 11,
+          marginTop: 4,
+          color: "var(--accent)",
+          fontWeight: 700,
+          display: "block",
+        }}
+      >
+        {item.stage} → +{item.stagePts} pt
+      </span>
+    );
   }
   if (item.type === "topout" && item.value && item.known) {
-    return item.correct ? <span style={{ fontSize: 12, marginTop: 4, color: "var(--green)", fontWeight: 700, display: "block" }}>+{PTS_TOP_OUT} ✓</span> : bad;
+    return item.correct ? (
+      <span
+        style={{
+          fontSize: 12,
+          marginTop: 4,
+          color: "var(--green)",
+          fontWeight: 700,
+          display: "block",
+        }}
+      >
+        +{PTS_TOP_OUT} ✓
+      </span>
+    ) : (
+      bad
+    );
   }
   return null;
 }
@@ -273,7 +567,9 @@ function buildMatchTimeline(state) {
     dt: KO_DATES[m.round] + "T20:00",
     isKO: true,
   }));
-  const sortedGroup = [...GROUP_MATCHES].sort((a, b) => (a.dt || "").localeCompare(b.dt || ""));
+  const sortedGroup = [...GROUP_MATCHES].sort((a, b) =>
+    (a.dt || "").localeCompare(b.dt || "")
+  );
   const allMatches = [
     ...sortedGroup.map((m) => ({ ...m, isKO: false })),
     ...koMatchesAll,
@@ -289,16 +585,32 @@ function buildMatchTimeline(state) {
   return { last5: allPlayed.slice(-5), next5: allUpcoming.slice(0, 5) };
 }
 
-function MatchTimeline({ last5, next5, pred, state, canCompareMatch, onCompareMatch }) {
+function MatchTimeline({
+  last5,
+  next5,
+  pred,
+  state,
+  canCompareMatch,
+  onCompareMatch,
+}) {
   return (
     <div style={{ marginBottom: 22 }}>
       {last5.length > 0 && (
         <div style={{ marginBottom: 16 }}>
           <TimelineHeader>Laatste wedstrijden</TimelineHeader>
           {last5.map((m) =>
-            m.isKO
-              ? <KOMatchRow key={m.id} m={m} pred={pred} state={state} />
-              : <GroupMatchRow key={m.id} m={m} pred={pred} state={state} canCompare={canCompareMatch} onClick={() => onCompareMatch(m)} />
+            m.isKO ? (
+              <KOMatchRow key={m.id} m={m} pred={pred} state={state} />
+            ) : (
+              <GroupMatchRow
+                key={m.id}
+                m={m}
+                pred={pred}
+                state={state}
+                canCompare={canCompareMatch}
+                onClick={() => onCompareMatch(m)}
+              />
+            )
           )}
         </div>
       )}
@@ -306,14 +618,30 @@ function MatchTimeline({ last5, next5, pred, state, canCompareMatch, onCompareMa
         <div>
           <TimelineHeader>Volgende wedstrijden</TimelineHeader>
           {next5.map((m) =>
-            m.isKO
-              ? <KOMatchRow key={m.id} m={m} pred={pred} state={state} />
-              : <GroupMatchRow key={m.id} m={m} pred={pred} state={state} canCompare={canCompareMatch} onClick={() => onCompareMatch(m)} />
+            m.isKO ? (
+              <KOMatchRow key={m.id} m={m} pred={pred} state={state} />
+            ) : (
+              <GroupMatchRow
+                key={m.id}
+                m={m}
+                pred={pred}
+                state={state}
+                canCompare={canCompareMatch}
+                onClick={() => onCompareMatch(m)}
+              />
+            )
           )}
         </div>
       )}
       {last5.length === 0 && next5.length === 0 && (
-        <div style={{ ...S.card(), textAlign: "center", color: "var(--muted)", fontSize: 13 }}>
+        <div
+          style={{
+            ...S.card(),
+            textAlign: "center",
+            color: "var(--muted)",
+            fontSize: 13,
+          }}
+        >
           Nog geen wedstrijden in het schema.
         </div>
       )}
@@ -323,7 +651,16 @@ function MatchTimeline({ last5, next5, pred, state, canCompareMatch, onCompareMa
 
 function TimelineHeader({ children }) {
   return (
-    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 8 }}>
+    <div
+      style={{
+        fontSize: 12,
+        fontWeight: 700,
+        color: "var(--accent)",
+        textTransform: "uppercase",
+        letterSpacing: "0.1em",
+        marginBottom: 8,
+      }}
+    >
       {children}
     </div>
   );
@@ -336,46 +673,146 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
   const isGroupF = m.group === "F";
 
   const borderColor = res
-    ? res.label === "exact" ? "rgba(63,185,80,.5)"
-      : res.label === "diff" ? "rgba(255,193,7,.4)"
-      : res.label === "winner" ? (isGroupF ? "rgba(240,136,62,.4)" : "rgba(88,166,255,.3)")
+    ? res.label === "exact"
+      ? "rgba(63,185,80,.5)"
+      : res.label === "diff"
+      ? "rgba(255,193,7,.4)"
+      : res.label === "winner"
+      ? isGroupF
+        ? "rgba(240,136,62,.4)"
+        : "rgba(88,166,255,.3)"
       : "rgba(248,81,73,.3)"
-    : isGroupF ? "rgba(240,136,62,.25)" : "var(--border)";
+    : isGroupF
+    ? "rgba(240,136,62,.25)"
+    : "var(--border)";
 
   const labelBadge = res
-    ? { exact: "exact", diff: "verschil", winner: "winnaar" }[res.label] || "mis"
+    ? { exact: "exact", diff: "verschil", winner: "winnaar" }[res.label] ||
+      "mis"
     : null;
 
   return (
     <div
       onClick={canCompare ? onClick : undefined}
-      style={{ marginBottom: 6, ...S.card(), padding: "8px 10px", border: `1px solid ${borderColor}`, background: isGroupF ? "rgba(240,136,62,.03)" : "var(--card)", cursor: canCompare ? "pointer" : "default" }}
+      style={{
+        marginBottom: 6,
+        ...S.card(),
+        padding: "8px 10px",
+        border: `1px solid ${borderColor}`,
+        background: isGroupF ? "rgba(240,136,62,.03)" : "var(--card)",
+        cursor: canCompare ? "pointer" : "default",
+      }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-        <span style={{ fontSize: 10, color: "var(--muted)" }}>{m.dt ? fmtDateTime(m.dt) : ""}</span>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 5,
+        }}
+      >
+        <span style={{ fontSize: 10, color: "var(--muted)" }}>
+          {m.dt ? fmtDateTime(m.dt) : ""}
+        </span>
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-          <span style={{ fontSize: 10, color: isGroupF ? "var(--orange)" : "var(--accent)", fontWeight: 700, background: isGroupF ? "rgba(240,136,62,.1)" : "rgba(88,166,255,.1)", borderRadius: 4, padding: "1px 6px" }}>
+          <span
+            style={{
+              fontSize: 10,
+              color: isGroupF ? "var(--orange)" : "var(--accent)",
+              fontWeight: 700,
+              background: isGroupF
+                ? "rgba(240,136,62,.1)"
+                : "rgba(88,166,255,.1)",
+              borderRadius: 4,
+              padding: "1px 6px",
+            }}
+          >
             Groep {m.group}
           </span>
-          {canCompare && <span style={{ fontSize: 9, color: "var(--muted)" }}>vergelijk →</span>}
+          {canCompare && (
+            <span style={{ fontSize: 9, color: "var(--muted)" }}>
+              vergelijk →
+            </span>
+          )}
         </div>
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
-        <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>{FLAG[m.home]} {m.home}</span>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, minWidth: 90 }}>
+      <div
+        style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}
+      >
+        <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>
+          {FLAG[m.home]} {m.home}
+        </span>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 1,
+            minWidth: 90,
+          }}
+        >
           <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
             <span style={{ fontSize: 10, color: "var(--muted)" }}>Jij:</span>
-            <span style={{ fontWeight: 700, color: isGroupF ? "var(--orange)" : "var(--accent)", background: isGroupF ? "rgba(240,136,62,.1)" : "rgba(88,166,255,.1)", borderRadius: 4, padding: "1px 7px", fontSize: 13 }}>
-              {pm?.home !== undefined && pm?.home !== "" ? `${pm.home}–${pm.away}` : "–"}
+            <span
+              style={{
+                fontWeight: 700,
+                color: isGroupF ? "var(--orange)" : "var(--accent)",
+                background: isGroupF
+                  ? "rgba(240,136,62,.1)"
+                  : "rgba(88,166,255,.1)",
+                borderRadius: 4,
+                padding: "1px 7px",
+                fontSize: 13,
+              }}
+            >
+              {pm?.home !== undefined && pm?.home !== ""
+                ? `${pm.home}–${pm.away}`
+                : "–"}
             </span>
           </div>
-          {r?.played
-            ? <div style={{ display: "flex", gap: 3, alignItems: "center" }}><span style={{ fontSize: 10, color: "var(--muted)" }}>Uitslag:</span><span style={{ fontWeight: 700, color: "var(--text)", background: "rgba(255,255,255,.06)", borderRadius: 4, padding: "1px 7px", fontSize: 13 }}>{r.home}–{r.away}</span></div>
-            : <span style={{ fontSize: 10, color: "var(--muted)", fontStyle: "italic" }}>nog te spelen</span>}
+          {r?.played ? (
+            <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+              <span style={{ fontSize: 10, color: "var(--muted)" }}>
+                Uitslag:
+              </span>
+              <span
+                style={{
+                  fontWeight: 700,
+                  color: "var(--text)",
+                  background: "rgba(255,255,255,.06)",
+                  borderRadius: 4,
+                  padding: "1px 7px",
+                  fontSize: 13,
+                }}
+              >
+                {r.home}–{r.away}
+              </span>
+            </div>
+          ) : (
+            <span
+              style={{
+                fontSize: 10,
+                color: "var(--muted)",
+                fontStyle: "italic",
+              }}
+            >
+              nog te spelen
+            </span>
+          )}
         </div>
-        <span style={{ flex: 1, fontWeight: 600 }}>{FLAG[m.away]} {m.away}</span>
+        <span style={{ flex: 1, fontWeight: 600 }}>
+          {FLAG[m.away]} {m.away}
+        </span>
         {res && (
-          <span style={{ minWidth: 52, textAlign: "right", fontWeight: 700, fontSize: 11, color: res.pts > 0 ? "var(--green)" : "var(--red)" }}>
+          <span
+            style={{
+              minWidth: 52,
+              textAlign: "right",
+              fontWeight: 700,
+              fontSize: 11,
+              color: res.pts > 0 ? "var(--green)" : "var(--red)",
+            }}
+          >
             {res.pts > 0 ? `+${res.pts} ${labelBadge}` : "✗"}
           </span>
         )}
@@ -391,35 +828,152 @@ function KOMatchRow({ m, pred, state }) {
   const schema = PTS_KO[m.round] || PTS_KO.r16;
   const winOk = r?.played && pw && pw === r.winner;
   const winNope = r?.played && pw && pw !== r.winner;
-  const scoreOk = r?.played && ps?.home !== undefined && parseInt(ps.home) === parseInt(r.home90) && parseInt(ps.away) === parseInt(r.away90);
+  const scoreOk =
+    r?.played &&
+    ps?.home !== undefined &&
+    parseInt(ps.home) === parseInt(r.home90) &&
+    parseInt(ps.away) === parseInt(r.away90);
   const richSlots = buildRichKOSlots(pred, state.results, state.koResults);
   const homeDesc = richSlots[m.id]?.home;
   const awayDesc = richSlots[m.id]?.away;
 
   return (
-    <div style={{ marginBottom: 6, ...S.card(), padding: "8px 10px", border: `1px solid ${winOk ? "rgba(63,185,80,.4)" : winNope ? "rgba(248,81,73,.3)" : "var(--border)"}` }}>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
-        <span style={{ fontSize: 10, color: "var(--muted)" }}>{m.dt ? fmtDateTime(m.dt) : ""}</span>
-        <span style={{ fontSize: 10, color: "var(--orange)", fontWeight: 700, background: "rgba(240,136,62,.1)", borderRadius: 4, padding: "1px 6px" }}>{m.label}</span>
-      </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
-        <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>
-          {homeDesc?.type === "team" ? `${FLAG[homeDesc.team] || ""} ${homeDesc.team}` : <span style={{ color: "var(--muted)", fontSize: 11 }}>{homeDesc?.label || "?"}</span>}
+    <div
+      style={{
+        marginBottom: 6,
+        ...S.card(),
+        padding: "8px 10px",
+        border: `1px solid ${
+          winOk
+            ? "rgba(63,185,80,.4)"
+            : winNope
+            ? "rgba(248,81,73,.3)"
+            : "var(--border)"
+        }`,
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 5,
+        }}
+      >
+        <span style={{ fontSize: 10, color: "var(--muted)" }}>
+          {m.dt ? fmtDateTime(m.dt) : ""}
         </span>
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, minWidth: 90 }}>
-          {pw
-            ? <div style={{ display: "flex", gap: 3, alignItems: "center" }}><span style={{ fontSize: 10, color: "var(--muted)" }}>Jij:</span><span style={{ fontWeight: 700, color: "var(--orange)", background: "rgba(240,136,62,.1)", borderRadius: 4, padding: "1px 7px", fontSize: 13 }}>{FLAG[pw] || ""} {pw}</span></div>
-            : <span style={{ fontSize: 10, color: "var(--muted)", fontStyle: "italic" }}>niet ingevuld</span>}
-          {ps?.home !== undefined && <span style={{ fontSize: 10, color: "var(--muted)" }}>{ps.home}–{ps.away}</span>}
-          {r?.played && <span style={{ fontSize: 10, color: "var(--muted)" }}>→ winnaar: {FLAG[r.winner] || ""} {r.winner}</span>}
+        <span
+          style={{
+            fontSize: 10,
+            color: "var(--orange)",
+            fontWeight: 700,
+            background: "rgba(240,136,62,.1)",
+            borderRadius: 4,
+            padding: "1px 6px",
+          }}
+        >
+          {m.label}
+        </span>
+      </div>
+      <div
+        style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}
+      >
+        <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>
+          {homeDesc?.type === "team" ? (
+            `${FLAG[homeDesc.team] || ""} ${homeDesc.team}`
+          ) : (
+            <span style={{ color: "var(--muted)", fontSize: 11 }}>
+              {homeDesc?.label || "?"}
+            </span>
+          )}
+        </span>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 1,
+            minWidth: 90,
+          }}
+        >
+          {pw ? (
+            <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+              <span style={{ fontSize: 10, color: "var(--muted)" }}>Jij:</span>
+              <span
+                style={{
+                  fontWeight: 700,
+                  color: "var(--orange)",
+                  background: "rgba(240,136,62,.1)",
+                  borderRadius: 4,
+                  padding: "1px 7px",
+                  fontSize: 13,
+                }}
+              >
+                {FLAG[pw] || ""} {pw}
+              </span>
+            </div>
+          ) : (
+            <span
+              style={{
+                fontSize: 10,
+                color: "var(--muted)",
+                fontStyle: "italic",
+              }}
+            >
+              niet ingevuld
+            </span>
+          )}
+          {ps?.home !== undefined && (
+            <span style={{ fontSize: 10, color: "var(--muted)" }}>
+              {ps.home}–{ps.away}
+            </span>
+          )}
+          {r?.played && (
+            <span style={{ fontSize: 10, color: "var(--muted)" }}>
+              → winnaar: {FLAG[r.winner] || ""} {r.winner}
+            </span>
+          )}
         </div>
         <span style={{ flex: 1, fontWeight: 600 }}>
-          {awayDesc?.type === "team" ? `${FLAG[awayDesc.team] || ""} ${awayDesc.team}` : <span style={{ color: "var(--muted)", fontSize: 11 }}>{awayDesc?.label || "?"}</span>}
+          {awayDesc?.type === "team" ? (
+            `${FLAG[awayDesc.team] || ""} ${awayDesc.team}`
+          ) : (
+            <span style={{ color: "var(--muted)", fontSize: 11 }}>
+              {awayDesc?.label || "?"}
+            </span>
+          )}
         </span>
-        <div style={{ minWidth: 40, textAlign: "right", display: "flex", gap: 3, justifyContent: "flex-end" }}>
-          {winOk && <span style={{ color: "var(--green)", fontWeight: 700, fontSize: 11 }}>+{schema.winner}</span>}
-          {winNope && <span style={{ color: "var(--red)", fontWeight: 700, fontSize: 11 }}>✗</span>}
-          {scoreOk && <span style={{ color: "var(--green)", fontWeight: 700, fontSize: 11 }}>+{schema.exact}</span>}
+        <div
+          style={{
+            minWidth: 40,
+            textAlign: "right",
+            display: "flex",
+            gap: 3,
+            justifyContent: "flex-end",
+          }}
+        >
+          {winOk && (
+            <span
+              style={{ color: "var(--green)", fontWeight: 700, fontSize: 11 }}
+            >
+              +{schema.winner}
+            </span>
+          )}
+          {winNope && (
+            <span
+              style={{ color: "var(--red)", fontWeight: 700, fontSize: 11 }}
+            >
+              ✗
+            </span>
+          )}
+          {scoreOk && (
+            <span
+              style={{ color: "var(--green)", fontWeight: 700, fontSize: 11 }}
+            >
+              +{schema.exact}
+            </span>
+          )}
         </div>
       </div>
     </div>
