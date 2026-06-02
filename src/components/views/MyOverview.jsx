@@ -272,7 +272,7 @@ function NavCards({
         label="KO-fase"
         filled={koFilled}
         total={KO_STRUCTURE.length}
-        frozen={true}
+        frozen={false}
         available={koAvailable}
         onClick={onEditKO}
       />
@@ -299,18 +299,18 @@ function NavCard({ icon, label, filled, total, frozen, available, onClick }) {
     textColor = "var(--muted)";
   } else if (frozen) {
     borderColor = "rgba(88,166,255,.4)";
-    bgColor = "rgba(88,166,255,.05)";
+    bgColor = "rgba(88,166,255,.15)";
     barColor = "var(--accent)";
     textColor = "var(--accent)";
   } else if (done) {
     borderColor = "rgba(63,185,80,.4)";
-    bgColor = "rgba(63,185,80,.05)";
+    bgColor = "rgba(63,185,80,.15)";
     barColor = "var(--green)";
     textColor = "var(--green)";
   } else {
     // open + not done (includes empty) → oranje
     borderColor = "rgba(240,136,62,.4)";
-    bgColor = "rgba(240,136,62,.05)";
+    bgColor = "rgba(240,136,62,.15)";
     barColor = "var(--orange)";
     textColor = "var(--orange)";
   }
