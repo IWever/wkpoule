@@ -593,46 +593,7 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
           background: "rgba(88,166,255,.04)",
           marginBottom: 4,
         }}
-      >
-        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
-          ⏰ Deadline-overzicht
-        </div>
-        <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.8 }}>
-          Bevriezing moet vóór aanvang van de eerste wedstrijd van elke ronde
-          plaatsvinden:
-        </div>
-        <div
-          style={{
-            marginTop: 8,
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-          }}
-        >
-          {[
-            [
-              "Extra vragen & Groepsfase ronde 1",
-              "11 jun 21:00 — vóór aanvang eerste groepswedstrijd",
-            ],
-            [
-              "Groepsfase ronde 2",
-              "18 jun 18:00 — vóór aanvang eerste wedstrijd ronde 2",
-            ],
-            [
-              "Groepsfase ronde 3",
-              "24 jun 21:00 — vóór aanvang eerste wedstrijd ronde 3",
-            ],
-          ].map(([label, date]) => (
-            <div key={label} style={{ display: "flex", gap: 8, fontSize: 12 }}>
-              <span style={{ color: "var(--accent)", minWidth: 6 }}>·</span>
-              <span>
-                <strong style={{ color: "var(--text)" }}>{label}:</strong>{" "}
-                <span style={{ color: "var(--muted)" }}>{date}</span>
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
+      ></div>
 
       {[
         {
