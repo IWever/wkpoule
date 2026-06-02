@@ -11,6 +11,8 @@ import {
   FLAG,
   GROUPS,
   getNextDeadline,
+  PTS_KO,
+  PTS_TOPSCORER_RANK,
 } from "../../data/tournamentData";
 import {
   calcPoints,
@@ -182,7 +184,6 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
 
   return (
     <div>
-      {/* Next deadline banner */}
       {nextDeadline && (
         <div
           style={{
@@ -217,7 +218,6 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
         </div>
       )}
 
-      {/* Stats */}
       <div
         style={{
           display: "grid",
@@ -255,7 +255,6 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
         ))}
       </div>
 
-      {/* Status badges */}
       <div
         style={{
           ...S.card(),
@@ -588,6 +587,53 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <div
+        style={{
+          ...S.card(),
+          background: "rgba(88,166,255,.04)",
+          marginBottom: 4,
+        }}
+      >
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
+          ⏰ Deadline-overzicht
+        </div>
+        <div style={{ fontSize: 12, color: "var(--muted)", lineHeight: 1.8 }}>
+          Bevriezing moet vóór aanvang van de eerste wedstrijd van elke ronde
+          plaatsvinden:
+        </div>
+        <div
+          style={{
+            marginTop: 8,
+            display: "flex",
+            flexDirection: "column",
+            gap: 4,
+          }}
+        >
+          {[
+            [
+              "Extra vragen & Groepsfase ronde 1",
+              "11 jun 21:00 — vóór aanvang eerste groepswedstrijd",
+            ],
+            [
+              "Groepsfase ronde 2",
+              "18 jun 18:00 — vóór aanvang eerste wedstrijd ronde 2",
+            ],
+            [
+              "Groepsfase ronde 3",
+              "24 jun 21:00 — vóór aanvang eerste wedstrijd ronde 3",
+            ],
+          ].map(([label, date]) => (
+            <div key={label} style={{ display: "flex", gap: 8, fontSize: 12 }}>
+              <span style={{ color: "var(--accent)", minWidth: 6 }}>·</span>
+              <span>
+                <strong style={{ color: "var(--text)" }}>{label}:</strong>{" "}
+                <span style={{ color: "var(--muted)" }}>{date}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {[
         {
           key: "groupFrozen",
@@ -599,7 +645,7 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
           key: "extraFrozen",
           icon: "🔮",
           label: "Extra vragen",
-          desc: "Kampioen, topscorer, Nederland, gele kaarten, verrassing en topland",
+          desc: "Kampioen, topscoorders, Nederland, gele kaarten, verrassing en topland",
         },
         {
           key: "koOpen",
@@ -681,8 +727,7 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
             lineHeight: 1.6,
           }}
         >
-          Bevriezing vóór aanvang eerste wedstrijd van elke ronde. Bevroren
-          rondes kunnen niet meer worden aangepast door deelnemers.
+          Bevriezing vóór aanvang eerste wedstrijd van elke ronde.
         </div>
         {KO_ROUND_CONFIG.map(({ key, label, date, deadline }) => {
           const frozen = !!frozenRounds[key];
@@ -1011,9 +1056,14 @@ function UsersAdmin({ state, onRemove }) {
           (m) =>
             p.matches?.[m.id]?.home !== undefined && p.matches[m.id].home !== ""
         ).length;
+        const topScorers = Array.isArray(p.topScorers)
+          ? p.topScorers.filter(Boolean)
+          : p.topScorer
+          ? [p.topScorer]
+          : [];
         const extraFilled = [
           !!p.champion,
-          !!p.topScorer,
+          topScorers.length > 0,
           !!p.nlStage,
           !!p.yellowCards,
           !!p.surpriseTeam,
@@ -1242,7 +1292,6 @@ function ResultsAdmin({
   return (
     <div>
       <GroupSelector active={activeGroup} onSelect={setActiveGroup} />
-
       {s && s.table.some((r) => r.gp > 0) && (
         <div
           style={{
@@ -1719,6 +1768,7 @@ function ExtrasAdmin({ state, setState }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* Topscorer admin — nieuw systeem met ranks */}
       <TopScorerAdmin state={state} setState={setState} />
 
       <div style={S.card()}>
@@ -1848,174 +1898,230 @@ function ExtrasAdmin({ state, setState }) {
   );
 }
 
+// ─── TOPSCORER ADMIN — nieuw systeem met ranks ─────────────────────────────────
+
 function TopScorerAdmin({ state, setState }) {
-  const currentWinners = Array.isArray(state.results["TOP_SCORER"])
-    ? state.results["TOP_SCORER"]
-    : state.results["TOP_SCORER"]
-    ? [state.results["TOP_SCORER"]]
+  // TOP_SCORERS = array van { name, rank, country }
+  const topScorers = Array.isArray(state.results["TOP_SCORERS"])
+    ? state.results["TOP_SCORERS"]
     : [];
 
-  function toggleScorer(name) {
+  const [newCountry, setNewCountry] = useState("");
+  const [newPlayer, setNewPlayer] = useState("");
+  const [newRank, setNewRank] = useState(1);
+
+  const allPlayersForCountry = newCountry
+    ? [...(PLAYERS_BY_COUNTRY[newCountry] || [])].sort((a, b) =>
+        b.kwal !== a.kwal ? b.kwal - a.kwal : a.name.localeCompare(b.name)
+      )
+    : [];
+
+  function addScorer() {
+    if (!newPlayer) return;
+    const rank = parseInt(newRank, 10);
+    // Check if player already in list
+    if (topScorers.find((s) => s.name === newPlayer)) return;
+    const updated = [
+      ...topScorers,
+      { name: newPlayer, rank, country: newCountry },
+    ];
     setState((s) => {
-      const cur = Array.isArray(s.results["TOP_SCORER"])
-        ? s.results["TOP_SCORER"]
-        : s.results["TOP_SCORER"]
-        ? [s.results["TOP_SCORER"]]
-        : [];
-      const ns = {
-        ...s,
-        results: {
-          ...s.results,
-          TOP_SCORER: cur.includes(name)
-            ? cur.filter((n) => n !== name)
-            : [...cur, name],
-        },
-      };
+      const ns = { ...s, results: { ...s.results, TOP_SCORERS: updated } };
+      persist(ns);
+      return ns;
+    });
+    setNewPlayer("");
+    setNewCountry("");
+    setNewRank(1);
+  }
+
+  function removeScorer(name) {
+    const updated = topScorers.filter((s) => s.name !== name);
+    setState((s) => {
+      const ns = { ...s, results: { ...s.results, TOP_SCORERS: updated } };
       persist(ns);
       return ns;
     });
   }
 
-  const country = state.results["TOP_SCORER_COUNTRY"] || "";
-  const allPlayers = country
-    ? [...(PLAYERS_BY_COUNTRY[country] || [])].sort((a, b) =>
-        b.kwal !== a.kwal ? b.kwal - a.kwal : a.name.localeCompare(b.name)
-      )
-    : [];
+  function updateRank(name, rank) {
+    const updated = topScorers.map((s) =>
+      s.name === name ? { ...s, rank: parseInt(rank, 10) } : s
+    );
+    setState((s) => {
+      const ns = { ...s, results: { ...s.results, TOP_SCORERS: updated } };
+      persist(ns);
+      return ns;
+    });
+  }
+
+  const rankColors = {
+    1: "var(--gold)",
+    2: "var(--muted)",
+    3: "var(--orange)",
+  };
+  const rankLabels = { 1: "1e (+15 pt)", 2: "2e (+10 pt)", 3: "3e (+5 pt)" };
 
   return (
     <div style={S.card()}>
-      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 6 }}>
-        ⚽ Officiële topscorer(s) — selecteer meerdere bij gelijkstand
+      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>
+        ⚽ Officiële topscoorders — voeg toe met rank
       </div>
-      <select
-        value={country}
-        onChange={(e) =>
-          setState((s) => {
-            const ns = {
-              ...s,
-              results: {
-                ...s.results,
-                TOP_SCORER_COUNTRY: e.target.value,
-                TOP_SCORER: [],
-              },
-            };
-            persist(ns);
-            return ns;
-          })
-        }
+      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 12 }}>
+        Rank 1 = +15 pt, rank 2 = +10 pt, rank 3 = +5 pt voor deelnemers die
+        deze speler hebben
+      </div>
+
+      {/* Current scorers list */}
+      {topScorers.length > 0 && (
+        <div
+          style={{
+            marginBottom: 14,
+            display: "flex",
+            flexDirection: "column",
+            gap: 6,
+          }}
+        >
+          {topScorers.map((scorer) => (
+            <div
+              key={scorer.name}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: "var(--bg)",
+                borderRadius: 8,
+                padding: "8px 12px",
+                border: `1px solid ${
+                  rankColors[scorer.rank] || "var(--border)"
+                }20`,
+              }}
+            >
+              <span
+                style={{
+                  background: rankColors[scorer.rank] || "var(--border)",
+                  color: scorer.rank === 2 ? "var(--card)" : "#fff",
+                  borderRadius: 4,
+                  padding: "2px 8px",
+                  fontSize: 11,
+                  fontWeight: 900,
+                  minWidth: 24,
+                  textAlign: "center",
+                }}
+              >
+                {scorer.rank}
+              </span>
+              <span style={{ flex: 1, fontWeight: 700, fontSize: 13 }}>
+                {scorer.country && (FLAG[scorer.country] || "🏳️")} {scorer.name}
+              </span>
+              <span
+                style={{
+                  fontSize: 11,
+                  color: "var(--accent)",
+                  fontWeight: 700,
+                }}
+              >
+                +{PTS_TOPSCORER_RANK[scorer.rank] || 0} pt
+              </span>
+              {/* Rank selector */}
+              <select
+                value={scorer.rank}
+                onChange={(e) => updateRank(scorer.name, e.target.value)}
+                style={{
+                  background: "var(--card2)",
+                  color: "var(--text)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 6,
+                  padding: "4px 8px",
+                  fontSize: 12,
+                  fontFamily: "var(--font)",
+                }}
+              >
+                <option value={1}>1e (+15)</option>
+                <option value={2}>2e (+10)</option>
+                <option value={3}>3e (+5)</option>
+              </select>
+              <button
+                onClick={() => removeScorer(scorer.name)}
+                style={{
+                  background: "none",
+                  border: "1px solid var(--border)",
+                  borderRadius: 6,
+                  color: "var(--muted)",
+                  padding: "3px 8px",
+                  cursor: "pointer",
+                  fontSize: 11,
+                  fontFamily: "var(--font)",
+                }}
+              >
+                ✕
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Add new scorer */}
+      <div
         style={{
           background: "var(--bg)",
-          color: "var(--text)",
+          borderRadius: 8,
+          padding: "12px",
           border: "1px solid var(--border)",
-          borderRadius: 6,
-          padding: "8px 12px",
-          fontSize: 14,
-          width: "100%",
-          marginBottom: 8,
-          fontFamily: "var(--font)",
         }}
       >
-        <option value="">— kies land voor topscorer —</option>
-        {Object.keys(PLAYERS_BY_COUNTRY)
-          .sort()
-          .map((c) => (
-            <option key={c} value={c}>
-              {FLAG[c] || "🏳️"} {c}
-            </option>
-          ))}
-      </select>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--muted)",
+            textTransform: "uppercase",
+            letterSpacing: "0.07em",
+            marginBottom: 10,
+          }}
+        >
+          Topscoorder toevoegen
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {/* Country */}
+          <select
+            value={newCountry}
+            onChange={(e) => {
+              setNewCountry(e.target.value);
+              setNewPlayer("");
+            }}
+            style={{
+              background: "var(--card)",
+              color: "var(--text)",
+              border: "1px solid var(--border)",
+              borderRadius: 6,
+              padding: "7px 10px",
+              fontSize: 13,
+              width: "100%",
+              fontFamily: "var(--font)",
+            }}
+          >
+            <option value="">— kies een land —</option>
+            {Object.keys(PLAYERS_BY_COUNTRY)
+              .sort()
+              .map((c) => (
+                <option key={c} value={c}>
+                  {FLAG[c] || "🏳️"} {c}
+                </option>
+              ))}
+          </select>
 
-      {country && (
-        <div>
-          <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 8 }}>
-            Geselecteerd:{" "}
-            {currentWinners.length === 0 ? "geen" : currentWinners.join(", ")}
-          </div>
-          <div
-            style={{
-              display: "flex",
-              flexDirection: "column",
-              gap: 5,
-              maxHeight: 260,
-              overflowY: "auto",
-            }}
-          >
-            {allPlayers.map((p) => {
-              const selected = currentWinners.includes(p.name);
-              return (
-                <button
-                  key={p.name}
-                  onClick={() => toggleScorer(p.name)}
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "7px 12px",
-                    borderRadius: 8,
-                    border: `2px solid ${
-                      selected ? "var(--green)" : "var(--border)"
-                    }`,
-                    background: selected ? "rgba(63,185,80,.12)" : "var(--bg)",
-                    color: "var(--text)",
-                    cursor: "pointer",
-                    fontSize: 13,
-                    fontWeight: selected ? 700 : 400,
-                    fontFamily: "var(--font)",
-                    textAlign: "left",
-                  }}
-                >
-                  <span>
-                    {selected ? "✓ " : ""}
-                    {p.name}
-                  </span>
-                  {p.kwal > 0 && (
-                    <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                      {p.kwal} kwal. goals
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-          <div
-            style={{
-              marginTop: 10,
-              borderTop: "1px solid var(--border)",
-              paddingTop: 10,
-            }}
-          >
-            <div
-              style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}
-            >
-              Speler uit ander land toevoegen:
-            </div>
+          {/* Player */}
+          {newCountry && (
             <select
-              value=""
-              onChange={(e) => {
-                if (!e.target.value) return;
-                setState((s) => {
-                  const cur = Array.isArray(s.results["TOP_SCORER"])
-                    ? s.results["TOP_SCORER"]
-                    : s.results["TOP_SCORER"]
-                    ? [s.results["TOP_SCORER"]]
-                    : [];
-                  if (cur.includes(e.target.value)) return s;
-                  const ns = {
-                    ...s,
-                    results: {
-                      ...s.results,
-                      TOP_SCORER: [...cur, e.target.value],
-                    },
-                  };
-                  persist(ns);
-                  return ns;
-                });
-              }}
+              value={newPlayer}
+              onChange={(e) => setNewPlayer(e.target.value)}
               style={{
-                background: "var(--bg)",
+                background: "var(--card)",
                 color: "var(--text)",
-                border: "1px solid var(--border)",
+                border: `1px solid ${
+                  newPlayer ? "var(--accent)" : "var(--border)"
+                }`,
                 borderRadius: 6,
                 padding: "7px 10px",
                 fontSize: 13,
@@ -2023,26 +2129,57 @@ function TopScorerAdmin({ state, setState }) {
                 fontFamily: "var(--font)",
               }}
             >
-              <option value="">— voeg speler uit ander land toe —</option>
-              {Object.keys(PLAYERS_BY_COUNTRY)
-                .sort()
-                .map((c) => (
-                  <optgroup key={c} label={`${FLAG[c] || ""} ${c}`}>
-                    {PLAYERS_BY_COUNTRY[c]
-                      .slice()
-                      .sort((a, b) => b.kwal - a.kwal)
-                      .map((pl) => (
-                        <option key={pl.name} value={pl.name}>
-                          {pl.name}
-                          {pl.kwal > 0 ? ` (${pl.kwal} kwal. goals)` : ""}
-                        </option>
-                      ))}
-                  </optgroup>
-                ))}
+              <option value="">— kies een speler —</option>
+              {allPlayersForCountry.map((p) => (
+                <option
+                  key={p.name}
+                  value={p.name}
+                  disabled={!!topScorers.find((s) => s.name === p.name)}
+                >
+                  {p.name}
+                  {p.kwal > 0 ? ` (${p.kwal} kwal. goals)` : ""}
+                  {topScorers.find((s) => s.name === p.name) ? " ✓" : ""}
+                </option>
+              ))}
             </select>
+          )}
+
+          {/* Rank + add button */}
+          <div style={{ display: "flex", gap: 8 }}>
+            <select
+              value={newRank}
+              onChange={(e) => setNewRank(e.target.value)}
+              style={{
+                background: "var(--card)",
+                color: "var(--text)",
+                border: "1px solid var(--border)",
+                borderRadius: 6,
+                padding: "7px 10px",
+                fontSize: 13,
+                fontFamily: "var(--font)",
+                flex: 1,
+              }}
+            >
+              <option value={1}>Rank 1 — +15 pt (goudschoener)</option>
+              <option value={2}>Rank 2 — +10 pt (zilveren schoen)</option>
+              <option value={3}>Rank 3 — +5 pt (bronzen schoen)</option>
+            </select>
+            <button
+              onClick={addScorer}
+              disabled={!newPlayer}
+              style={{
+                ...S.btn("var(--green)"),
+                padding: "7px 18px",
+                fontSize: 13,
+                opacity: newPlayer ? 1 : 0.4,
+                cursor: newPlayer ? "pointer" : "default",
+              }}
+            >
+              + Toevoegen
+            </button>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import {
   PTS_EXTRA,
   PTS_SURPRISE,
   PTS_TOP_OUT,
+  PTS_TOPSCORER_RANK,
   FLAG,
   TEAM_GROUP,
   getNextDeadline,
@@ -17,6 +18,7 @@ import {
   deriveSurpriseStage,
   deriveTopOuts,
   fmtDateTime,
+  calcTopScorerPts,
 } from "../../pouleEngine";
 import { S } from "../../styles/ui";
 import { SingleMatchCompare, PlayerCompare } from "../compare";
@@ -35,15 +37,11 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
   const pred = user.predictions || {};
   const pts = calcPoints(user, state.results, state.koResults);
   const primaryComp = calcPrimaryComp(user, state);
-
   const koAvailable = state.koOpen || state.fase === "ko";
   const [compareMatch, setCompareMatch] = useState(null);
   const [comparePlayer, setComparePlayer] = useState(null);
-
   const { last5, next5 } = buildMatchTimeline(state);
   const nextDeadline = getNextDeadline();
-
-  // Competition rank (only shown if user is in at least one comp)
   const compRank = primaryComp
     ? {
         rank: primaryComp.userRank,
@@ -54,9 +52,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
 
   return (
     <div>
-      {/* Deadline banner */}
       {nextDeadline && <DeadlineBanner deadline={nextDeadline} />}
-
       <WelcomeHeader user={user} compRank={compRank} pts={pts} />
       <StatCards pts={pts} compRank={compRank} />
       <NavCards
@@ -110,7 +106,7 @@ function DeadlineBanner({ deadline }) {
   let timeStr;
   if (diffH < 1) timeStr = "minder dan een uur";
   else if (diffD >= 2) timeStr = `${diffD} dagen`;
-  else if (diffD === 1) timeStr = `morgen`;
+  else if (diffD === 1) timeStr = "morgen";
   else timeStr = `${diffH} uur`;
 
   return (
@@ -226,9 +222,14 @@ function NavCards({
   onEditExtra,
   onEditKO,
 }) {
+  const topScorers = Array.isArray(pred.topScorers)
+    ? pred.topScorers.filter(Boolean)
+    : pred.topScorer
+    ? [pred.topScorer]
+    : [];
   const extraFilled = [
     !!pred.champion,
-    !!pred.topScorer,
+    topScorers.length > 0,
     !!pred.nlStage,
     !!pred.yellowCards,
     !!pred.surpriseTeam,
@@ -283,14 +284,7 @@ function NavCards({
 function NavCard({ icon, label, filled, total, frozen, available, onClick }) {
   const pct = total > 0 ? Math.round((filled / total) * 100) : 0;
   const done = filled === total && available;
-  const started = filled > 0 && available;
 
-  // Color logic:
-  // frozen  → blauw (accent)
-  // done    → groen
-  // started (maar niet done, niet frozen) → oranje
-  // leeg & available → oranje
-  // niet beschikbaar → muted/border
   let borderColor, bgColor, barColor, textColor;
   if (!available) {
     borderColor = "var(--border)";
@@ -308,7 +302,6 @@ function NavCard({ icon, label, filled, total, frozen, available, onClick }) {
     barColor = "var(--green)";
     textColor = "var(--green)";
   } else {
-    // open + not done (includes empty) → oranje
     borderColor = "rgba(240,136,62,.4)";
     bgColor = "rgba(240,136,62,.15)";
     barColor = "var(--orange)";
@@ -414,9 +407,24 @@ function ExtraPredictionsGrid({ pred, state }) {
     state.results["YELLOW_CARDS"] &&
     pred.yellowCards === state.results["YELLOW_CARDS"];
   const yellowKnown = !!state.results["YELLOW_CARDS"];
-
-  // Champion group letter
   const championGroup = pred.champion ? TEAM_GROUP[pred.champion] : null;
+
+  // Topscorers — nieuw systeem
+  const resultTopScorers = Array.isArray(state.results["TOP_SCORERS"])
+    ? state.results["TOP_SCORERS"]
+    : [];
+  const topScorersKnown = resultTopScorers.length > 0;
+  const predTopScorers = Array.isArray(pred.topScorers)
+    ? pred.topScorers.filter(Boolean)
+    : pred.topScorer
+    ? [pred.topScorer]
+    : [];
+  const topScorerPts = topScorersKnown
+    ? calcTopScorerPts(
+        pred.topScorers || (pred.topScorer ? [pred.topScorer] : []),
+        resultTopScorers
+      )
+    : null;
 
   const items = [
     {
@@ -429,12 +437,12 @@ function ExtraPredictionsGrid({ pred, state }) {
       type: "simple",
     },
     {
-      label: "⚽️ Topscorer",
-      value: pred.topScorer,
-      pts: PTS_EXTRA.topScorer,
-      actual: state.results["TOP_SCORER"],
-      known: !!state.results["TOP_SCORER"],
+      label: "⚽ Topscoorders",
       type: "topscorer",
+      value: predTopScorers.length > 0 ? predTopScorers.join(", ") : null,
+      totalPts: topScorerPts,
+      known: topScorersKnown,
+      resultTopScorers,
     },
     {
       label: "🇳🇱 Nederland",
@@ -528,7 +536,13 @@ function ExtraCard({ item }) {
         )}
       </div>
       <div style={{ fontWeight: 700, fontSize: 13 }}>
-        {item.value ? (
+        {item.type === "topscorer" ? (
+          item.value ? (
+            <span style={{ fontSize: 11, lineHeight: 1.5 }}>{item.value}</span>
+          ) : (
+            <span style={{ color: "var(--muted)" }}>–</span>
+          )
+        ) : item.value ? (
           FLAG[item.value] ? (
             `${FLAG[item.value]} ${item.value}`
           ) : (
@@ -544,7 +558,7 @@ function ExtraCard({ item }) {
 }
 
 function ExtraCardResult({ item }) {
-  const good = (
+  const good = (pts) => (
     <span
       style={{
         fontSize: 12,
@@ -554,7 +568,7 @@ function ExtraCardResult({ item }) {
         display: "block",
       }}
     >
-      +{item.pts} ✓
+      +{pts} ✓
     </span>
   );
   const bad = (
@@ -572,14 +586,31 @@ function ExtraCardResult({ item }) {
   );
 
   if (item.type === "simple" && item.known)
-    return item.value === item.actual ? good : bad;
+    return item.value === item.actual ? good(item.pts) : bad;
+
   if (item.type === "topscorer" && item.known) {
-    const winners = Array.isArray(item.actual) ? item.actual : [item.actual];
-    return winners.includes(item.value) ? good : bad;
+    if (item.totalPts === null || item.totalPts === undefined) return null;
+    return item.totalPts > 0 ? (
+      <span
+        style={{
+          fontSize: 12,
+          marginTop: 4,
+          color: "var(--green)",
+          fontWeight: 700,
+          display: "block",
+        }}
+      >
+        +{item.totalPts} pt ✓
+      </span>
+    ) : (
+      bad
+    );
   }
+
   if (item.type === "yellowcards" && item.known)
-    return item.correct ? good : bad;
-  if (item.type === "surprise" && item.stage) {
+    return item.correct ? good(item.pts) : bad;
+
+  if (item.type === "surprise" && item.stage)
     return (
       <span
         style={{
@@ -593,24 +624,10 @@ function ExtraCardResult({ item }) {
         {item.stage} → +{item.stagePts} pt
       </span>
     );
-  }
-  if (item.type === "topout" && item.value && item.known) {
-    return item.correct ? (
-      <span
-        style={{
-          fontSize: 12,
-          marginTop: 4,
-          color: "var(--green)",
-          fontWeight: 700,
-          display: "block",
-        }}
-      >
-        +{PTS_TOP_OUT} ✓
-      </span>
-    ) : (
-      bad
-    );
-  }
+
+  if (item.type === "topout" && item.value && item.known)
+    return item.correct ? good(PTS_TOP_OUT) : bad;
+
   return null;
 }
 
@@ -720,6 +737,24 @@ function TimelineHeader({ children }) {
   );
 }
 
+// Helper: team label met oranje+vet voor Nederland
+function TeamNameLabel({ team, align = "left" }) {
+  const isNL = team === "Nederland";
+  return (
+    <span
+      style={{
+        flex: 1,
+        fontSize: 12,
+        textAlign: align,
+        fontWeight: isNL ? 900 : 600,
+        color: isNL ? "var(--orange)" : "var(--text)",
+      }}
+    >
+      {FLAG[team]} {team}
+    </span>
+  );
+}
+
 function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
   const res = calcGroupMatchPts(pred.matches?.[m.id], state.results[m.id]);
   const r = state.results[m.id];
@@ -744,24 +779,6 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
     ? { exact: "exact", diff: "verschil", winner: "winnaar" }[res.label] ||
       "mis"
     : null;
-
-  // For group F: Netherlands name is orange+bold, no NL flag badge
-  const homeLabel =
-    isGroupF && m.home === "Nederland" ? (
-      <span style={{ color: "var(--orange)", fontWeight: 900 }}>
-        {FLAG[m.home]} {m.home}
-      </span>
-    ) : (
-      `${FLAG[m.home]} ${m.home}`
-    );
-  const awayLabel =
-    isGroupF && m.away === "Nederland" ? (
-      <span style={{ color: "var(--orange)", fontWeight: 900 }}>
-        {FLAG[m.away]} {m.away}
-      </span>
-    ) : (
-      `${FLAG[m.away]} ${m.away}`
-    );
 
   return (
     <div
@@ -790,8 +807,8 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
           <span
             style={{
               fontSize: 10,
-              color: isGroupF ? "var(--orange)" : "var(--accent)",
               fontWeight: 700,
+              color: isGroupF ? "var(--orange)" : "var(--accent)",
               background: isGroupF
                 ? "rgba(240,136,62,.1)"
                 : "rgba(88,166,255,.1)",
@@ -811,9 +828,7 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
       <div
         style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}
       >
-        <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>
-          {homeLabel}
-        </span>
+        <TeamNameLabel team={m.home} align="right" />
         <div
           style={{
             display: "flex",
@@ -872,7 +887,7 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
             </span>
           )}
         </div>
-        <span style={{ flex: 1, fontWeight: 600 }}>{awayLabel}</span>
+        <TeamNameLabel team={m.away} align="left" />
         {res && (
           <span
             style={{

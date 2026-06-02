@@ -167,6 +167,23 @@ function GroupSelector({ active, onSelect }) {
   );
 }
 
+// Helper: render team label — Nederland always orange+bold, others normal
+function TeamLabel({ team, isGroupF, align = "left" }) {
+  const isNL = team === "Nederland";
+  const style = {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: isNL ? 900 : 600,
+    color: isNL ? "var(--orange)" : "var(--text)",
+    textAlign: align,
+  };
+  return (
+    <span style={style}>
+      {FLAG[team]} {team}
+    </span>
+  );
+}
+
 function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
   const res = calcGroupMatchPts(pred.matches?.[m.id], r);
 
@@ -184,6 +201,7 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
 
   return (
     <div style={{ marginBottom: 8 }}>
+      {/* Match header — alleen datum/ronde, geen NL-badge */}
       <div
         style={{
           display: "flex",
@@ -196,13 +214,6 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
         <span style={{ fontSize: 10, color: "var(--muted)" }}>
           {m.dt ? fmtDateTime(m.dt) : ""} · Ronde {m.round}
         </span>
-        {isGroupF && (
-          <span
-            style={{ fontSize: 10, color: "var(--orange)", fontWeight: 700 }}
-          >
-            🇳🇱 Groep F
-          </span>
-        )}
       </div>
 
       <div
@@ -214,16 +225,7 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span
-            style={{
-              flex: 1,
-              fontSize: 13,
-              textAlign: "right",
-              fontWeight: 600,
-            }}
-          >
-            {FLAG[m.home]} {m.home}
-          </span>
+          <TeamLabel team={m.home} isGroupF={isGroupF} align="right" />
           <input
             disabled={frozen}
             type="number"
@@ -243,9 +245,7 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
             onChange={(e) => onSet(["matches", m.id, "away"], e.target.value)}
             style={S.numInput}
           />
-          <span style={{ flex: 1, fontSize: 13, fontWeight: 600 }}>
-            {FLAG[m.away]} {m.away}
-          </span>
+          <TeamLabel team={m.away} isGroupF={isGroupF} align="left" />
         </div>
 
         {r?.played && (

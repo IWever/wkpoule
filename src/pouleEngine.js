@@ -8,6 +8,7 @@ import {
   PTS_STANDING,
   PTS_KO,
   PTS_EXTRA,
+  PTS_TOPSCORER_RANK,
   PTS_SURPRISE,
   TOP_TEAMS,
   PTS_TOP_OUT,
@@ -397,6 +398,24 @@ function deriveSurpriseStage(team, koResults) {
     : null;
 }
 
+// ─── TOPSCORER PUNTEN HELPER ─────────────────────────────────────────────────
+// results.TOP_SCORERS = array van { name, rank } objecten
+// pred.topScorers = array van max 3 spelersnamen (strings)
+// Geeft totaal punten op basis van rank matches
+function calcTopScorerPts(predTopScorers, resultTopScorers) {
+  if (!predTopScorers || !resultTopScorers || resultTopScorers.length === 0)
+    return 0;
+  let pts = 0;
+  (predTopScorers || []).forEach((playerName) => {
+    if (!playerName) return;
+    const match = resultTopScorers.find((r) => r.name === playerName);
+    if (match) {
+      pts += PTS_TOPSCORER_RANK[match.rank] || 0;
+    }
+  });
+  return pts;
+}
+
 // ─── PUNTEN ───────────────────────────────────────────────────────────────────
 function calcGroupMatchPts(pred, result) {
   if (!result?.played || !pred || pred.home === undefined || pred.home === "")
@@ -455,7 +474,7 @@ function calcPoints(user, results, koResults) {
     }
   });
 
-  // KO-wedstrijden
+  // KO-wedstrijden (inclusief 3e plaats)
   KO_STRUCTURE.forEach((m) => {
     const r = koResults[m.id];
     if (!r?.played) return;
@@ -481,12 +500,25 @@ function calcPoints(user, results, koResults) {
   )
     pts += PTS_EXTRA.champion;
 
-  // Extra: topscorer — ondersteunt nu meerdere winnaars
-  if (p.topScorer && results["TOP_SCORER"]) {
-    const winners = Array.isArray(results["TOP_SCORER"])
+  // Extra: topscorers (nieuw systeem met rank)
+  const resultTopScorers = results["TOP_SCORERS"]; // array van { name, rank }
+  // Backwards compat: oud systeem TOP_SCORER (string of array)
+  if (resultTopScorers && Array.isArray(resultTopScorers)) {
+    pts += calcTopScorerPts(p.topScorers, resultTopScorers);
+  } else if (results["TOP_SCORER"]) {
+    // Legacy: enkel veld of array zonder rank → 15pt voor elke match
+    const legacy = Array.isArray(results["TOP_SCORER"])
       ? results["TOP_SCORER"]
       : [results["TOP_SCORER"]];
-    if (winners.includes(p.topScorer)) pts += PTS_EXTRA.topScorer;
+    // Nieuwe pred: topScorers array
+    const predScorers = Array.isArray(p.topScorers)
+      ? p.topScorers
+      : p.topScorer
+      ? [p.topScorer]
+      : [];
+    predScorers.forEach((name) => {
+      if (name && legacy.includes(name)) pts += 15;
+    });
   }
 
   // Extra: hoe ver Nederland
@@ -536,6 +568,7 @@ export {
   buildKOSlots,
   deriveTopOuts,
   deriveSurpriseStage,
+  calcTopScorerPts,
   calcGroupMatchPts,
   calcPoints,
   fmtDate,

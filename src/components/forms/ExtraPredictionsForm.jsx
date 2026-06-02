@@ -7,6 +7,7 @@ import {
   TOP_TEAMS,
   PLAYERS_BY_COUNTRY,
   PTS_EXTRA,
+  PTS_TOPSCORER_RANK,
   FLAG,
 } from "../../data/tournamentData";
 import { deepSet } from "../../pouleEngine";
@@ -24,6 +25,47 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
   function set(path, val) {
     setPred((p) => {
       const next = deepSet(p, path, val);
+      onSave(next);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+      return next;
+    });
+  }
+
+  // Helper for topScorers array
+  function setTopScorer(index, val) {
+    setPred((p) => {
+      const current = Array.isArray(p.topScorers)
+        ? [...p.topScorers]
+        : ["", "", ""];
+      while (current.length < 3) current.push("");
+      current[index] = val;
+      const next = { ...p, topScorers: current };
+      onSave(next);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
+      return next;
+    });
+  }
+
+  function setTopScorerCountry(index, country) {
+    setPred((p) => {
+      const currentCountries = Array.isArray(p.topScorerCountries)
+        ? [...p.topScorerCountries]
+        : ["", "", ""];
+      while (currentCountries.length < 3) currentCountries.push("");
+      currentCountries[index] = country;
+      // clear selected player for this slot
+      const currentScorers = Array.isArray(p.topScorers)
+        ? [...p.topScorers]
+        : ["", "", ""];
+      while (currentScorers.length < 3) currentScorers.push("");
+      currentScorers[index] = "";
+      const next = {
+        ...p,
+        topScorerCountries: currentCountries,
+        topScorers: currentScorers,
+      };
       onSave(next);
       setSaved(true);
       setTimeout(() => setSaved(false), 1500);
@@ -68,10 +110,8 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
         <TopScorerCard
           pred={pred}
           frozen={frozen}
-          set={set}
-          setPred={setPred}
-          onSave={onSave}
-          selectStyle={selectStyle}
+          setTopScorer={setTopScorer}
+          setTopScorerCountry={setTopScorerCountry}
         />
         <NlStageCard
           pred={pred}
@@ -173,120 +213,201 @@ function ChampionCard({ pred, frozen, set, selectStyle }) {
   );
 }
 
-function TopScorerCard({ pred, frozen, set, setPred, onSave, selectStyle }) {
-  const allPlayers = pred.topScorerCountry
-    ? [...(PLAYERS_BY_COUNTRY[pred.topScorerCountry] || [])].sort((a, b) =>
-        b.kwal !== a.kwal ? b.kwal - a.kwal : a.name.localeCompare(b.name)
-      )
-    : [];
+// ─── TOPSCORER CARD (3 slots) ─────────────────────────────────────────────────
 
-  function onCountryChange(e) {
-    const country = e.target.value;
-    setPred((p) => {
-      const next = deepSet(
-        deepSet(p, ["topScorerCountry"], country),
-        ["topScorer"],
-        ""
-      );
-      onSave(next);
-      return next;
-    });
-  }
+function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
+  const topScorers = Array.isArray(pred.topScorers)
+    ? [...pred.topScorers]
+    : [pred.topScorer || "", "", ""];
+  while (topScorers.length < 3) topScorers.push("");
+
+  const topScorerCountries = Array.isArray(pred.topScorerCountries)
+    ? [...pred.topScorerCountries]
+    : [pred.topScorerCountry || "", "", ""];
+  while (topScorerCountries.length < 3) topScorerCountries.push("");
+
+  const rankLabels = [
+    { rank: 1, pts: PTS_TOPSCORER_RANK[1], label: "1e topscoorder" },
+    { rank: 2, pts: PTS_TOPSCORER_RANK[2], label: "2e topscoorder" },
+    { rank: 3, pts: PTS_TOPSCORER_RANK[3], label: "3e topscoorder" },
+  ];
 
   return (
-    <QuestionCard label="⚽ Topscorer" pts={PTS_EXTRA.topScorer}>
-      <select
-        disabled={frozen}
-        value={pred.topScorerCountry || ""}
-        onChange={onCountryChange}
-        style={{
-          background: "var(--bg)",
-          color: "var(--text)",
-          border: "1px solid var(--border)",
-          borderRadius: 6,
-          padding: "8px 12px",
-          fontSize: 14,
-          width: "100%",
-          marginBottom: 8,
-          opacity: frozen ? 0.6 : 1,
-          fontFamily: "var(--font)",
-        }}
-      >
-        <option value="">— kies een land —</option>
-        {Object.keys(PLAYERS_BY_COUNTRY)
-          .sort()
-          .map((c) => (
-            <option key={c} value={c}>
-              {FLAG[c] || "🏳️"} {c}
-            </option>
-          ))}
-      </select>
+    <div style={S.card()}>
+      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>
+        ⚽ Topscoorders — kies 3 spelers
+      </div>
+      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 12 }}>
+        Verdien punten per rank: 1e ={" "}
+        <strong style={{ color: "var(--accent)" }}>
+          +{PTS_TOPSCORER_RANK[1]}
+        </strong>
+        , 2e ={" "}
+        <strong style={{ color: "var(--accent)" }}>
+          +{PTS_TOPSCORER_RANK[2]}
+        </strong>
+        , 3e ={" "}
+        <strong style={{ color: "var(--accent)" }}>
+          +{PTS_TOPSCORER_RANK[3]}
+        </strong>{" "}
+        pt
+      </div>
 
-      {pred.topScorerCountry ? (
-        <div>
-          <select
-            disabled={frozen}
-            value={pred.topScorer || ""}
-            onChange={(e) => set(["topScorer"], e.target.value)}
-            style={{
-              background: "var(--bg)",
-              color: "var(--text)",
-              border: `1px solid ${
-                pred.topScorer ? "var(--accent)" : "var(--border)"
-              }`,
-              borderRadius: 6,
-              padding: "8px 12px",
-              fontSize: 14,
-              width: "100%",
-              opacity: frozen ? 0.6 : 1,
-              fontFamily: "var(--font)",
-            }}
-          >
-            <option value="">— kies een speler —</option>
-            {allPlayers.map((p) => (
-              <option key={p.name} value={p.name}>
-                {p.name}
-                {p.kwal > 0 ? ` (${p.kwal} kwal. goals)` : ""}
-              </option>
-            ))}
-          </select>
-          {pred.topScorer && (
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {rankLabels.map(({ rank, pts, label }, i) => {
+          const country = topScorerCountries[i] || "";
+          const player = topScorers[i] || "";
+          const allPlayers = country
+            ? [...(PLAYERS_BY_COUNTRY[country] || [])].sort((a, b) =>
+                b.kwal !== a.kwal
+                  ? b.kwal - a.kwal
+                  : a.name.localeCompare(b.name)
+              )
+            : [];
+
+          return (
             <div
+              key={rank}
               style={{
-                marginTop: 8,
-                display: "flex",
-                alignItems: "center",
-                gap: 8,
+                background: "var(--bg)",
+                border: `1px solid ${
+                  player ? "rgba(88,166,255,.3)" : "var(--border)"
+                }`,
+                borderRadius: 8,
+                padding: "10px 12px",
               }}
             >
-              <span style={{ fontSize: 22 }}>
-                {FLAG[pred.topScorerCountry] || "🏳️"}
-              </span>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>
-                  {pred.topScorer}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                  {pred.topScorerCountry}
-                  {(() => {
-                    const pl = allPlayers.find(
-                      (p) => p.name === pred.topScorer
-                    );
-                    return pl?.kwal > 0 ? ` · ${pl.kwal} kwal. doelpunten` : "";
-                  })()}
-                </div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  marginBottom: 8,
+                }}
+              >
+                <span
+                  style={{
+                    background: player ? "var(--accent)" : "var(--border)",
+                    color: "#fff",
+                    borderRadius: 4,
+                    padding: "2px 8px",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    minWidth: 20,
+                    textAlign: "center",
+                  }}
+                >
+                  {rank}e
+                </span>
+                <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                  {label}
+                </span>
+                <span
+                  style={{
+                    marginLeft: "auto",
+                    fontSize: 12,
+                    color: "var(--accent)",
+                    fontWeight: 700,
+                  }}
+                >
+                  +{pts} pt
+                </span>
               </div>
+
+              {/* Country selector */}
+              <select
+                disabled={frozen}
+                value={country}
+                onChange={(e) => setTopScorerCountry(i, e.target.value)}
+                style={{
+                  background: "var(--card)",
+                  color: "var(--text)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 6,
+                  padding: "7px 10px",
+                  fontSize: 13,
+                  width: "100%",
+                  marginBottom: 8,
+                  opacity: frozen ? 0.6 : 1,
+                  fontFamily: "var(--font)",
+                }}
+              >
+                <option value="">— kies een land —</option>
+                {Object.keys(PLAYERS_BY_COUNTRY)
+                  .sort()
+                  .map((c) => (
+                    <option key={c} value={c}>
+                      {FLAG[c] || "🏳️"} {c}
+                    </option>
+                  ))}
+              </select>
+
+              {/* Player selector */}
+              {country ? (
+                <select
+                  disabled={frozen}
+                  value={player}
+                  onChange={(e) => setTopScorer(i, e.target.value)}
+                  style={{
+                    background: "var(--card)",
+                    color: "var(--text)",
+                    border: `1px solid ${
+                      player ? "var(--accent)" : "var(--border)"
+                    }`,
+                    borderRadius: 6,
+                    padding: "7px 10px",
+                    fontSize: 13,
+                    width: "100%",
+                    opacity: frozen ? 0.6 : 1,
+                    fontFamily: "var(--font)",
+                  }}
+                >
+                  <option value="">— kies een speler —</option>
+                  {allPlayers.map((pl) => (
+                    <option key={pl.name} value={pl.name}>
+                      {pl.name}
+                      {pl.kwal > 0 ? ` (${pl.kwal} kwal. goals)` : ""}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--muted)",
+                    fontStyle: "italic",
+                  }}
+                >
+                  Kies eerst een land om spelers te zien
+                </div>
+              )}
+
+              {/* Selected player display */}
+              {player && country && (
+                <div
+                  style={{
+                    marginTop: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ fontSize: 20 }}>{FLAG[country] || "🏳️"}</span>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>
+                      {player}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                      {country}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      ) : (
-        <div
-          style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}
-        >
-          Kies eerst een land om spelers te zien
-        </div>
-      )}
-    </QuestionCard>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

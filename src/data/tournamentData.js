@@ -883,14 +883,18 @@ const PTS_KO = {
   "3rd": { winner: 12, exact: 20 },
   final: { winner: 15, exact: 25 },
 };
-const PTS_TOP_OUT = 15;
+const PTS_TOP_OUT = 10;
 const PTS_EXTRA = {
   champion: 40,
-  topScorer: 15,
+  // topscorer punten zijn per rank: rank1=15, rank2=10, rank3=5
+  topScorer: 15, // max (rank 1)
   nlStage: 15,
   yellowCards: 15,
   topOut: PTS_TOP_OUT,
 };
+
+// Punten per rank in de topscorerslijst
+const PTS_TOPSCORER_RANK = { 1: 15, 2: 10, 3: 5 };
 
 const FLAG = {
   Mexico: "🇲🇽",
@@ -958,32 +962,32 @@ const SESSION_KEY = "wk_session_v12";
 // ─── DEADLINE HELPER ──────────────────────────────────────────────────────────
 const DEADLINES = [
   {
-    dt: "2026-06-11T21:00",
+    dt: "2026-06-11T20:00",
     label: "Groepsfase & extra vragen sluiten",
     desc: "Vul alles in vóór de eerste aftrap",
   },
   {
-    dt: "2026-06-28T19:00",
+    dt: "2026-07-01T19:00",
     label: "KO-fase: zestiende finales",
     desc: "Vul je zestiende finale voorspellingen in",
   },
   {
-    dt: "2026-07-04T19:00",
+    dt: "2026-07-05T19:00",
     label: "KO-fase: achtste finales",
     desc: "Vul je achtste finale voorspellingen in",
   },
   {
-    dt: "2026-07-09T22:00",
+    dt: "2026-07-10T19:00",
     label: "KO-fase: kwartfinales",
     desc: "Vul je kwartfinale voorspellingen in",
   },
   {
-    dt: "2026-07-14T21:00",
+    dt: "2026-07-14T19:00",
     label: "KO-fase: halve finales",
     desc: "Vul je halve finale voorspellingen in",
   },
   {
-    dt: "2026-07-18T21:00",
+    dt: "2026-07-19T18:00",
     label: "KO-fase: finale",
     desc: "Vul je finale voorspelling in",
   },
@@ -1009,10 +1013,12 @@ export {
   PTS_STANDING,
   PTS_KO,
   PTS_EXTRA,
+  PTS_TOPSCORER_RANK,
   FLAG,
   TEAM_GROUP,
   ADMIN_PW,
   KEY,
   SESSION_KEY,
+  DEADLINES,
   getNextDeadline,
 };

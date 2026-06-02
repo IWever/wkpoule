@@ -5,6 +5,8 @@ import {
   PTS_KO,
   PTS_EXTRA,
   PTS_SURPRISE,
+  PTS_TOPSCORER_RANK,
+  DEADLINES,
 } from "../../data/tournamentData";
 import { S } from "../../styles/ui";
 
@@ -31,6 +33,73 @@ function Rules() {
       <KOPhaseRules />
       <TipsCard />
     </div>
+  );
+}
+
+// ─── DEADLINES CARD ───────────────────────────────────────────────────────────
+
+function DeadlinesCard() {
+  const rows = [
+    {
+      label: "Extra vragen & Groepsfase ronde 1",
+      desc: "vóór aanvang eerste wedstrijd (11 jun 21:00)",
+    },
+    {
+      label: "Zestiende finales",
+      desc: "vóór aanvang zestiende finales (28 jun 21:00)",
+    },
+    {
+      label: "Achtste finales",
+      desc: "vóór aanvang achtste finales (4 jul 19:00)",
+    },
+    { label: "Kwartfinales", desc: "vóór aanvang kwartfinales (9 jul 22:00)" },
+    {
+      label: "Halve finales",
+      desc: "vóór aanvang halve finales (14 jul 21:00)",
+    },
+    {
+      label: "Finale en 3e plaats",
+      desc: "vóór aanvang finale (18 jul 23:00)",
+    },
+  ];
+
+  return (
+    <>
+      <SubTitle>⏰ Deadlines</SubTitle>
+      <div style={{ ...S.card(), marginBottom: 14 }}>
+        <div
+          style={{
+            fontSize: 12,
+            color: "var(--muted)",
+            marginBottom: 12,
+            lineHeight: 1.6,
+          }}
+        >
+          Elke speelronde sluit op het moment dat de eerste wedstrijd van die
+          ronde begint.
+        </div>
+        {rows.map(({ label, desc }, i) => (
+          <div
+            key={label}
+            style={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 10,
+              paddingBottom: 8,
+              marginBottom: 8,
+              borderBottom:
+                i < rows.length - 1 ? "1px solid var(--border)" : "none",
+            }}
+          >
+            <span style={{ fontSize: 16, marginTop: 1 }}>📅</span>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 13 }}>{label}</div>
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>{desc}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
   );
 }
 
@@ -104,46 +173,113 @@ function ExtraQuestionsRules() {
     <>
       <SubTitle>🔮 Extra vragen</SubTitle>
       <div style={{ ...S.card(), marginBottom: 14 }}>
-        {[
-          [
-            "🏆 Wereldkampioen",
-            "Voorspel welk land het WK wint.",
-            PTS_EXTRA.champion,
-          ],
-          [
-            "⚽ Topscorer",
-            "Kies een land en vervolgens de speler die de meeste doelpunten scoort.",
-            PTS_EXTRA.topScorer,
-          ],
-          [
-            "🇳🇱 Hoe ver komt Nederland?",
-            "Voorspel in welke ronde Nederland uitvalt — of kampioen wordt.",
-            PTS_EXTRA.nlStage,
-          ],
-          [
-            "🟨 Meeste gele kaarten",
-            "Welk land heeft aan het einde van het toernooi de meeste gele kaarten ontvangen?",
-            PTS_EXTRA.yellowCards,
-          ],
-          [
-            "💥 Welk topland valt af?",
-            "Kies een van de 12 hoogst geklasseerde landen die toch niet verder komt dan de groepsfase.",
-            PTS_EXTRA.topOut,
-          ],
-        ].map(([title, desc, pts]) => (
-          <RuleRow key={title} title={title} desc={desc} pts={pts} />
-        ))}
+        <RuleRow
+          title="🏆 Wereldkampioen"
+          desc="Voorspel welk land het WK wint."
+          pts={PTS_EXTRA.champion}
+        />
+        <RuleRow
+          title="🇳🇱 Hoe ver komt Nederland?"
+          desc="Voorspel in welke ronde Nederland uitvalt — of kampioen wordt."
+          pts={PTS_EXTRA.nlStage}
+        />
+        <RuleRow
+          title="🟨 Meeste gele kaarten"
+          desc="Welk land heeft aan het einde van het toernooi de meeste gele kaarten ontvangen?"
+          pts={PTS_EXTRA.yellowCards}
+        />
+        <RuleRow
+          title="💥 Welk topland valt af?"
+          desc="Kies een van de 12 hoogst geklasseerde landen die toch niet verder komt dan de groepsfase."
+          pts={PTS_EXTRA.topOut}
+        />
+
+        {/* Topscorer special card */}
+        <div
+          style={{
+            borderBottom: "1px solid var(--border)",
+            paddingBottom: 12,
+            marginBottom: 10,
+          }}
+        >
+          <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
+            ⚽ Topscoorders
+          </div>
+          <div
+            style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}
+          >
+            Kies 3 spelers die jij verwacht bovenaan de topscoorderslijst. Per
+            speler verdien je punten op basis van zijn eindplek:
+          </div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {[
+              {
+                rank: 1,
+                label: "🥇 Goudschoener (1e)",
+                pts: PTS_TOPSCORER_RANK[1],
+              },
+              {
+                rank: 2,
+                label: "🥈 Zilveren schoen (2e)",
+                pts: PTS_TOPSCORER_RANK[2],
+              },
+              {
+                rank: 3,
+                label: "🥉 Bronzen schoen (3e)",
+                pts: PTS_TOPSCORER_RANK[3],
+              },
+            ].map(({ rank, label, pts }) => (
+              <div
+                key={rank}
+                style={{
+                  background: "rgba(88,166,255,.08)",
+                  border: "1px solid rgba(88,166,255,.2)",
+                  borderRadius: 8,
+                  padding: "8px 12px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  gap: 3,
+                  flex: 1,
+                  minWidth: 90,
+                }}
+              >
+                <span
+                  style={{
+                    fontSize: 12,
+                    color: "var(--muted)",
+                    textAlign: "center",
+                  }}
+                >
+                  {label}
+                </span>
+                <span
+                  style={{
+                    fontSize: 16,
+                    color: "var(--accent)",
+                    fontWeight: 900,
+                  }}
+                >
+                  +{pts} pt
+                </span>
+              </div>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
+            💡 Je kunt punten verdienen voor meerdere spelers tegelijk —
+            maximaal 3 keuzes.
+          </div>
+        </div>
 
         {/* Surprise team special scoring */}
-        <div
-          style={{ borderBottom: "1px solid var(--border)", paddingBottom: 10 }}
-        >
+        <div>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>
             🌟 Verrassing van het WK
           </div>
           <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
-            Kies een van de 12 laagst geklasseerde landen. De 3e plek levert
-            evenveel punten op als de halve finale.
+            Kies een van de 12 laagst geklasseerde landen. Punten op basis van
+            hoe ver dit land de KO-fase haalt. De 3e plek levert evenveel punten
+            op als de halve finale.
           </div>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
             {[
@@ -281,8 +417,8 @@ function GroupPhaseRules() {
               <div
                 style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}
               >
-                Jouw voorspelde top-2 bevat een team dat doorkomt (maar niet op
-                de juiste plek)
+                Jouw voorspelde top-2 bevat een team dat ook echt doorkomt (maar
+                niet op de juiste plek)
               </div>
             </div>
             <div
@@ -313,7 +449,7 @@ function GroupPhaseRules() {
               <div
                 style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}
               >
-                Jouw #1 is ook echt #1, of jouw #2 is ook echt #2
+                Jouw #1 is ook echt #1, of jouw #2 is ook echt #2 in de groep
               </div>
             </div>
             <div
@@ -351,6 +487,7 @@ function KOPhaseRules() {
           ["Achtste finale", PTS_KO.r16],
           ["Kwartfinale", PTS_KO.qf],
           ["Halve finale", PTS_KO.sf],
+          ["3e Plaats", PTS_KO["3rd"]],
           ["Finale", PTS_KO.final],
         ].map(([ronde, schema]) => (
           <div
@@ -385,70 +522,6 @@ function KOPhaseRules() {
   );
 }
 
-// ─── DEADLINES CARD ───────────────────────────────────────────────────────────
-
-function DeadlinesCard() {
-  const rows = [
-    {
-      label: "Extra vragen & Groepsfase ronde 1",
-      desc: "vóór aanvang eerste wedstrijd (11 juni 21:00)",
-    },
-    {
-      label: "Zestiende finales",
-      desc: "vóór aanvang zestiende finales (28 juni 21:00)",
-    },
-    {
-      label: "Achtste finales",
-      desc: "vóór aanvang achtste finales (4 jul 19:00)",
-    },
-    { label: "Kwartfinales", desc: "vóór aanvang kwartfinales (9 juli 22:00)" },
-    {
-      label: "Halve finales",
-      desc: "vóór aanvang halve finales (14 juli 21:00)",
-    },
-    { label: "Finale", desc: "vóór aanvang finale (18 juli 21:00)" },
-  ];
-
-  return (
-    <>
-      <SubTitle>⏰ Deadlines</SubTitle>
-      <div style={{ ...S.card(), marginBottom: 14 }}>
-        <div
-          style={{
-            fontSize: 12,
-            color: "var(--muted)",
-            marginBottom: 12,
-            lineHeight: 1.6,
-          }}
-        >
-          Elke speelronde sluit op het moment dat de eerste wedstrijd van die
-          ronde begint.
-        </div>
-        {rows.map(({ label, desc }, i) => (
-          <div
-            key={label}
-            style={{
-              display: "flex",
-              alignItems: "flex-start",
-              gap: 10,
-              paddingBottom: 8,
-              marginBottom: 8,
-              borderBottom:
-                i < rows.length - 1 ? "1px solid var(--border)" : "none",
-            }}
-          >
-            <span style={{ fontSize: 16, marginTop: 1 }}>📅</span>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 13 }}>{label}</div>
-              <div style={{ fontSize: 11, color: "var(--muted)" }}>{desc}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </>
-  );
-}
-
 function TipsCard() {
   return (
     <div
@@ -467,10 +540,20 @@ function TipsCard() {
         ✦ Extra vragen en groepsfase sluiten vóór de eerste wedstrijd van elke
         speelronde.
       </div>
-      <div>✦ KO-voorspellingen worden per ronde ingevoerd.</div>
       <div>
-        ✦ Klik op een wedstrijd of deelnemer in de stand om te vergelijken. Dit
-        is mogelijk wanneer de invoer is bevroren.
+        ✦ KO-voorspellingen open zodra de admin dit aanzet; elke ronde kan apart
+        bevroren worden.
+      </div>
+      <div>
+        ✦ Topscoorders: kies 3 spelers — je verdient punten voor iedere speler
+        die in de top 3 eindigt.
+      </div>
+      <div>
+        ✦ Bij verrassing: 3e plek levert evenveel punten op als halve finale (30
+        pt).
+      </div>
+      <div>
+        ✦ Klik op een wedstrijd of deelnemer in de stand om te vergelijken.
       </div>
     </div>
   );
