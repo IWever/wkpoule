@@ -1014,5 +1014,6 @@ export {
   ADMIN_PW,
   KEY,
   SESSION_KEY,
+  DEADLINES,
   getNextDeadline,
 };
