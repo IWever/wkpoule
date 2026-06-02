@@ -883,9 +883,7 @@ const PTS_KO = {
   "3rd": { winner: 12, exact: 20 },
   final: { winner: 15, exact: 25 },
 };
-
 const PTS_TOP_OUT = 10;
-
 const PTS_EXTRA = {
   champion: 40,
   topScorer: 15,
@@ -957,6 +955,45 @@ const ADMIN_PW = "admin2026";
 const KEY = "wk_poule_v12";
 const SESSION_KEY = "wk_session_v12";
 
+// ─── DEADLINE HELPER ──────────────────────────────────────────────────────────
+const DEADLINES = [
+  {
+    dt: "2026-06-11T20:00",
+    label: "Groepsfase & extra vragen sluiten",
+    desc: "Vul alles in vóór de eerste aftrap",
+  },
+  {
+    dt: "2026-07-01T19:00",
+    label: "KO-fase: zestiende finales",
+    desc: "Vul je zestiende finale voorspellingen in",
+  },
+  {
+    dt: "2026-07-05T19:00",
+    label: "KO-fase: achtste finales",
+    desc: "Vul je achtste finale voorspellingen in",
+  },
+  {
+    dt: "2026-07-10T19:00",
+    label: "KO-fase: kwartfinales",
+    desc: "Vul je kwartfinale voorspellingen in",
+  },
+  {
+    dt: "2026-07-14T19:00",
+    label: "KO-fase: halve finales",
+    desc: "Vul je halve finale voorspellingen in",
+  },
+  {
+    dt: "2026-07-19T18:00",
+    label: "KO-fase: finale",
+    desc: "Vul je finale voorspelling in",
+  },
+];
+
+function getNextDeadline() {
+  const now = new Date();
+  return DEADLINES.find((d) => new Date(d.dt) > now) || null;
+}
+
 export {
   GROUPS,
   ALL_TEAMS,
@@ -977,4 +1014,5 @@ export {
   ADMIN_PW,
   KEY,
   SESSION_KEY,
+  getNextDeadline,
 };
