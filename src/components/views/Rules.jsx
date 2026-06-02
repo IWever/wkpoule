@@ -7,7 +7,7 @@ import {
   PTS_SURPRISE,
   DEADLINES,
 } from "../../data/tournamentData";
-import { S } from "../styles/ui";
+import { S } from "../../styles/ui";
 
 function Rules() {
   return (
