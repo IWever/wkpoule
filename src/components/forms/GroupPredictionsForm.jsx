@@ -6,7 +6,7 @@ import {
   deriveGroupStandingsFromResults,
   calcGroupMatchPts,
   fmtDateTime,
-} from "../pouleEngine";
+} from "../../pouleEngine";
 import { S } from "../../styles/ui";
 import { Alert, TabBar, GroupStandingTable } from "../common";
 
