@@ -161,20 +161,8 @@ function WelcomeHeader({ user, compRank, pts }) {
         gap: 10,
       }}
     >
-      <div>
-        <div style={{ fontSize: 22, fontWeight: 900 }}>
-          Hoi, {user.name}! 👋
-        </div>
-        {compRank ? (
-          <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>
-            #{compRank.rank} van {compRank.total} in {compRank.name} · {pts}{" "}
-            punten
-          </div>
-        ) : (
-          <div style={{ color: "var(--muted)", fontSize: 13, marginTop: 2 }}>
-            {pts} punten
-          </div>
-        )}
+      <div style={{ fontSize: 22, fontWeight: 900 }}>
+        Succes {user.name}! 👋
       </div>
     </div>
   );
@@ -284,7 +272,7 @@ function NavCards({
         label="KO-fase"
         filled={koFilled}
         total={KO_STRUCTURE.length}
-        frozen={false}
+        frozen={true}
         available={koAvailable}
         onClick={onEditKO}
       />
