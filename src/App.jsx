@@ -236,6 +236,13 @@ export default function App() {
   const [adminStep, setAdminStep] = useState(false);
   const [mainTab, setMainTab] = useState("overview");
 
+  const urlParams = new URLSearchParams(window.location.search);
+  const preRegister =
+    urlParams.get("register") !== null ||
+    urlParams.has("comp") ||
+    urlParams.get("r") !== null;
+  const preComp = urlParams.get("comp") || urlParams.get("register") || "";
+
   const loadState = useCallback(async () => {
     setLoadStatus("loading");
     try {
@@ -367,6 +374,8 @@ export default function App() {
           onLogin={handleLogin}
           users={state.users}
           competitions={state.competitions || []}
+          preRegister={preRegister}
+          preComp={preComp}
         />
       </div>
     );

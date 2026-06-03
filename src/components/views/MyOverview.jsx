@@ -539,7 +539,7 @@ function ExtraCard({ item }) {
               {item.value.map((name, i) => (
                 <span key={i}>
                   {item.countries?.[i]
-                    ? (FLAG[item.countries[i]] || "🏳️") + " "
+                    ? (FLAG[item.countries[i]] || "🏳️") + " - "
                     : ""}
                   {name}
                 </span>

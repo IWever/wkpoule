@@ -6,13 +6,26 @@ import { Alert } from "./common";
 
 // ─── AUTH SCREEN ──────────────────────────────────────────────────────────────
 
-function AuthScreen({ onLogin, users, competitions: allCompetitions }) {
+function AuthScreen({
+  onLogin,
+  users,
+  competitions: allCompetitions,
+  preRegister = false,
+  preComp = "",
+}) {
   const competitions = allCompetitions.filter((c) => !c.hiddenRegistration);
-  const [mode, setMode] = useState("login");
+  const [mode, setMode] = useState(preRegister ? "register" : "login");
+
+  // Pre-selecteer competitie op naam (case-insensitive)
+  const preSelectedIds = preComp
+    ? allCompetitions
+        .filter((c) => c.name.toLowerCase().includes(preComp.toLowerCase()))
+        .map((c) => c.id)
+    : [];
+  const [selectedComps, setSelectedComps] = useState(preSelectedIds);
   const [name, setName] = useState("");
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
-  const [selectedComps, setSelectedComps] = useState([]);
   const [err, setErr] = useState("");
 
   function doLogin() {
@@ -61,7 +74,13 @@ function AuthScreen({ onLogin, users, competitions: allCompetitions }) {
       <div style={{ width: "100%", maxWidth: 380 }}>
         <AuthHeader />
         <div style={S.card()}>
-          <ModeSwitcher mode={mode} setMode={(m) => { setMode(m); setErr(""); }} />
+          <ModeSwitcher
+            mode={mode}
+            setMode={(m) => {
+              setMode(m);
+              setErr("");
+            }}
+          />
           <Alert msg={err} type="error" />
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             <input
@@ -174,11 +193,23 @@ function ModeSwitcher({ mode, setMode }) {
   );
 }
 
-function CompetitionPicker({ competitions, allCompetitions, selectedComps, onToggle }) {
+function CompetitionPicker({
+  competitions,
+  allCompetitions,
+  selectedComps,
+  onToggle,
+}) {
   if (competitions.length > 0) {
     return (
       <div>
-        <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8, marginTop: 4 }}>
+        <div
+          style={{
+            fontSize: 12,
+            color: "var(--muted)",
+            marginBottom: 8,
+            marginTop: 4,
+          }}
+        >
           Kies je competitie(s):
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -192,7 +223,9 @@ function CompetitionPicker({ competitions, allCompetitions, selectedComps, onTog
                   padding: "9px 14px",
                   borderRadius: 8,
                   textAlign: "left",
-                  border: `2px solid ${selected ? "var(--accent)" : "var(--border)"}`,
+                  border: `2px solid ${
+                    selected ? "var(--accent)" : "var(--border)"
+                  }`,
                   background: selected ? "rgba(88,166,255,.12)" : "var(--bg)",
                   color: selected ? "var(--accent)" : "var(--text)",
                   cursor: "pointer",
@@ -216,15 +249,30 @@ function CompetitionPicker({ competitions, allCompetitions, selectedComps, onTog
 
   if (allCompetitions.length > 0) {
     return (
-      <div style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic", padding: "6px 0" }}>
+      <div
+        style={{
+          fontSize: 12,
+          color: "var(--muted)",
+          fontStyle: "italic",
+          padding: "6px 0",
+        }}
+      >
         Er zijn op dit moment geen competities beschikbaar voor registratie.
       </div>
     );
   }
 
   return (
-    <div style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic", padding: "6px 0" }}>
-      Nog geen competities aangemaakt — de admin maakt competities aan in het admin paneel.
+    <div
+      style={{
+        fontSize: 12,
+        color: "var(--muted)",
+        fontStyle: "italic",
+        padding: "6px 0",
+      }}
+    >
+      Nog geen competities aangemaakt — de admin maakt competities aan in het
+      admin paneel.
     </div>
   );
 }
@@ -281,8 +329,17 @@ function AdminLogin({ onSuccess, onCancel }) {
       }}
     >
       <div style={{ width: "100%", maxWidth: 340, ...S.card(), padding: 28 }}>
-        <div style={{ fontSize: 36, textAlign: "center", marginBottom: 12 }}>🔐</div>
-        <div style={{ textAlign: "center", fontWeight: 700, fontSize: 18, marginBottom: 20 }}>
+        <div style={{ fontSize: 36, textAlign: "center", marginBottom: 12 }}>
+          🔐
+        </div>
+        <div
+          style={{
+            textAlign: "center",
+            fontWeight: 700,
+            fontSize: 18,
+            marginBottom: 20,
+          }}
+        >
           Admin toegang
         </div>
         <Alert msg={err} type="error" />
@@ -314,7 +371,14 @@ function AdminLogin({ onSuccess, onCancel }) {
             Terug
           </button>
         </div>
-        <p style={{ fontSize: 11, color: "var(--muted)", marginTop: 12, textAlign: "center" }}>
+        <p
+          style={{
+            fontSize: 11,
+            color: "var(--muted)",
+            marginTop: 12,
+            textAlign: "center",
+          }}
+        >
           Bij vragen of suggesties, whatsapp Ingmar
         </p>
       </div>
