@@ -147,6 +147,7 @@ function DeadlineBanner({ deadline }) {
         >
           Volgende deadline over {timeStr}: {deadline.label}
         </div>
+        <div>{deadline.desc}</div>
       </div>
     </div>
   );

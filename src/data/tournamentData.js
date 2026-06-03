@@ -963,34 +963,34 @@ const SESSION_KEY = "wk_session_v12";
 
 const DEADLINES = [
   {
-    dt: "2026-06-11T20:00",
+    dt: "2026-06-11T21:00",
     label: "Groepsfase & extra vragen sluiten",
-    desc: "Vul alles in vóór de eerste aftrap",
+    desc: "Vóór aanvang eerste wedstrijd (11 jun 21:00)",
   },
   {
-    dt: "2026-07-01T19:00",
+    dt: "2026-06-28T21:00",
     label: "KO-fase: zestiende finales",
-    desc: "Vul je zestiende finale voorspellingen in",
+    desc: "Vóór aanvang zestiende finales (28 jun 21:00)",
   },
   {
-    dt: "2026-07-05T19:00",
+    dt: "2026-07-04T19:00",
     label: "KO-fase: achtste finales",
-    desc: "Vul je achtste finale voorspellingen in",
+    desc: "Vóór aanvang achtste finales (4 jul 19:00)",
   },
   {
-    dt: "2026-07-10T19:00",
+    dt: "2026-07-9T22:00",
     label: "KO-fase: kwartfinales",
-    desc: "Vul je kwartfinale voorspellingen in",
+    desc: "Vóór aanvang kwartfinales (9 jul 22:00)",
   },
   {
-    dt: "2026-07-14T19:00",
+    dt: "2026-07-14T21:00",
     label: "KO-fase: halve finales",
-    desc: "Vul je halve finale voorspellingen in",
+    desc: "Vóór aanvang halve finales (14 jul 21:00)",
   },
   {
-    dt: "2026-07-19T18:00",
-    label: "KO-fase: finale",
-    desc: "Vul je finale voorspelling in",
+    dt: "2026-07-18T23:00",
+    label: "KO-fase: finale en 3e plek",
+    desc: "Vóór aanvang wedstrijd om 3e plek (18 jul 23:00)",
   },
 ];
 
