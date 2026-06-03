@@ -151,10 +151,11 @@ function DeadlineBanner({ deadline }) {
           style={{
             fontSize: 12,
             fontWeight: 700,
-            color: "var(--accent)",
+            color: "whitesmoke",
             textTransform: "uppercase",
             letterSpacing: "0.1em",
-            marginBottom: 10,
+            marginTOP: 4,
+            marginBottom: 4,
           }}
         >
           {deadline.desc}
