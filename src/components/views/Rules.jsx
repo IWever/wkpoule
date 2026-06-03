@@ -37,29 +37,7 @@ function Rules() {
 }
 
 function DeadlinesCard() {
-  const rows = [
-    {
-      label: "Extra vragen & Groepsfase ronde 1",
-      desc: "vóór aanvang eerste wedstrijd (11 jun 21:00)",
-    },
-    {
-      label: "Zestiende finales",
-      desc: "vóór aanvang zestiende finales (28 jun 21:00)",
-    },
-    {
-      label: "Achtste finales",
-      desc: "vóór aanvang achtste finales (4 jul 19:00)",
-    },
-    { label: "Kwartfinales", desc: "vóór aanvang kwartfinales (9 jul 22:00)" },
-    {
-      label: "Halve finales",
-      desc: "vóór aanvang halve finales (14 jul 21:00)",
-    },
-    {
-      label: "Finale en 3e plaats",
-      desc: "vóór aanvang finale (18 jul 23:00)",
-    },
-  ];
+  const rows = DEADLINES;
 
   return (
     <>
