@@ -886,7 +886,7 @@ const PTS_KO = {
   "3rd": { winner: 12, exact: 20 },
   final: { winner: 15, exact: 25 },
 };
-const PTS_TOP_OUT = 10;
+const PTS_TOP_OUT = 15;
 const PTS_EXTRA = {
   champion: 50,
   topScorer: 15,
