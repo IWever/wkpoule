@@ -310,16 +310,6 @@ function AdminLoginLink({ onLogin }) {
           fontFamily: "var(--font)",
         }}
       >
-        <p
-          style={{
-            fontSize: 11,
-            color: "var(--muted)",
-            marginTop: 12,
-            textAlign: "center",
-          }}
-        >
-          Bij vragen of suggesties, whatsapp Ingmar
-        </p>
         ⚙️ Admin inloggen
       </button>
     </div>
