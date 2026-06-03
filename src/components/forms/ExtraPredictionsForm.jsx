@@ -27,7 +27,6 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
       const next = deepSet(p, path, val);
       onSave(next).then((ok) => {
         setSaved(ok ? "ok" : "error");
-        setTimeout(() => setSaved(null), 2000);
       });
       return next;
     });
