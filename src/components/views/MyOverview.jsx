@@ -147,7 +147,18 @@ function DeadlineBanner({ deadline }) {
         >
           Volgende deadline over {timeStr}: {deadline.label}
         </div>
-        <div>{deadline.desc}</div>
+        <div
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: "var(--accent)",
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            marginBottom: 10,
+          }}
+        >
+          {deadline.desc}
+        </div>
       </div>
     </div>
   );

@@ -1,14 +1,42 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { load, persist, hash, blank, saveSession, loadSession } from "./pouleEngine";
+import {
+  load,
+  persist,
+  hash,
+  blank,
+  saveSession,
+  loadSession,
+} from "./pouleEngine";
 import { AuthScreen, AdminLogin } from "./components/auth";
-import { GroupPredictionsForm, ExtraPredictionsForm, KOPredictionsForm } from "./components/forms";
-import { MyOverview, Rules, StandWithCompare, AdminPanel } from "./components/views";
+import {
+  GroupPredictionsForm,
+  ExtraPredictionsForm,
+  KOPredictionsForm,
+} from "./components/forms";
+import {
+  MyOverview,
+  Rules,
+  StandWithCompare,
+  AdminPanel,
+} from "./components/views";
 
 // ─── LOADING / ERROR SCREENS ──────────────────────────────────────────────────
 
 function LoadingScreen() {
   return (
-    <div style={{ minHeight: "100vh", background: "#0d1117", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, fontFamily: "'Barlow', sans-serif", color: "#8b949e" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#0d1117",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 16,
+        fontFamily: "'Barlow', sans-serif",
+        color: "#8b949e",
+      }}
+    >
       <div style={{ fontSize: 48 }}>⚽</div>
       <div style={{ fontSize: 14, letterSpacing: "0.1em" }}>LADEN…</div>
     </div>
@@ -17,13 +45,41 @@ function LoadingScreen() {
 
 function ErrorScreen({ onRetry }) {
   return (
-    <div style={{ minHeight: "100vh", background: "#0d1117", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, fontFamily: "'Barlow', sans-serif", color: "#e6edf3", padding: 20, textAlign: "center" }}>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#0d1117",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 16,
+        fontFamily: "'Barlow', sans-serif",
+        color: "#e6edf3",
+        padding: 20,
+        textAlign: "center",
+      }}
+    >
       <div style={{ fontSize: 48 }}>⚠️</div>
       <div style={{ fontWeight: 700, fontSize: 18 }}>Verbindingsfout</div>
-      <div style={{ color: "#8b949e", fontSize: 14, maxWidth: 320 }}>Kan de poule-data niet ophalen. Controleer je internetverbinding en probeer opnieuw.</div>
+      <div style={{ color: "#8b949e", fontSize: 14, maxWidth: 320 }}>
+        Kan de poule-data niet ophalen. Controleer je internetverbinding en
+        probeer opnieuw.
+      </div>
       <button
         onClick={onRetry}
-        style={{ background: "#58a6ff", color: "#fff", border: "none", borderRadius: 8, padding: "10px 24px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "'Barlow', sans-serif", marginTop: 8 }}
+        style={{
+          background: "#58a6ff",
+          color: "#fff",
+          border: "none",
+          borderRadius: 8,
+          padding: "10px 24px",
+          fontSize: 14,
+          fontWeight: 700,
+          cursor: "pointer",
+          fontFamily: "'Barlow', sans-serif",
+          marginTop: 8,
+        }}
       >
         Opnieuw proberen
       </button>
@@ -34,7 +90,10 @@ function ErrorScreen({ onRetry }) {
 // ─── GLOBAL STYLES ────────────────────────────────────────────────────────────
 
 const GlobalFonts = () => (
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700;900&display=swap" rel="stylesheet" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700;900&display=swap"
+    rel="stylesheet"
+  />
 );
 
 const GlobalStyles = () => (
@@ -58,40 +117,96 @@ const GlobalStyles = () => (
 
 const OVERVIEW_SCREENS = ["overview", "editGroup", "editExtra", "editKO"];
 const NAV_TABS = [
-  { id: "overview", label: "Mijn Poule" },
+  { id: "overview", label: "🎯 Mijn Poule" },
   { id: "stand", label: "🏅 Stand" },
   { id: "rules", label: "📋 Spelregels" },
 ];
 
 function Header({ screen, setScreen, state, isAdmin, userName, onSetMainTab }) {
   return (
-    <div style={{ background: "linear-gradient(135deg,#0d2137 0%,#0d1117 70%)", borderBottom: "1px solid var(--border)", padding: "0 20px" }}>
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "16px 0 0", display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+    <div
+      style={{
+        background: "linear-gradient(135deg,#0d2137 0%,#0d1117 70%)",
+        borderBottom: "1px solid var(--border)",
+        padding: "0 20px",
+      }}
+    >
+      <div
+        style={{
+          maxWidth: 760,
+          margin: "0 auto",
+          padding: "16px 0 0",
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 8,
+        }}
+      >
         <div>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 30, letterSpacing: "0.06em", lineHeight: 1, color: "#fff" }}>
+          <div
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: 30,
+              letterSpacing: "0.06em",
+              lineHeight: 1,
+              color: "#fff",
+            }}
+          >
             🏆 WK POULE 2026
           </div>
-          <div style={{ fontSize: 11, color: "var(--muted)", letterSpacing: "0.1em", marginTop: 3 }}>
+          <div
+            style={{
+              fontSize: 11,
+              color: "var(--muted)",
+              letterSpacing: "0.1em",
+              marginTop: 3,
+            }}
+          >
             {isAdmin ? "⚙️ ADMIN" : userName}
             {!isAdmin && state.fase === "ko" && (
-              <span style={{ marginLeft: 8, background: "rgba(240,136,62,.2)", color: "var(--orange)", borderRadius: 4, padding: "1px 6px", fontSize: 10, fontWeight: 700 }}>KO-FASE</span>
+              <span
+                style={{
+                  marginLeft: 8,
+                  background: "rgba(240,136,62,.2)",
+                  color: "var(--orange)",
+                  borderRadius: 4,
+                  padding: "1px 6px",
+                  fontSize: 10,
+                  fontWeight: 700,
+                }}
+              >
+                KO-FASE
+              </span>
             )}
           </div>
         </div>
         {!isAdmin && (
           <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
             {NAV_TABS.map((t) => {
-              const targetScreen = t.id === "stand" ? "stand" : t.id === "rules" ? "rules" : "overview";
-              const isActive = screen === t.id || (t.id === "overview" && OVERVIEW_SCREENS.includes(screen));
+              const targetScreen =
+                t.id === "stand"
+                  ? "stand"
+                  : t.id === "rules"
+                  ? "rules"
+                  : "overview";
+              const isActive =
+                screen === t.id ||
+                (t.id === "overview" && OVERVIEW_SCREENS.includes(screen));
               return (
                 <button
                   key={t.id}
-                  onClick={() => { onSetMainTab(t.id); setScreen(targetScreen); }}
+                  onClick={() => {
+                    onSetMainTab(t.id);
+                    setScreen(targetScreen);
+                  }}
                   style={{
                     padding: "7px 14px",
                     borderRadius: "7px 7px 0 0",
                     border: "1px solid var(--border)",
-                    borderBottom: isActive ? "1px solid var(--bg)" : "1px solid var(--border)",
+                    borderBottom: isActive
+                      ? "1px solid var(--bg)"
+                      : "1px solid var(--border)",
                     background: isActive ? "var(--bg)" : "transparent",
                     color: isActive ? "var(--accent)" : "var(--muted)",
                     cursor: "pointer",
@@ -133,16 +248,24 @@ export default function App() {
     }
   }, []);
 
-  useEffect(() => { loadState(); }, [loadState]);
+  useEffect(() => {
+    loadState();
+  }, [loadState]);
 
   // Restore session after state loads
   useEffect(() => {
     if (loadStatus !== "ready" || !state) return;
     const saved = loadSession();
     if (!saved) return;
-    if (saved === "__admin__") { setSession("__admin__"); return; }
+    if (saved === "__admin__") {
+      setSession("__admin__");
+      return;
+    }
     const userExists = state.users.find((u) => u.id === saved);
-    if (userExists) { setSession(saved); setScreen("overview"); }
+    if (userExists) {
+      setSession(saved);
+      setScreen("overview");
+    }
   }, [loadStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const setAndPersist = useCallback((updater) => {
@@ -156,15 +279,31 @@ export default function App() {
   if (loadStatus === "loading") return <LoadingScreen />;
   if (loadStatus === "error") return <ErrorScreen onRetry={loadState} />;
 
-  const currentUser = session && session !== "__admin__" ? state.users.find((u) => u.id === session) : null;
+  const currentUser =
+    session && session !== "__admin__"
+      ? state.users.find((u) => u.id === session)
+      : null;
   const isAdmin = session === "__admin__";
-  const updatedUser = currentUser ? state.users.find((u) => u.id === session) : null;
+  const updatedUser = currentUser
+    ? state.users.find((u) => u.id === session)
+    : null;
 
   const handleLogin = (userId, newUser) => {
-    if (userId === "__admin__") { setAdminStep(true); return; }
+    if (userId === "__admin__") {
+      setAdminStep(true);
+      return;
+    }
     if (newUser) {
       const id = "u_" + Date.now();
-      const user = { id, name: newUser.name, pwHash: hash(newUser.pw), pwPlain: newUser.pw, predictions: {}, locked: false, competitionIds: newUser.competitionIds || [] };
+      const user = {
+        id,
+        name: newUser.name,
+        pwHash: hash(newUser.pw),
+        pwPlain: newUser.pw,
+        predictions: {},
+        locked: false,
+        competitionIds: newUser.competitionIds || [],
+      };
       setAndPersist((s) => ({ ...s, users: [...s.users, user] }));
       setSession(id);
       saveSession(id);
@@ -177,7 +316,12 @@ export default function App() {
   };
 
   const savePred = (pred) => {
-    setAndPersist((s) => ({ ...s, users: s.users.map((u) => u.id === session ? { ...u, predictions: pred } : u) }));
+    setAndPersist((s) => ({
+      ...s,
+      users: s.users.map((u) =>
+        u.id === session ? { ...u, predictions: pred } : u
+      ),
+    }));
   };
 
   const logout = () => {
@@ -188,15 +332,25 @@ export default function App() {
     setMainTab("overview");
   };
 
-  const shellStyle = { minHeight: "100vh", background: "#0d1117", color: "#e6edf3", fontFamily: "'Barlow', sans-serif" };
+  const shellStyle = {
+    minHeight: "100vh",
+    background: "#0d1117",
+    color: "#e6edf3",
+    fontFamily: "'Barlow', sans-serif",
+  };
 
   // Admin password step
   if (adminStep && !session) {
     return (
       <div style={shellStyle}>
-        <GlobalStyles /><GlobalFonts />
+        <GlobalStyles />
+        <GlobalFonts />
         <AdminLogin
-          onSuccess={() => { setAdminStep(false); setSession("__admin__"); saveSession("__admin__"); }}
+          onSuccess={() => {
+            setAdminStep(false);
+            setSession("__admin__");
+            saveSession("__admin__");
+          }}
           onCancel={() => setAdminStep(false)}
         />
       </div>
@@ -207,8 +361,13 @@ export default function App() {
   if (!session) {
     return (
       <div style={shellStyle}>
-        <GlobalStyles /><GlobalFonts />
-        <AuthScreen onLogin={handleLogin} users={state.users} competitions={state.competitions || []} />
+        <GlobalStyles />
+        <GlobalFonts />
+        <AuthScreen
+          onLogin={handleLogin}
+          users={state.users}
+          competitions={state.competitions || []}
+        />
       </div>
     );
   }
@@ -227,7 +386,9 @@ export default function App() {
         onSetMainTab={setMainTab}
       />
 
-      <div style={{ maxWidth: 760, margin: "0 auto", padding: "24px 20px 100px" }}>
+      <div
+        style={{ maxWidth: 760, margin: "0 auto", padding: "24px 20px 100px" }}
+      >
         {isAdmin && <AdminPanel state={state} setState={setAndPersist} />}
         {!isAdmin && updatedUser && (
           <UserScreens
@@ -251,12 +412,45 @@ function UserScreens({ screen, setScreen, user, state, savePred }) {
   const goBack = () => setScreen("overview");
 
   if (screen === "overview") {
-    return <MyOverview user={user} state={state} onEditGroup={() => setScreen("editGroup")} onEditExtra={() => setScreen("editExtra")} onEditKO={() => setScreen("editKO")} />;
+    return (
+      <MyOverview
+        user={user}
+        state={state}
+        onEditGroup={() => setScreen("editGroup")}
+        onEditExtra={() => setScreen("editExtra")}
+        onEditKO={() => setScreen("editKO")}
+      />
+    );
   }
-  if (screen === "editGroup") return <GroupPredictionsForm user={user} state={state} onSave={savePred} onBack={goBack} />;
-  if (screen === "editExtra") return <ExtraPredictionsForm user={user} state={state} onSave={savePred} onBack={goBack} />;
-  if (screen === "editKO") return <KOPredictionsForm user={user} state={state} onSave={savePred} onBack={goBack} />;
-  if (screen === "stand") return <StandWithCompare state={state} currentUser={user} />;
+  if (screen === "editGroup")
+    return (
+      <GroupPredictionsForm
+        user={user}
+        state={state}
+        onSave={savePred}
+        onBack={goBack}
+      />
+    );
+  if (screen === "editExtra")
+    return (
+      <ExtraPredictionsForm
+        user={user}
+        state={state}
+        onSave={savePred}
+        onBack={goBack}
+      />
+    );
+  if (screen === "editKO")
+    return (
+      <KOPredictionsForm
+        user={user}
+        state={state}
+        onSave={savePred}
+        onBack={goBack}
+      />
+    );
+  if (screen === "stand")
+    return <StandWithCompare state={state} currentUser={user} />;
   if (screen === "rules") return <Rules />;
   return null;
 }
@@ -268,7 +462,17 @@ function LogoutButton({ onClick }) {
     <div style={{ position: "fixed", bottom: 16, right: 16, zIndex: 100 }}>
       <button
         onClick={onClick}
-        style={{ background: "rgba(22,27,34,0.92)", border: "1px solid var(--border)", borderRadius: 8, color: "var(--muted)", cursor: "pointer", fontSize: 11, fontFamily: "var(--font)", padding: "5px 10px", backdropFilter: "blur(4px)" }}
+        style={{
+          background: "rgba(22,27,34,0.92)",
+          border: "1px solid var(--border)",
+          borderRadius: 8,
+          color: "var(--muted)",
+          cursor: "pointer",
+          fontSize: 11,
+          fontFamily: "var(--font)",
+          padding: "5px 10px",
+          backdropFilter: "blur(4px)",
+        }}
       >
         ↩ uitloggen
       </button>

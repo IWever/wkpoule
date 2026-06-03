@@ -199,7 +199,7 @@ function ExtraQuestionsRules() {
             {[
               {
                 rank: 1,
-                label: "🥇 Goudschoener (1e)",
+                label: "🥇 Gouden schoen (1e)",
                 pts: PTS_TOPSCORER_RANK[1],
               },
               {
