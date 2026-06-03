@@ -376,6 +376,8 @@ const KO_ROUND_TO_STAGE = {
   final: "🏆 Wereldkampioen",
 };
 
+// deriveSurpriseStage: geeft de hoogste ronde terug die het team haalde
+// Voor verrassing: punten alleen voor halve finale verliezer (sf), 3e plek (3rd), kampioen (final)
 function deriveSurpriseStage(team, koResults) {
   if (!team) return null;
   let furthestIdx = -1;
@@ -399,9 +401,6 @@ function deriveSurpriseStage(team, koResults) {
 }
 
 // ─── TOPSCORER PUNTEN HELPER ─────────────────────────────────────────────────
-// results.TOP_SCORERS = array van { name, rank } objecten
-// pred.topScorers = array van max 3 spelersnamen (strings)
-// Geeft totaal punten op basis van rank matches
 function calcTopScorerPts(predTopScorers, resultTopScorers) {
   if (!predTopScorers || !resultTopScorers || resultTopScorers.length === 0)
     return 0;
@@ -409,9 +408,7 @@ function calcTopScorerPts(predTopScorers, resultTopScorers) {
   (predTopScorers || []).forEach((playerName) => {
     if (!playerName) return;
     const match = resultTopScorers.find((r) => r.name === playerName);
-    if (match) {
-      pts += PTS_TOPSCORER_RANK[match.rank] || 0;
-    }
+    if (match) pts += PTS_TOPSCORER_RANK[match.rank] || 0;
   });
   return pts;
 }
@@ -474,7 +471,7 @@ function calcPoints(user, results, koResults) {
     }
   });
 
-  // KO-wedstrijden (inclusief 3e plaats)
+  // KO-wedstrijden
   KO_STRUCTURE.forEach((m) => {
     const r = koResults[m.id];
     if (!r?.played) return;
@@ -500,17 +497,14 @@ function calcPoints(user, results, koResults) {
   )
     pts += PTS_EXTRA.champion;
 
-  // Extra: topscorers (nieuw systeem met rank)
-  const resultTopScorers = results["TOP_SCORERS"]; // array van { name, rank }
-  // Backwards compat: oud systeem TOP_SCORER (string of array)
+  // Extra: topscorers
+  const resultTopScorers = results["TOP_SCORERS"];
   if (resultTopScorers && Array.isArray(resultTopScorers)) {
     pts += calcTopScorerPts(p.topScorers, resultTopScorers);
   } else if (results["TOP_SCORER"]) {
-    // Legacy: enkel veld of array zonder rank → 15pt voor elke match
     const legacy = Array.isArray(results["TOP_SCORER"])
       ? results["TOP_SCORER"]
       : [results["TOP_SCORER"]];
-    // Nieuwe pred: topScorers array
     const predScorers = Array.isArray(p.topScorers)
       ? p.topScorers
       : p.topScorer
@@ -533,7 +527,7 @@ function calcPoints(user, results, koResults) {
   )
     pts += PTS_EXTRA.yellowCards;
 
-  // Extra: verrassing
+  // Extra: verrassing (punten alleen voor halve finale verliezer, 3e plek, kampioen)
   if (p.surpriseTeam) {
     const ss = deriveSurpriseStage(p.surpriseTeam, koResults);
     if (ss) pts += PTS_SURPRISE[ss] || 0;
@@ -543,6 +537,22 @@ function calcPoints(user, results, koResults) {
   if (p.topOut) {
     const outs = deriveTopOuts(results);
     if (outs.includes(p.topOut)) pts += PTS_TOP_OUT;
+  }
+
+  // Extra: meeste clean sheets
+  if (p.mostCleanSheets && results["MOST_CLEAN_SHEETS"]) {
+    const adminCS = Array.isArray(results["MOST_CLEAN_SHEETS"])
+      ? results["MOST_CLEAN_SHEETS"]
+      : [results["MOST_CLEAN_SHEETS"]];
+    if (adminCS.includes(p.mostCleanSheets)) pts += PTS_EXTRA.mostCleanSheets;
+  }
+
+  // Extra: meeste doelpunten groepsfase
+  if (p.mostGroupGoals && results["MOST_GROUP_GOALS"]) {
+    const adminMGG = Array.isArray(results["MOST_GROUP_GOALS"])
+      ? results["MOST_GROUP_GOALS"]
+      : [results["MOST_GROUP_GOALS"]];
+    if (adminMGG.includes(p.mostGroupGoals)) pts += PTS_EXTRA.mostGroupGoals;
   }
 
   return pts;

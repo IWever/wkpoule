@@ -36,8 +36,6 @@ function Rules() {
   );
 }
 
-// ─── DEADLINES CARD ───────────────────────────────────────────────────────────
-
 function DeadlinesCard() {
   const rows = [
     {
@@ -102,8 +100,6 @@ function DeadlinesCard() {
     </>
   );
 }
-
-// ─── SECTION COMPONENTS ───────────────────────────────────────────────────────
 
 function SectionTitle({ children }) {
   return (
@@ -193,8 +189,18 @@ function ExtraQuestionsRules() {
           desc="Kies een van de 12 hoogst geklasseerde landen die toch niet verder komt dan de groepsfase."
           pts={PTS_EXTRA.topOut}
         />
+        <RuleRow
+          title="🧤 Meeste clean sheets"
+          desc="Welk land houdt op het hele toernooi de meeste nul? Bij gelijkstand kunnen meerdere landen goed zijn."
+          pts={PTS_EXTRA.mostCleanSheets}
+        />
+        <RuleRow
+          title="⚽ Meeste doelpunten groepsfase"
+          desc="Welk land scoort de meeste doelpunten in de groepsfase? Bij gelijkstand kunnen meerdere landen goed zijn."
+          pts={PTS_EXTRA.mostGroupGoals}
+        />
 
-        {/* Topscorer special card */}
+        {/* Topscorer */}
         <div
           style={{
             borderBottom: "1px solid var(--border)",
@@ -271,22 +277,20 @@ function ExtraQuestionsRules() {
           </div>
         </div>
 
-        {/* Surprise team special scoring */}
+        {/* Verrassing */}
         <div>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 4 }}>
             🌟 Verrassing van het WK
           </div>
           <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
-            Kies een van de 12 laagst geklasseerde landen. Punten op basis van
-            hoe ver dit land de KO-fase haalt. De 3e plek levert evenveel punten
-            op als de halve finale.
+            Kies een van de 12 laagst geklasseerde landen. Punten alleen als dit
+            land de halve finale haalt of verder komt — er zijn geen punten voor
+            eerdere rondes.
           </div>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
             {[
-              ["Zestiende finale", PTS_SURPRISE["Zestiende finale"]],
-              ["Achtste finale", PTS_SURPRISE["Achtste finale"]],
-              ["Kwartfinale", PTS_SURPRISE["Kwartfinale"]],
-              ["Halve finale", PTS_SURPRISE["Halve finale"]],
+              ["Halve finale verliezend", PTS_SURPRISE["Halve finale"]],
+              ["Finalespeler (verliezend)", PTS_SURPRISE["3e Plaats"]],
               ["🏆 Kampioen", PTS_SURPRISE["🏆 Wereldkampioen"]],
             ].map(([s, p]) => (
               <div
@@ -314,6 +318,10 @@ function ExtraQuestionsRules() {
                 <span style={{ fontSize: 10, color: "var(--muted)" }}>{s}</span>
               </div>
             ))}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
+            💡 Bereikt jouw verrassing de finale als verliezend halvefinalist,
+            dan verdien je 40 pt (3e plek-niveau). Wordt het kampioen: 50 pt.
           </div>
         </div>
       </div>
@@ -549,8 +557,12 @@ function TipsCard() {
         die in de top 3 eindigt.
       </div>
       <div>
-        ✦ Bij verrassing: 3e plek levert evenveel punten op als halve finale (30
-        pt).
+        ✦ Verrassing: punten alleen als jouw land de halve finale haalt (30 pt)
+        of verder (40/50 pt).
+      </div>
+      <div>
+        ✦ Clean sheets & groepsdoelpunten: bij gelijkstand zijn meerdere landen
+        goed.
       </div>
       <div>
         ✦ Klik op een wedstrijd of deelnemer in de stand om te vergelijken.

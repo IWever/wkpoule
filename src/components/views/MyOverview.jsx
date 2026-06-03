@@ -53,7 +53,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
   return (
     <div>
       {nextDeadline && <DeadlineBanner deadline={nextDeadline} />}
-      <WelcomeHeader user={user} compRank={compRank} pts={pts} />
+      <WelcomeHeader user={user} />
       <StatCards pts={pts} compRank={compRank} />
       <NavCards
         pred={pred}
@@ -145,18 +145,9 @@ function DeadlineBanner({ deadline }) {
 
 // ─── WELCOME HEADER ───────────────────────────────────────────────────────────
 
-function WelcomeHeader({ user, compRank, pts }) {
+function WelcomeHeader({ user }) {
   return (
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        marginBottom: 20,
-        flexWrap: "wrap",
-        gap: 10,
-      }}
-    >
+    <div style={{ marginBottom: 20 }}>
       <div style={{ fontSize: 22, fontWeight: 900 }}>
         Succes {user.name}! 👋
       </div>
@@ -234,6 +225,8 @@ function NavCards({
     !!pred.yellowCards,
     !!pred.surpriseTeam,
     !!pred.topOut,
+    !!pred.mostCleanSheets,
+    !!pred.mostGroupGoals,
   ].filter(Boolean).length;
   const groupFilled = GROUP_MATCHES.filter(
     (m) =>
@@ -254,7 +247,7 @@ function NavCards({
         icon="🔮"
         label="Extra vragen"
         filled={extraFilled}
-        total={6}
+        total={8}
         frozen={state.extraFrozen}
         available
         onClick={onEditExtra}
@@ -392,24 +385,16 @@ function NavCard({ icon, label, filled, total, frozen, available, onClick }) {
   );
 }
 
-// ─── EXTRA PREDICTIONS GRID ───────────────────────────────────────────────────
+// ─── EXTRA PREDICTIONS GRID — alleen 4 vragen tonen ──────────────────────────
 
 function ExtraPredictionsGrid({ pred, state }) {
   const surpriseStage = pred.surpriseTeam
     ? deriveSurpriseStage(pred.surpriseTeam, state.koResults)
     : null;
   const surprisePts = surpriseStage ? PTS_SURPRISE[surpriseStage] || 0 : null;
-  const topOuts = deriveTopOuts(state.results);
-  const topOutCorrect = pred.topOut && topOuts.includes(pred.topOut);
-  const topOutKnown = topOuts.length > 0;
-  const yellowCorrect =
-    pred.yellowCards &&
-    state.results["YELLOW_CARDS"] &&
-    pred.yellowCards === state.results["YELLOW_CARDS"];
-  const yellowKnown = !!state.results["YELLOW_CARDS"];
   const championGroup = pred.champion ? TEAM_GROUP[pred.champion] : null;
 
-  // Topscorers — nieuw systeem
+  // Topscorers
   const resultTopScorers = Array.isArray(state.results["TOP_SCORERS"])
     ? state.results["TOP_SCORERS"]
     : [];
@@ -426,6 +411,7 @@ function ExtraPredictionsGrid({ pred, state }) {
       )
     : null;
 
+  // Alleen 4 vragen tonen op het beginscherm
   const items = [
     {
       label: "🏆 Kampioen",
@@ -445,22 +431,6 @@ function ExtraPredictionsGrid({ pred, state }) {
       resultTopScorers,
     },
     {
-      label: "🇳🇱 Nederland",
-      value: pred.nlStage,
-      pts: PTS_EXTRA.nlStage,
-      actual: state.results["NL_STAGE"],
-      known: !!state.results["NL_STAGE"],
-      type: "simple",
-    },
-    {
-      label: "🟨 Gele kaarten",
-      value: pred.yellowCards,
-      pts: PTS_EXTRA.yellowCards,
-      correct: yellowCorrect,
-      known: yellowKnown,
-      type: "yellowcards",
-    },
-    {
       label: "🌟 Verrassing",
       value: pred.surpriseTeam,
       groupLetter: pred.surpriseTeam ? TEAM_GROUP[pred.surpriseTeam] : null,
@@ -469,12 +439,12 @@ function ExtraPredictionsGrid({ pred, state }) {
       stagePts: surprisePts,
     },
     {
-      label: "💥 Topland uit",
-      value: pred.topOut,
-      groupLetter: pred.topOut ? TEAM_GROUP[pred.topOut] : null,
-      type: "topout",
-      correct: topOutCorrect,
-      known: topOutKnown,
+      label: "🇳🇱 Nederland",
+      value: pred.nlStage,
+      pts: PTS_EXTRA.nlStage,
+      actual: state.results["NL_STAGE"],
+      known: !!state.results["NL_STAGE"],
+      type: "simple",
     },
   ];
 
@@ -607,9 +577,6 @@ function ExtraCardResult({ item }) {
     );
   }
 
-  if (item.type === "yellowcards" && item.known)
-    return item.correct ? good(item.pts) : bad;
-
   if (item.type === "surprise" && item.stage)
     return (
       <span
@@ -624,9 +591,6 @@ function ExtraCardResult({ item }) {
         {item.stage} → +{item.stagePts} pt
       </span>
     );
-
-  if (item.type === "topout" && item.value && item.known)
-    return item.correct ? good(PTS_TOP_OUT) : bad;
 
   return null;
 }
@@ -737,7 +701,6 @@ function TimelineHeader({ children }) {
   );
 }
 
-// Helper: team label met oranje+vet voor Nederland
 function TeamNameLabel({ team, align = "left" }) {
   const isNL = team === "Nederland";
   return (

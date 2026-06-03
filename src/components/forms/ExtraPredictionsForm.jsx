@@ -32,7 +32,6 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
     });
   }
 
-  // Helper for topScorers array
   function setTopScorer(index, val) {
     setPred((p) => {
       const current = Array.isArray(p.topScorers)
@@ -55,7 +54,6 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
         : ["", "", ""];
       while (currentCountries.length < 3) currentCountries.push("");
       currentCountries[index] = country;
-      // clear selected player for this slot
       const currentScorers = Array.isArray(p.topScorers)
         ? [...p.topScorers]
         : ["", "", ""];
@@ -73,18 +71,6 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
     });
   }
 
-  const selectStyle = (highlighted) => ({
-    background: "var(--bg)",
-    color: "var(--text)",
-    border: `1px solid ${highlighted ? "var(--accent)" : "var(--border)"}`,
-    borderRadius: 6,
-    padding: "8px 12px",
-    fontSize: 14,
-    width: "100%",
-    opacity: frozen ? 0.6 : 1,
-    fontFamily: "var(--font)",
-  });
-
   return (
     <div>
       <FormHeader
@@ -101,48 +87,25 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <ChampionCard
-          pred={pred}
-          frozen={frozen}
-          set={set}
-          selectStyle={selectStyle}
-        />
+        <ChampionCard pred={pred} frozen={frozen} set={set} />
         <TopScorerCard
           pred={pred}
           frozen={frozen}
           setTopScorer={setTopScorer}
           setTopScorerCountry={setTopScorerCountry}
         />
-        <NlStageCard
-          pred={pred}
-          frozen={frozen}
-          set={set}
-          selectStyle={selectStyle}
-        />
-        <YellowCardsCard
-          pred={pred}
-          frozen={frozen}
-          set={set}
-          selectStyle={selectStyle}
-        />
-        <SurpriseTeamCard
-          pred={pred}
-          frozen={frozen}
-          set={set}
-          selectStyle={selectStyle}
-        />
-        <TopOutCard
-          pred={pred}
-          frozen={frozen}
-          set={set}
-          selectStyle={selectStyle}
-        />
+        <NlStageCard pred={pred} frozen={frozen} set={set} />
+        <YellowCardsCard pred={pred} frozen={frozen} set={set} />
+        <SurpriseTeamCard pred={pred} frozen={frozen} set={set} />
+        <TopOutCard pred={pred} frozen={frozen} set={set} />
+        <MostCleanSheetsCard pred={pred} frozen={frozen} set={set} />
+        <MostGroupGoalsCard pred={pred} frozen={frozen} set={set} />
       </div>
     </div>
   );
 }
 
-// ─── INDIVIDUAL QUESTION CARDS ────────────────────────────────────────────────
+// ─── SHARED SUB-COMPONENTS ────────────────────────────────────────────────────
 
 function QuestionCard({ label, pts, description, children }) {
   return (
@@ -199,7 +162,7 @@ function TeamSelect({ value, onChange, disabled, placeholder, teams }) {
   );
 }
 
-function ChampionCard({ pred, frozen, set, selectStyle }) {
+function ChampionCard({ pred, frozen, set }) {
   return (
     <QuestionCard label="🏆 Wereldkampioen" pts={PTS_EXTRA.champion}>
       <TeamSelect
@@ -213,7 +176,7 @@ function ChampionCard({ pred, frozen, set, selectStyle }) {
   );
 }
 
-// ─── TOPSCORER CARD (3 slots) ─────────────────────────────────────────────────
+// ─── TOPSCORER CARD ───────────────────────────────────────────────────────────
 
 function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
   const topScorers = Array.isArray(pred.topScorers)
@@ -225,12 +188,6 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
     ? [...pred.topScorerCountries]
     : [pred.topScorerCountry || "", "", ""];
   while (topScorerCountries.length < 3) topScorerCountries.push("");
-
-  const rankLabels = [
-    { label: "Topscoorder" },
-    { label: "Topscoorder" },
-    { label: "Topscoorder" },
-  ];
 
   return (
     <div style={S.card()}>
@@ -252,9 +209,8 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
         </strong>{" "}
         pt
       </div>
-
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-        {rankLabels.map(({ rank, pts, label }, i) => {
+        {[0, 1, 2].map((i) => {
           const country = topScorerCountries[i] || "";
           const player = topScorers[i] || "";
           const allPlayers = country
@@ -267,7 +223,7 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
 
           return (
             <div
-              key={rank}
+              key={i}
               style={{
                 background: "var(--bg)",
                 border: `1px solid ${
@@ -277,16 +233,6 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
                 padding: "10px 12px",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                  marginBottom: 8,
-                }}
-              ></div>
-
-              {/* Country selector */}
               <select
                 disabled={frozen}
                 value={country}
@@ -314,7 +260,6 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
                   ))}
               </select>
 
-              {/* Player selector */}
               {country ? (
                 <select
                   disabled={frozen}
@@ -354,7 +299,6 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
                 </div>
               )}
 
-              {/* Selected player display */}
               {player && country && (
                 <div
                   style={{
@@ -435,7 +379,7 @@ function SurpriseTeamCard({ pred, frozen, set }) {
   return (
     <QuestionCard
       label="🌟 Verrassing van het WK"
-      description="Kies een van de 12 laagst geklasseerde landen. Punten op basis van hoe ver dit land de KO-fase haalt."
+      description="Kies een van de 12 laagst geklasseerde landen. Punten als dit team de halve finale haalt of verder komt."
     >
       <TeamSelect
         value={pred.surpriseTeam}
@@ -450,23 +394,25 @@ function SurpriseTeamCard({ pred, frozen, set }) {
           <div
             style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}
           >
-            {Object.entries(PTS_SURPRISE)
-              .filter(([, v]) => v > 0)
-              .map(([stage, p]) => (
-                <span
-                  key={stage}
-                  style={{
-                    background: "rgba(88,166,255,.1)",
-                    borderRadius: 4,
-                    padding: "2px 7px",
-                    fontSize: 11,
-                    color: "var(--accent)",
-                    fontWeight: 700,
-                  }}
-                >
-                  {stage === "🏆 Wereldkampioen" ? "🏆 Kampioen" : stage}: +{p}
-                </span>
-              ))}
+            {[
+              ["Halve finale verliezend", PTS_SURPRISE["Halve finale"]],
+              ["Finalespeler (verliezend)", PTS_SURPRISE["3e Plaats"]],
+              ["🏆 Wereldkampioen", PTS_SURPRISE["🏆 Wereldkampioen"]],
+            ].map(([stage, p]) => (
+              <span
+                key={stage}
+                style={{
+                  background: "rgba(88,166,255,.1)",
+                  borderRadius: 4,
+                  padding: "2px 7px",
+                  fontSize: 11,
+                  color: "var(--accent)",
+                  fontWeight: 700,
+                }}
+              >
+                {stage}: +{p}
+              </span>
+            ))}
           </div>
         </div>
       )}
@@ -487,6 +433,42 @@ function TopOutCard({ pred, frozen, set }) {
         disabled={frozen}
         placeholder="— kies jouw topland —"
         teams={TOP_TEAMS}
+      />
+    </QuestionCard>
+  );
+}
+
+function MostCleanSheetsCard({ pred, frozen, set }) {
+  return (
+    <QuestionCard
+      label="🧤 Meeste clean sheets"
+      pts={PTS_EXTRA.mostCleanSheets}
+      description="Welk land houdt op het hele toernooi de meeste clean sheets (nul gehouden)?"
+    >
+      <TeamSelect
+        value={pred.mostCleanSheets}
+        onChange={(e) => set(["mostCleanSheets"], e.target.value)}
+        disabled={frozen}
+        placeholder="— selecteer land —"
+        teams={ALL_TEAMS}
+      />
+    </QuestionCard>
+  );
+}
+
+function MostGroupGoalsCard({ pred, frozen, set }) {
+  return (
+    <QuestionCard
+      label="⚽ Meeste doelpunten groepsfase"
+      pts={PTS_EXTRA.mostGroupGoals}
+      description="Welk land scoort de meeste doelpunten tijdens de groepsfase?"
+    >
+      <TeamSelect
+        value={pred.mostGroupGoals}
+        onChange={(e) => set(["mostGroupGoals"], e.target.value)}
+        disabled={frozen}
+        placeholder="— selecteer land —"
+        teams={ALL_TEAMS}
       />
     </QuestionCard>
   );

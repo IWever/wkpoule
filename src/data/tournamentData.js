@@ -848,13 +848,16 @@ const SURPRISE_TEAMS = [
   "Zuid-Afrika",
 ];
 
+// Punten voor verrassing:
+// - 3e Plaats krijgt zelfde als verliezend finalist (40 pt)
+// - Punten alleen voor halve finale verliezer (30), finale verliezer (40), kampioen (50)
 const PTS_SURPRISE = {
   "Groepsfase (niet verder)": 0,
-  "Zestiende finale": 5,
-  "Achtste finale": 10,
-  Kwartfinale: 20,
-  "Halve finale": 30,
-  "3e Plaats": 40,
+  "Zestiende finale": 0,
+  "Achtste finale": 0,
+  Kwartfinale: 0,
+  "Halve finale": 30, // verliest halve finale
+  "3e Plaats": 40, // bereikt finale als verliezend SF-finalist
   "🏆 Wereldkampioen": 50,
 };
 
@@ -886,14 +889,14 @@ const PTS_KO = {
 const PTS_TOP_OUT = 10;
 const PTS_EXTRA = {
   champion: 50,
-  // topscorer punten zijn per rank: rank1=15, rank2=10, rank3=5
-  topScorer: 15, // max (rank 1)
+  topScorer: 15,
   nlStage: 15,
   yellowCards: 15,
   topOut: PTS_TOP_OUT,
+  mostCleanSheets: 15,
+  mostGroupGoals: 15,
 };
 
-// Punten per rank in de topscorerslijst
 const PTS_TOPSCORER_RANK = { 1: 15, 2: 10, 3: 5 };
 
 const FLAG = {
@@ -947,7 +950,6 @@ const FLAG = {
   Panama: "🇵🇦",
 };
 
-// Group lookup helper
 const TEAM_GROUP = {};
 Object.entries(GROUPS).forEach(([g, teams]) =>
   teams.forEach((t) => {
@@ -959,7 +961,6 @@ const ADMIN_PW = "admin2026";
 const KEY = "wk_poule_v12";
 const SESSION_KEY = "wk_session_v12";
 
-// ─── DEADLINE HELPER ──────────────────────────────────────────────────────────
 const DEADLINES = [
   {
     dt: "2026-06-11T20:00",

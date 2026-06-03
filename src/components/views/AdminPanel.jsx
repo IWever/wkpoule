@@ -13,6 +13,7 @@ import {
   getNextDeadline,
   PTS_KO,
   PTS_TOPSCORER_RANK,
+  PTS_EXTRA,
 } from "../../data/tournamentData";
 import {
   calcPoints,
@@ -132,7 +133,9 @@ function AdminPanel({ state, setState }) {
       {tab === "competitions" && (
         <CompetitionsAdmin state={state} setState={setState} />
       )}
-      {tab === "users" && <UsersAdmin state={state} onRemove={removeUser} />}
+      {tab === "users" && (
+        <UsersAdmin state={state} setState={setState} onRemove={removeUser} />
+      )}
       {tab === "results" && (
         <ResultsAdmin
           state={state}
@@ -587,14 +590,6 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      <div
-        style={{
-          ...S.card(),
-          background: "rgba(88,166,255,.04)",
-          marginBottom: 4,
-        }}
-      ></div>
-
       {[
         {
           key: "groupFrozen",
@@ -606,7 +601,7 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
           key: "extraFrozen",
           icon: "🔮",
           label: "Extra vragen",
-          desc: "Kampioen, topscoorders, Nederland, gele kaarten, verrassing en topland",
+          desc: "Kampioen, topscoorders, Nederland, gele kaarten, verrassing, topland, clean sheets en groepsdoelpunten",
         },
         {
           key: "koOpen",
@@ -728,10 +723,12 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
   );
 }
 
-// ─── COMPETITIONS ADMIN ───────────────────────────────────────────────────────
+// ─── COMPETITIONS ADMIN — met naam wijzigen ───────────────────────────────────
 
 function CompetitionsAdmin({ state, setState }) {
   const [newName, setNewName] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState("");
   const competitions = state.competitions || [];
 
   function addComp() {
@@ -770,6 +767,26 @@ function CompetitionsAdmin({ state, setState }) {
       persist(ns);
       return ns;
     });
+  }
+
+  function startEditComp(comp) {
+    setEditingId(comp.id);
+    setEditName(comp.name);
+  }
+
+  function saveEditComp(id) {
+    if (!editName.trim()) return;
+    setState((s) => {
+      const ns = {
+        ...s,
+        competitions: s.competitions.map((c) =>
+          c.id === id ? { ...c, name: editName.trim() } : c
+        ),
+      };
+      persist(ns);
+      return ns;
+    });
+    setEditingId(null);
   }
 
   function toggleUserInComp(userId, compId) {
@@ -841,6 +858,8 @@ function CompetitionsAdmin({ state, setState }) {
         const nonMembers = state.users.filter(
           (u) => !(u.competitionIds || []).includes(comp.id)
         );
+        const isEditing = editingId === comp.id;
+
         return (
           <div key={comp.id} style={{ ...S.card(), marginBottom: 14 }}>
             <div
@@ -853,59 +872,130 @@ function CompetitionsAdmin({ state, setState }) {
                 gap: 8,
               }}
             >
-              <div>
-                <div style={{ fontWeight: 700, fontSize: 15 }}>{comp.name}</div>
-                <div
-                  style={{ fontSize: 12, color: "var(--muted)", marginTop: 2 }}
-                >
-                  {members.length} deelnemer{members.length !== 1 ? "s" : ""}
-                </div>
+              <div style={{ flex: 1 }}>
+                {isEditing ? (
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <input
+                      style={{
+                        ...S.input,
+                        flex: 1,
+                        fontSize: 13,
+                        padding: "6px 10px",
+                      }}
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") saveEditComp(comp.id);
+                        if (e.key === "Escape") setEditingId(null);
+                      }}
+                      autoFocus
+                    />
+                    <button
+                      onClick={() => saveEditComp(comp.id)}
+                      style={{
+                        ...S.btn("var(--green)"),
+                        padding: "6px 12px",
+                        fontSize: 12,
+                      }}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      style={{
+                        background: "none",
+                        border: "1px solid var(--border)",
+                        borderRadius: 6,
+                        color: "var(--muted)",
+                        padding: "6px 10px",
+                        cursor: "pointer",
+                        fontSize: 12,
+                        fontFamily: "var(--font)",
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>
+                      {comp.name}
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "var(--muted)",
+                        marginTop: 2,
+                      }}
+                    >
+                      {members.length} deelnemer
+                      {members.length !== 1 ? "s" : ""}
+                    </div>
+                  </div>
+                )}
               </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                {[
-                  ["hidden", comp.hidden ? "🏅 Verborgen" : "🏅 Zichtbaar"],
-                  [
-                    "hiddenRegistration",
-                    comp.hiddenRegistration ? "📝 Verborgen" : "📝 Zichtbaar",
-                  ],
-                ].map(([prop, label]) => (
+              {!isEditing && (
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   <button
-                    key={prop}
-                    onClick={() => toggleCompProp(comp.id, prop)}
+                    onClick={() => startEditComp(comp)}
                     style={{
-                      background: comp[prop]
-                        ? "rgba(240,136,62,.12)"
-                        : "rgba(88,166,255,.08)",
-                      border: `1px solid ${
-                        comp[prop] ? "var(--orange)" : "var(--border)"
-                      }`,
+                      background: "rgba(88,166,255,.08)",
+                      border: "1px solid rgba(88,166,255,.2)",
                       borderRadius: 6,
-                      color: comp[prop] ? "var(--orange)" : "var(--muted)",
+                      color: "var(--accent)",
                       padding: "4px 10px",
                       cursor: "pointer",
                       fontSize: 12,
                       fontFamily: "var(--font)",
                     }}
                   >
-                    {label}
+                    ✏️ Naam
                   </button>
-                ))}
-                <button
-                  onClick={() => removeComp(comp.id)}
-                  style={{
-                    background: "none",
-                    border: "1px solid var(--border)",
-                    borderRadius: 6,
-                    color: "var(--muted)",
-                    padding: "4px 10px",
-                    cursor: "pointer",
-                    fontSize: 12,
-                    fontFamily: "var(--font)",
-                  }}
-                >
-                  🗑 Verwijderen
-                </button>
-              </div>
+                  {[
+                    ["hidden", comp.hidden ? "🏅 Verborgen" : "🏅 Zichtbaar"],
+                    [
+                      "hiddenRegistration",
+                      comp.hiddenRegistration ? "📝 Verborgen" : "📝 Zichtbaar",
+                    ],
+                  ].map(([prop, label]) => (
+                    <button
+                      key={prop}
+                      onClick={() => toggleCompProp(comp.id, prop)}
+                      style={{
+                        background: comp[prop]
+                          ? "rgba(240,136,62,.12)"
+                          : "rgba(88,166,255,.08)",
+                        border: `1px solid ${
+                          comp[prop] ? "var(--orange)" : "var(--border)"
+                        }`,
+                        borderRadius: 6,
+                        color: comp[prop] ? "var(--orange)" : "var(--muted)",
+                        padding: "4px 10px",
+                        cursor: "pointer",
+                        fontSize: 12,
+                        fontFamily: "var(--font)",
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => removeComp(comp.id)}
+                    style={{
+                      background: "none",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6,
+                      color: "var(--muted)",
+                      padding: "4px 10px",
+                      cursor: "pointer",
+                      fontSize: 12,
+                      fontFamily: "var(--font)",
+                    }}
+                  >
+                    🗑 Verwijderen
+                  </button>
+                </div>
+              )}
             </div>
 
             {members.length > 0 && (
@@ -1002,9 +1092,41 @@ function CompetitionsAdmin({ state, setState }) {
   );
 }
 
-// ─── USERS ADMIN ──────────────────────────────────────────────────────────────
+// ─── USERS ADMIN — met naam wijzigen ─────────────────────────────────────────
 
-function UsersAdmin({ state, onRemove }) {
+function UsersAdmin({ state, setState, onRemove }) {
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState("");
+
+  function startEdit(user) {
+    setEditingId(user.id);
+    setEditName(user.name);
+  }
+
+  function saveEdit(uid) {
+    if (!editName.trim()) return;
+    const newName = editName.trim();
+    // Check duplicate
+    const duplicate = state.users.find(
+      (u) => u.id !== uid && u.name.toLowerCase() === newName.toLowerCase()
+    );
+    if (duplicate) {
+      alert("Deze naam is al in gebruik.");
+      return;
+    }
+    setState((s) => {
+      const ns = {
+        ...s,
+        users: s.users.map((u) => (u.id === uid ? { ...u, name: newName } : u)),
+      };
+      persist(ns);
+      return ns;
+    });
+    setEditingId(null);
+  }
+
+  const koAvail = state.koOpen || state.fase === "ko";
+
   return (
     <div>
       {state.users.length === 0 && (
@@ -1029,6 +1151,8 @@ function UsersAdmin({ state, onRemove }) {
           !!p.yellowCards,
           !!p.surpriseTeam,
           !!p.topOut,
+          !!p.mostCleanSheets,
+          !!p.mostGroupGoals,
         ].filter(Boolean).length;
         const koFilled = KO_STRUCTURE.filter((m) => p.koWinners?.[m.id]).length;
         const userComps = (u.competitionIds || [])
@@ -1036,7 +1160,7 @@ function UsersAdmin({ state, onRemove }) {
             (cid) => (state.competitions || []).find((c) => c.id === cid)?.name
           )
           .filter(Boolean);
-        const koAvail = state.koOpen || state.fase === "ko";
+        const isEditing = editingId === u.id;
 
         return (
           <div key={u.id} style={{ ...S.card(), marginBottom: 10 }}>
@@ -1049,34 +1173,96 @@ function UsersAdmin({ state, onRemove }) {
                 marginBottom: 6,
               }}
             >
-              <div style={{ flex: 1, fontWeight: 700, fontSize: 14 }}>
-                {u.name}
-              </div>
-              <div
-                style={{
-                  fontSize: 13,
-                  color: "var(--accent)",
-                  fontWeight: 700,
-                }}
-              >
-                {pts} pt
-              </div>
-              <PwReveal u={u} />
-              <button
-                onClick={() => onRemove(u.id)}
-                style={{
-                  background: "none",
-                  border: "1px solid var(--border)",
-                  borderRadius: 6,
-                  color: "var(--muted)",
-                  padding: "3px 8px",
-                  cursor: "pointer",
-                  fontSize: 11,
-                  fontFamily: "var(--font)",
-                }}
-              >
-                ✕
-              </button>
+              {isEditing ? (
+                <div style={{ display: "flex", gap: 6, flex: 1 }}>
+                  <input
+                    style={{
+                      ...S.input,
+                      flex: 1,
+                      fontSize: 13,
+                      padding: "6px 10px",
+                    }}
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") saveEdit(u.id);
+                      if (e.key === "Escape") setEditingId(null);
+                    }}
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => saveEdit(u.id)}
+                    style={{
+                      ...S.btn("var(--green)"),
+                      padding: "6px 12px",
+                      fontSize: 12,
+                    }}
+                  >
+                    ✓
+                  </button>
+                  <button
+                    onClick={() => setEditingId(null)}
+                    style={{
+                      background: "none",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6,
+                      color: "var(--muted)",
+                      padding: "6px 10px",
+                      cursor: "pointer",
+                      fontSize: 12,
+                      fontFamily: "var(--font)",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div style={{ flex: 1, fontWeight: 700, fontSize: 14 }}>
+                    {u.name}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "var(--accent)",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {pts} pt
+                  </div>
+                  <PwReveal u={u} />
+                  <button
+                    onClick={() => startEdit(u)}
+                    style={{
+                      background: "rgba(88,166,255,.08)",
+                      border: "1px solid rgba(88,166,255,.2)",
+                      borderRadius: 6,
+                      color: "var(--accent)",
+                      padding: "3px 8px",
+                      cursor: "pointer",
+                      fontSize: 11,
+                      fontFamily: "var(--font)",
+                    }}
+                  >
+                    ✏️
+                  </button>
+                  <button
+                    onClick={() => onRemove(u.id)}
+                    style={{
+                      background: "none",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6,
+                      color: "var(--muted)",
+                      padding: "3px 8px",
+                      cursor: "pointer",
+                      fontSize: 11,
+                      fontFamily: "var(--font)",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </>
+              )}
             </div>
             {userComps.length > 0 && (
               <div
@@ -1108,7 +1294,7 @@ function UsersAdmin({ state, onRemove }) {
               <UserPill
                 label="Extra"
                 filled={extraFilled}
-                total={6}
+                total={8}
                 available
               />
               <UserPill
@@ -1281,18 +1467,6 @@ function ResultsAdmin({
             )}
           </div>
           <AdminStandingTable rows={s.table} />
-        </div>
-      )}
-      {(!s || !s.table.some((r) => r.gp > 0)) && (
-        <div
-          style={{
-            ...S.card(),
-            marginBottom: 12,
-            fontSize: 12,
-            color: "var(--muted)",
-          }}
-        >
-          Nog geen wedstrijden gespeeld in Groep {activeGroup}.
         </div>
       )}
 
@@ -1717,7 +1891,7 @@ function ExtrasAdmin({ state, setState }) {
   const surpriseProgress = SURPRISE_TEAMS.map((team) => ({
     team,
     stage: deriveSurpriseStage(team, state.koResults),
-  })).filter((s) => s.stage);
+  })).filter((s) => s.stage && PTS_SURPRISE[s.stage] > 0);
 
   function setResult(patch) {
     setState((s) => {
@@ -1729,7 +1903,6 @@ function ExtrasAdmin({ state, setState }) {
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {/* Topscorer admin — nieuw systeem met ranks */}
       <TopScorerAdmin state={state} setState={setState} />
 
       <div style={S.card()}>
@@ -1786,6 +1959,22 @@ function ExtrasAdmin({ state, setState }) {
         </select>
       </div>
 
+      {/* Meeste clean sheets — admin selecteert meerdere */}
+      <MultiTeamAdmin
+        label="🧤 Meeste clean sheets (meerdere landen mogelijk bij gelijkstand)"
+        resultKey="MOST_CLEAN_SHEETS"
+        state={state}
+        setState={setState}
+      />
+
+      {/* Meeste doelpunten groepsfase — admin selecteert meerdere */}
+      <MultiTeamAdmin
+        label="⚽ Meeste doelpunten groepsfase (meerdere landen mogelijk bij gelijkstand)"
+        resultKey="MOST_GROUP_GOALS"
+        state={state}
+        setState={setState}
+      />
+
       <div style={{ ...S.card(), background: "rgba(88,166,255,.04)" }}>
         <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>
           💥 Toplands uitgeschakeld in groepsfase (automatisch)
@@ -1820,13 +2009,13 @@ function ExtrasAdmin({ state, setState }) {
 
       <div style={{ ...S.card(), background: "rgba(88,166,255,.04)" }}>
         <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>
-          🌟 Verrassing-landen in KO-fase (automatisch)
+          🌟 Verrassing-landen in KO-fase (punten alleen halve finale+)
         </div>
         {surpriseProgress.length === 0 ? (
           <span
             style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}
           >
-            Nog geen KO-wedstrijden gespeeld
+            Nog geen relevante KO-wedstrijden gespeeld
           </span>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -1859,14 +2048,133 @@ function ExtrasAdmin({ state, setState }) {
   );
 }
 
-// ─── TOPSCORER ADMIN — nieuw systeem met ranks ─────────────────────────────────
+// ─── MULTI-TEAM ADMIN SELECTOR ────────────────────────────────────────────────
+// Admin kan meerdere landen selecteren (bij gelijkstand)
+
+function MultiTeamAdmin({ label, resultKey, state, setState }) {
+  const current = Array.isArray(state.results[resultKey])
+    ? state.results[resultKey]
+    : state.results[resultKey]
+    ? [state.results[resultKey]]
+    : [];
+
+  const [addVal, setAddVal] = useState("");
+
+  function toggle(team) {
+    const next = current.includes(team)
+      ? current.filter((t) => t !== team)
+      : [...current, team];
+    setState((s) => {
+      const ns = { ...s, results: { ...s.results, [resultKey]: next } };
+      persist(ns);
+      return ns;
+    });
+  }
+
+  function addTeam() {
+    if (!addVal || current.includes(addVal)) {
+      setAddVal("");
+      return;
+    }
+    toggle(addVal);
+    setAddVal("");
+  }
+
+  return (
+    <div style={S.card()}>
+      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 10 }}>
+        {label}
+      </div>
+      {current.length > 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: 6,
+            flexWrap: "wrap",
+            marginBottom: 10,
+          }}
+        >
+          {current.map((t) => (
+            <div
+              key={t}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                background: "rgba(88,166,255,.12)",
+                border: "1px solid rgba(88,166,255,.3)",
+                borderRadius: 20,
+                padding: "4px 10px 4px 12px",
+                fontSize: 13,
+              }}
+            >
+              <span style={{ fontWeight: 700, color: "var(--accent)" }}>
+                {FLAG[t] || "🏳️"} {t}
+              </span>
+              <button
+                onClick={() => toggle(t)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  cursor: "pointer",
+                  color: "var(--muted)",
+                  fontSize: 14,
+                  padding: "0 2px",
+                  lineHeight: 1,
+                }}
+              >
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{ display: "flex", gap: 8 }}>
+        <select
+          value={addVal}
+          onChange={(e) => setAddVal(e.target.value)}
+          style={{
+            flex: 1,
+            background: "var(--bg)",
+            color: "var(--text)",
+            border: "1px solid var(--border)",
+            borderRadius: 6,
+            padding: "8px 12px",
+            fontSize: 13,
+            fontFamily: "var(--font)",
+          }}
+        >
+          <option value="">— selecteer land —</option>
+          {ALL_TEAMS.filter((t) => !current.includes(t)).map((t) => (
+            <option key={t} value={t}>
+              {FLAG[t] || "🏳️"} {t}
+            </option>
+          ))}
+        </select>
+        <button
+          onClick={addTeam}
+          disabled={!addVal}
+          style={{
+            ...S.btn("var(--green)"),
+            padding: "8px 16px",
+            fontSize: 13,
+            opacity: addVal ? 1 : 0.4,
+            cursor: addVal ? "pointer" : "default",
+          }}
+        >
+          + Toevoegen
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ─── TOPSCORER ADMIN ──────────────────────────────────────────────────────────
 
 function TopScorerAdmin({ state, setState }) {
-  // TOP_SCORERS = array van { name, rank, country }
   const topScorers = Array.isArray(state.results["TOP_SCORERS"])
     ? state.results["TOP_SCORERS"]
     : [];
-
   const [newCountry, setNewCountry] = useState("");
   const [newPlayer, setNewPlayer] = useState("");
   const [newRank, setNewRank] = useState(1);
@@ -1880,7 +2188,6 @@ function TopScorerAdmin({ state, setState }) {
   function addScorer() {
     if (!newPlayer) return;
     const rank = parseInt(newRank, 10);
-    // Check if player already in list
     if (topScorers.find((s) => s.name === newPlayer)) return;
     const updated = [
       ...topScorers,
@@ -1921,7 +2228,6 @@ function TopScorerAdmin({ state, setState }) {
     2: "var(--muted)",
     3: "var(--orange)",
   };
-  const rankLabels = { 1: "1e (+15 pt)", 2: "2e (+10 pt)", 3: "3e (+5 pt)" };
 
   return (
     <div style={S.card()}>
@@ -1929,11 +2235,9 @@ function TopScorerAdmin({ state, setState }) {
         ⚽ Officiële topscoorders — voeg toe met rank
       </div>
       <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 12 }}>
-        Rank 1 = +15 pt, rank 2 = +10 pt, rank 3 = +5 pt voor deelnemers die
-        deze speler hebben
+        Rank 1 = +15 pt, rank 2 = +10 pt, rank 3 = +5 pt
       </div>
 
-      {/* Current scorers list */}
       {topScorers.length > 0 && (
         <div
           style={{
@@ -1984,7 +2288,6 @@ function TopScorerAdmin({ state, setState }) {
               >
                 +{PTS_TOPSCORER_RANK[scorer.rank] || 0} pt
               </span>
-              {/* Rank selector */}
               <select
                 value={scorer.rank}
                 onChange={(e) => updateRank(scorer.name, e.target.value)}
@@ -2022,7 +2325,6 @@ function TopScorerAdmin({ state, setState }) {
         </div>
       )}
 
-      {/* Add new scorer */}
       <div
         style={{
           background: "var(--bg)",
@@ -2044,7 +2346,6 @@ function TopScorerAdmin({ state, setState }) {
           Topscoorder toevoegen
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {/* Country */}
           <select
             value={newCountry}
             onChange={(e) => {
@@ -2071,8 +2372,6 @@ function TopScorerAdmin({ state, setState }) {
                 </option>
               ))}
           </select>
-
-          {/* Player */}
           {newCountry && (
             <select
               value={newPlayer}
@@ -2104,8 +2403,6 @@ function TopScorerAdmin({ state, setState }) {
               ))}
             </select>
           )}
-
-          {/* Rank + add button */}
           <div style={{ display: "flex", gap: 8 }}>
             <select
               value={newRank}
