@@ -853,9 +853,9 @@ const SURPRISE_TEAMS = [
 // - Punten alleen voor halve finale verliezer (30), finale verliezer (40), kampioen (50)
 const PTS_SURPRISE = {
   "Groepsfase (niet verder)": 0,
-  "Zestiende finale": 0,
-  "Achtste finale": 0,
-  Kwartfinale: 0,
+  "Zestiende finale": 5,
+  "Achtste finale": 10,
+  Kwartfinale: 20,
   "Halve finale": 30, // verliest halve finale
   "3e Plaats": 40, // bereikt finale als verliezend SF-finalist
   "🏆 Wereldkampioen": 50,
