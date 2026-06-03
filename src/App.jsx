@@ -312,10 +312,21 @@ export default function App() {
         locked: false,
         competitionIds: newUser.competitionIds || [],
       };
-      setAndPersist((s) => ({ ...s, users: [...s.users, user] }));
-      setSession(id);
-      saveSession(id);
-      setScreen("editGroup");
+      setState((prev) => {
+        const next = { ...prev, users: [...prev.users, user] };
+        persist(next).then((ok) => {
+          if (ok) {
+            setSession(id);
+            saveSession(id);
+            setScreen("editGroup");
+          } else {
+            alert(
+              "Registratie mislukt — controleer je verbinding en probeer opnieuw."
+            );
+          }
+        });
+        return next;
+      });
       return;
     }
     setSession(userId);

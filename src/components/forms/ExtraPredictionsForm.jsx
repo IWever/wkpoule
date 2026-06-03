@@ -40,9 +40,9 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
       while (current.length < 3) current.push("");
       current[index] = val;
       const next = { ...p, topScorers: current };
-      onSave(next);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
+      onSave(next).then((ok) => {
+        setSaved(ok ? "ok" : "error");
+      });
       return next;
     });
   }
@@ -64,9 +64,9 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
         topScorerCountries: currentCountries,
         topScorers: currentScorers,
       };
-      onSave(next);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
+      onSave(next).then((ok) => {
+        setSaved(ok ? "ok" : "error");
+      });
       return next;
     });
   }
