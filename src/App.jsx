@@ -19,6 +19,7 @@ import {
   StandWithCompare,
   AdminPanel,
 } from "./components/views";
+import { ChangePasswordScreen } from "./components/ChangePasswordScreen";
 
 // ─── LOADING / ERROR SCREENS ──────────────────────────────────────────────────
 
@@ -376,6 +377,33 @@ export default function App() {
           competitions={state.competitions || []}
           preRegister={preRegister}
           preComp={preComp}
+        />
+      </div>
+    );
+  }
+
+  if (session && session !== "__admin__" && updatedUser?.mustChangePassword) {
+    return (
+      <div style={shellStyle}>
+        <GlobalStyles />
+        <GlobalFonts />
+        <ChangePasswordScreen
+          user={updatedUser}
+          onSave={(newPw) => {
+            setAndPersist((s) => ({
+              ...s,
+              users: s.users.map((u) =>
+                u.id === session
+                  ? {
+                      ...u,
+                      pwPlain: newPw,
+                      pwHash: hash(newPw),
+                      mustChangePassword: false,
+                    }
+                  : u
+              ),
+            }));
+          }}
         />
       </div>
     );
