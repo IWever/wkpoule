@@ -441,7 +441,10 @@ function ExtraPredictionsGrid({ pred, state }) {
     {
       label: "⚽ Topscoorders",
       type: "topscorer",
-      value: predTopScorers.length > 0 ? predTopScorers.join(", ") : null,
+      value: predTopScorers.length > 0 ? predTopScorers : null,
+      countries: Array.isArray(pred.topScorerCountries)
+        ? pred.topScorerCountries
+        : [],
       totalPts: topScorerPts,
       known: topScorersKnown,
       resultTopScorers,
@@ -524,7 +527,24 @@ function ExtraCard({ item }) {
       <div style={{ fontWeight: 700, fontSize: 13 }}>
         {item.type === "topscorer" ? (
           item.value ? (
-            <span style={{ fontSize: 11, lineHeight: 1.5 }}>{item.value}</span>
+            <span
+              style={{
+                fontSize: 11,
+                lineHeight: 1.8,
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+              }}
+            >
+              {item.value.map((name, i) => (
+                <span key={i}>
+                  {item.countries?.[i]
+                    ? (FLAG[item.countries[i]] || "🏳️") + " "
+                    : ""}
+                  {name}
+                </span>
+              ))}
+            </span>
           ) : (
             <span style={{ color: "var(--muted)" }}>–</span>
           )

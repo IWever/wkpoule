@@ -964,7 +964,7 @@ const SESSION_KEY = "wk_session_v12";
 const DEADLINES = [
   {
     dt: "2026-06-11T21:00",
-    label: "Groepsfase & extra vragen sluiten",
+    label: "Groepsfase & extra vragen",
     desc: "Vóór aanvang eerste wedstrijd (11 jun 21:00)",
   },
   {
