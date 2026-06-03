@@ -22,12 +22,13 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
   const [saved, setSaved] = useState(false);
   const frozen = state.extraFrozen;
 
-  function set(path, val) {
+  async function set(path, val) {
     setPred((p) => {
       const next = deepSet(p, path, val);
-      onSave(next);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
+      onSave(next).then((ok) => {
+        setSaved(ok ? "ok" : "error");
+        setTimeout(() => setSaved(null), 2000);
+      });
       return next;
     });
   }

@@ -323,13 +323,19 @@ export default function App() {
     setScreen("overview");
   };
 
-  const savePred = (pred) => {
-    setAndPersist((s) => ({
-      ...s,
-      users: s.users.map((u) =>
-        u.id === session ? { ...u, predictions: pred } : u
-      ),
-    }));
+  const savePred = async (pred) => {
+    return new Promise((resolve) => {
+      setState((prev) => {
+        const next = {
+          ...prev,
+          users: prev.users.map((u) =>
+            u.id === session ? { ...u, predictions: pred } : u
+          ),
+        };
+        persist(next).then(resolve);
+        return next;
+      });
+    });
   };
 
   const logout = () => {

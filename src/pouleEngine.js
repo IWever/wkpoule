@@ -61,7 +61,7 @@ async function persist(data) {
     try {
       localStorage.setItem(KEY, JSON.stringify(data));
     } catch {}
-    return;
+    return true;
   }
   try {
     const res = await fetch("/api/state", {
@@ -69,10 +69,14 @@ async function persist(data) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok)
+    if (!res.ok) {
       console.error("persist() API fout:", res.status, await res.text());
+      return false;
+    }
+    return true;
   } catch (err) {
     console.error("persist() netwerk fout:", err);
+    return false;
   }
 }
 

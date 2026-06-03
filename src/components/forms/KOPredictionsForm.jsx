@@ -106,15 +106,16 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
       ? isRoundFrozen("final") && isRoundFrozen("3rd")
       : isRoundFrozen(activeRound);
 
-  function set(path, val) {
-    setPred((p) => {
-      const next = deepSet(p, path, val);
-      onSave(next);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
-      return next;
-    });
-  }
+      async function set(path, val) {
+        setPred((p) => {
+          const next = deepSet(p, path, val);
+          onSave(next).then((ok) => {
+            setSaved(ok ? "ok" : "error");
+            setTimeout(() => setSaved(null), 2000);
+          });
+          return next;
+        });
+      }
 
   const richSlots = buildRichKOSlots(pred, state.results, state.koResults);
 

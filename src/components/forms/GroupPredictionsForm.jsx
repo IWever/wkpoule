@@ -20,12 +20,13 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
   const [saved, setSaved] = useState(false);
   const frozen = state.groupFrozen;
 
-  function set(path, val) {
+  async function set(path, val) {
     setPred((p) => {
       const next = deepSet(p, path, val);
-      onSave(next);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
+      onSave(next).then((ok) => {
+        setSaved(ok ? "ok" : "error");
+        setTimeout(() => setSaved(null), 2000);
+      });
       return next;
     });
   }
@@ -102,9 +103,14 @@ function FormHeader({ title, icon, saved, onBack }) {
         {icon} {title}
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        {saved && (
+        {saved === "ok" && (
           <span style={{ fontSize: 12, color: "var(--green)" }}>
             ✓ Opgeslagen
+          </span>
+        )}
+        {saved === "error" && (
+          <span style={{ fontSize: 12, color: "var(--red)" }}>
+            ✗ Opslaan mislukt!
           </span>
         )}
         <button
