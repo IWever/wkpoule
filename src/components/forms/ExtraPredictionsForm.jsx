@@ -135,6 +135,7 @@ function QuestionCard({ label, pts, description, children }) {
 }
 
 function TeamSelect({ value, onChange, disabled, placeholder, teams }) {
+  const sorted = [...teams].sort((a, b) => a.localeCompare(b, "nl"));
   return (
     <select
       value={value || ""}
@@ -153,7 +154,7 @@ function TeamSelect({ value, onChange, disabled, placeholder, teams }) {
       }}
     >
       <option value="">{placeholder}</option>
-      {teams.map((t) => (
+      {sorted.map((t) => (
         <option key={t} value={t}>
           {FLAG[t] || "🏳️"} {t}
         </option>
