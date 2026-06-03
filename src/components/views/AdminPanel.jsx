@@ -1127,6 +1127,32 @@ function UsersAdmin({ state, setState, onRemove }) {
 
   const koAvail = state.koOpen || state.fase === "ko";
 
+  const [resetId, setResetId] = useState(null);
+  const [resetPw, setResetPw] = useState("");
+
+  function doReset(uid) {
+    if (!resetPw.trim() || resetPw.length < 4) return;
+    setState((s) => {
+      const ns = {
+        ...s,
+        users: s.users.map((u) =>
+          u.id === uid
+            ? {
+                ...u,
+                pwPlain: resetPw,
+                pwHash: hash(resetPw),
+                mustChangePassword: true,
+              }
+            : u
+        ),
+      };
+      persist(ns);
+      return ns;
+    });
+    setResetId(null);
+    setResetPw("");
+  }
+
   return (
     <div>
       {state.users.length === 0 && (
@@ -1261,7 +1287,73 @@ function UsersAdmin({ state, setState, onRemove }) {
                   >
                     ✕
                   </button>
+                  <button
+                    onClick={() => {
+                      setResetId(u.id);
+                      setResetPw("");
+                    }}
+                    style={{
+                      background: "rgba(240,136,62,.08)",
+                      border: "1px solid rgba(240,136,62,.2)",
+                      borderRadius: 6,
+                      color: "var(--orange)",
+                      padding: "3px 8px",
+                      cursor: "pointer",
+                      fontSize: 11,
+                      fontFamily: "var(--font)",
+                    }}
+                  >
+                    🔑 Reset
+                  </button>
                 </>
+              )}
+
+              {/* Reset formulier, toont onder de rij als resetId === u.id */}
+              {resetId === u.id && (
+                <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                  <input
+                    style={{
+                      ...S.input,
+                      flex: 1,
+                      fontSize: 13,
+                      padding: "6px 10px",
+                    }}
+                    type="password"
+                    placeholder="Tijdelijk wachtwoord"
+                    value={resetPw}
+                    onChange={(e) => setResetPw(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") doReset(u.id);
+                      if (e.key === "Escape") setResetId(null);
+                    }}
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => doReset(u.id)}
+                    style={{
+                      ...S.btn("var(--orange)"),
+                      padding: "6px 12px",
+                      fontSize: 12,
+                    }}
+                  >
+                    ✓ Opslaan
+                  </button>
+                  <button
+                    onClick={() => setResetId(null)}
+                    style={{
+                      background: "none",
+                      border: "1px solid var(--border)",
+                      borderRadius: 6,
+                      color: "var(--muted)",
+                      padding: "6px 10px",
+                      cursor: "pointer",
+                      fontSize: 12,
+                      fontFamily: "var(--font)",
+                    }}
+                  >
+                    ✕
+                  </button>
+                </div>
               )}
             </div>
             {userComps.length > 0 && (
