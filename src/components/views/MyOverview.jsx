@@ -147,19 +147,7 @@ function DeadlineBanner({ deadline }) {
         >
           Volgende deadline over {timeStr}
         </div>
-        <div
-          style={{
-            fontSize: 12,
-            fontWeight: 700,
-            color: "whitesmoke",
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            marginTOP: 4,
-            marginBottom: 4,
-          }}
-        >
-          {deadline.desc}
-        </div>
+
         <div
           style={{
             fontWeight: 700,
@@ -168,6 +156,15 @@ function DeadlineBanner({ deadline }) {
           }}
         >
           {deadline.label}
+        </div>
+        <div
+          style={{
+            fontSize: 13,
+            fontWeight: 700,
+            color: "whitesmoke",
+          }}
+        >
+          {deadline.desc}
         </div>
       </div>
     </div>
