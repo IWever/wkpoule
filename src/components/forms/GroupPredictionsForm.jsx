@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GROUP_MATCHES, FLAG } from "../../data/tournamentData";
+import { GROUP_MATCHES, FLAG, GROUPS } from "../../data/tournamentData";
 import {
   deepSet,
   deriveGroupStandings,
@@ -59,7 +59,8 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
 
       <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
         Vul de verwachte uitslag in (na 90 min + blessuretijd). De top-2 wordt
-        automatisch afgeleid uit jouw scores. De ingevulde score wordt automatisch opgeslagen.
+        automatisch afgeleid uit jouw scores. De ingevulde score wordt
+        automatisch opgeslagen.
       </div>
 
       {GROUP_MATCHES.filter((m) => m.group === activeGroup).map((m) => (
@@ -134,13 +135,14 @@ function GroupSelector({ active, onSelect }) {
       {GROUP_LETTERS.map((g) => {
         const isActive = active === g;
         const isF = g === "F";
+        const teams = GROUPS[g] || [];
         return (
           <button
             key={g}
             onClick={() => onSelect(g)}
             style={{
-              padding: "5px 13px",
-              borderRadius: 20,
+              padding: "6px 12px",
+              borderRadius: 10,
               border: `1px solid ${
                 isActive
                   ? isF
@@ -157,9 +159,16 @@ function GroupSelector({ active, onSelect }) {
               cursor: "pointer",
               fontSize: 13,
               fontWeight: 600,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 4,
             }}
           >
-            Groep {g}
+            <span>Groep {g}</span>
+            <span style={{ fontSize: 13, letterSpacing: 1 }}>
+              {teams.map((t) => FLAG[t] || "🏳️").join("")}
+            </span>
           </button>
         );
       })}
