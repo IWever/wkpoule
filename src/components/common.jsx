@@ -81,7 +81,6 @@ function FlagTeam({ team, size = 13 }) {
 }
 
 // ─── SLOT DISPLAY ─────────────────────────────────────────────────────────────
-// Renders a KO-bracket slot description (team / two candidates / label)
 
 function SlotDisplay({ desc, align = "left", size = 14 }) {
   if (!desc)
@@ -129,7 +128,6 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
 }
 
 // ─── GROUP STANDING TABLE ─────────────────────────────────────────────────────
-// Columns: W (games played), Pts, GV+ (goals for), GT- (goals against), DS (goal diff)
 
 function GroupStandingTable({ rows }) {
   const HEADER_STYLE = {
@@ -151,8 +149,8 @@ function GroupStandingTable({ rows }) {
         <span>Team</span>
         <span style={{ textAlign: "center" }}>W</span>
         <span style={{ textAlign: "center" }}>Pts</span>
-        <span style={{ textAlign: "center", color: "var(--green)" }}>GV+</span>
-        <span style={{ textAlign: "center", color: "var(--red)" }}>GT-</span>
+        <span style={{ textAlign: "center" }}>GV+</span>
+        <span style={{ textAlign: "center" }}>GT-</span>
         <span style={{ textAlign: "center" }}>DS</span>
       </div>
 
@@ -205,10 +203,10 @@ function GroupStandingTable({ rows }) {
           >
             {r.pts}
           </span>
-          <span style={{ textAlign: "center", color: "var(--green)" }}>
+          <span style={{ textAlign: "center", color: "var(--muted)" }}>
             {r.gf}
           </span>
-          <span style={{ textAlign: "center", color: "var(--red)" }}>
+          <span style={{ textAlign: "center", color: "var(--muted)" }}>
             {r.ga}
           </span>
           <span
