@@ -283,14 +283,16 @@ function ExtraQuestionsRules() {
             🌟 Verrassing van het WK
           </div>
           <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 8 }}>
-            Kies een van de 12 laagst geklasseerde landen. Punten alleen als dit
-            land de halve finale haalt of verder komt — er zijn geen punten voor
-            eerdere rondes.
+            Kies een van de 12 laagst geklasseerde landen. Verdien punten op
+            basis van hoe ver dit land de KO-fase haalt:
           </div>
           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
             {[
-              ["Halve finale verliezend", PTS_SURPRISE["Halve finale"]],
-              ["Finalespeler (verliezend)", PTS_SURPRISE["3e Plaats"]],
+              ["Zestiende finale", PTS_SURPRISE["Zestiende finale"]],
+              ["Achtste finale", PTS_SURPRISE["Achtste finale"]],
+              ["Kwartfinale", PTS_SURPRISE["Kwartfinale"]],
+              ["Halve finale", PTS_SURPRISE["Halve finale"]],
+              ["3e Plaats", PTS_SURPRISE["3e Plaats"]],
               ["🏆 Kampioen", PTS_SURPRISE["🏆 Wereldkampioen"]],
             ].map(([s, p]) => (
               <div
@@ -320,8 +322,9 @@ function ExtraQuestionsRules() {
             ))}
           </div>
           <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 8 }}>
-            💡 Bereikt jouw verrassing de finale als verliezend halvefinalist,
-            dan verdien je 40 pt (3e plek-niveau). Wordt het kampioen: 50 pt.
+            💡 Punten worden gegeven voor de verste ronde die het land haalt. 3e
+            plek levert evenveel op als halve finale verliezer (
+            {PTS_SURPRISE["3e Plaats"]} pt).
           </div>
         </div>
       </div>
@@ -557,8 +560,8 @@ function TipsCard() {
         die in de top 3 eindigt.
       </div>
       <div>
-        ✦ Verrassing: punten alleen als jouw land de halve finale haalt (30 pt)
-        of verder (40/50 pt).
+        ✦ Verrassing: punten voor elke KO-ronde die het land haalt
+        (5/10/20/30/40/50 pt).
       </div>
       <div>
         ✦ Clean sheets & groepsdoelpunten: bij gelijkstand zijn meerdere landen
