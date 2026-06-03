@@ -59,7 +59,7 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
 
       <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
         Vul de verwachte uitslag in (na 90 min + blessuretijd). De top-2 wordt
-        automatisch afgeleid uit jouw scores.
+        automatisch afgeleid uit jouw scores. De ingevulde score wordt automatisch opgeslagen.
       </div>
 
       {GROUP_MATCHES.filter((m) => m.group === activeGroup).map((m) => (

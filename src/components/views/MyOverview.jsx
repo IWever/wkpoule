@@ -133,10 +133,7 @@ function DeadlineBanner({ deadline }) {
             color: urgent ? "var(--red)" : "var(--accent)",
           }}
         >
-          Volgende deadline: {deadline.label}
-        </div>
-        <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 1 }}>
-          Sluit over {timeStr} · {deadline.desc}
+          Volgende deadline: {deadline.label} over {timeStr} · {deadline.desc}
         </div>
       </div>
     </div>
