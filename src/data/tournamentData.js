@@ -957,7 +957,7 @@ Object.entries(GROUPS).forEach(([g, teams]) =>
   })
 );
 
-const ADMIN_PW = "admin2026";
+const ADMIN_PW = "fifa2507";
 const KEY = "wk_poule_v12";
 const SESSION_KEY = "wk_session_v12";
 
