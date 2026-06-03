@@ -357,24 +357,6 @@ function NlStageCard({ pred, frozen, set }) {
   );
 }
 
-function YellowCardsCard({ pred, frozen, set }) {
-  return (
-    <QuestionCard
-      label="🟨 Meeste gele kaarten"
-      pts={PTS_EXTRA.yellowCards}
-      description="Welk land heeft aan het einde van het toernooi de meeste gele kaarten ontvangen?"
-    >
-      <TeamSelect
-        value={pred.yellowCards}
-        onChange={(e) => set(["yellowCards"], e.target.value)}
-        disabled={frozen}
-        placeholder="— selecteer land —"
-        teams={ALL_TEAMS}
-      />
-    </QuestionCard>
-  );
-}
-
 function SurpriseTeamCard({ pred, frozen, set }) {
   return (
     <QuestionCard
@@ -448,6 +430,24 @@ function MostCleanSheetsCard({ pred, frozen, set }) {
       <TeamSelect
         value={pred.mostCleanSheets}
         onChange={(e) => set(["mostCleanSheets"], e.target.value)}
+        disabled={frozen}
+        placeholder="— selecteer land —"
+        teams={ALL_TEAMS}
+      />
+    </QuestionCard>
+  );
+}
+
+function YellowCardsCard({ pred, frozen, set }) {
+  return (
+    <QuestionCard
+      label="🟨 Meeste gele kaarten"
+      pts={PTS_EXTRA.yellowCards}
+      description="Welk land heeft aan het einde van het toernooi de meeste gele kaarten ontvangen?"
+    >
+      <TeamSelect
+        value={pred.yellowCards}
+        onChange={(e) => set(["yellowCards"], e.target.value)}
         disabled={frozen}
         placeholder="— selecteer land —"
         teams={ALL_TEAMS}

@@ -166,7 +166,7 @@ function KOInstructions() {
             badge: "W",
             color: "var(--accent)",
             title: "Winnaar",
-            desc: "Welk team gaat door? Bij gelijkspel na 90 min. gaat het door via verlenging of strafschoppen — voorspel de winnaar, niet het eindresultaat.",
+            desc: "Welk team gaat door? Bij gelijkspel na 90 min. gaat het door via verlenging of strafschoppen — voorspel de winnaar.",
           },
           {
             badge: "S",

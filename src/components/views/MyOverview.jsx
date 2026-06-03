@@ -93,6 +93,18 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
   );
 }
 
+// ─── WELCOME HEADER ───────────────────────────────────────────────────────────
+
+function WelcomeHeader({ user }) {
+  return (
+    <div style={{ marginBottom: 20 }}>
+      <div style={{ fontSize: 22, fontWeight: 900 }}>
+        Succes {user.name}! 👋
+      </div>
+    </div>
+  );
+}
+
 // ─── DEADLINE BANNER ──────────────────────────────────────────────────────────
 
 function DeadlineBanner({ deadline }) {
@@ -133,20 +145,8 @@ function DeadlineBanner({ deadline }) {
             color: urgent ? "var(--red)" : "var(--accent)",
           }}
         >
-          Volgende deadline: {deadline.label} over {timeStr} · {deadline.desc}
+          Volgende deadline: {deadline.label} over {timeStr}
         </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── WELCOME HEADER ───────────────────────────────────────────────────────────
-
-function WelcomeHeader({ user }) {
-  return (
-    <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 22, fontWeight: 900 }}>
-        Succes {user.name}! 👋
       </div>
     </div>
   );
