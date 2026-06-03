@@ -145,7 +145,7 @@ function DeadlineBanner({ deadline }) {
             color: urgent ? "var(--red)" : "var(--accent)",
           }}
         >
-          Volgende deadline: {deadline.label} over {timeStr}
+          Volgende deadline over {timeStr}: {deadline.label}
         </div>
       </div>
     </div>
