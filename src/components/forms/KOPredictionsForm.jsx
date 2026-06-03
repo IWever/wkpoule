@@ -4,6 +4,7 @@ import {
   ALL_TEAMS,
   PTS_KO,
   FLAG,
+  GROUPS,
 } from "../../data/tournamentData";
 import { deepSet, buildRichKOSlots } from "../../pouleEngine";
 import { S } from "../../styles/ui";
@@ -17,6 +18,74 @@ const ROUNDS = [
   { key: "sf", label: "Halve finales" },
   { key: "final", label: "Finale & 3e Plaats" },
 ];
+
+// ─── HELPER: derive all possible teams from a slot ────────────────────────────
+// Returns a Set of team names that could possibly appear in this slot.
+// Falls back to ALL_TEAMS if the slot is ambiguous (e.g. beste nr. 3).
+
+function teamsFromSlot(slot, pred, koResults) {
+  if (!slot) return null;
+
+  // Group winner/runner-up: all teams in that group are candidates
+  if (/^[12][A-L]$/.test(slot)) {
+    const g = slot[1];
+    return new Set(GROUPS[g] || []);
+  }
+
+  // Best nr. 3: teams from multiple groups — return null (use ALL_TEAMS)
+  if (/^N3/.test(slot)) return null;
+
+  // Winner of a KO match
+  if (slot.charAt(0) === "W") {
+    const matchId = slot.slice(1);
+    // If admin result is known, only that winner
+    const adminWinner = koResults?.[matchId]?.winner;
+    if (koResults?.[matchId]?.played && adminWinner) {
+      return new Set([adminWinner]);
+    }
+    // Otherwise: union of both sides of that KO match
+    const koMatch = KO_STRUCTURE.find((m) => m.id === matchId);
+    if (!koMatch) return null;
+    const homeTeams = teamsFromSlot(koMatch.homeSlot, pred, koResults);
+    const awayTeams = teamsFromSlot(koMatch.awaySlot, pred, koResults);
+    if (!homeTeams || !awayTeams) return null;
+    return new Set([...homeTeams, ...awayTeams]);
+  }
+
+  // Loser of a KO match (for 3rd place)
+  if (slot.charAt(0) === "L") {
+    const matchId = slot.slice(1);
+    const koMatch = KO_STRUCTURE.find((m) => m.id === matchId);
+    if (!koMatch) return null;
+    const homeTeams = teamsFromSlot(koMatch.homeSlot, pred, koResults);
+    const awayTeams = teamsFromSlot(koMatch.awaySlot, pred, koResults);
+    if (!homeTeams || !awayTeams) return null;
+    return new Set([...homeTeams, ...awayTeams]);
+  }
+
+  return null;
+}
+
+function getDropdownTeams(homeDesc, awayDesc, match, pred, koResults) {
+  // If we already have concrete candidates from the rich slots, use those
+  const fromDesc = winnerCandidates(homeDesc, awayDesc);
+  if (fromDesc.length > 0 && fromDesc.length <= 4) return fromDesc;
+
+  // Try to derive from slot structure
+  const koMatch = KO_STRUCTURE.find((m) => m.id === match.id);
+  if (!koMatch) return ALL_TEAMS;
+
+  const homeTeams = teamsFromSlot(koMatch.homeSlot, pred, koResults);
+  const awayTeams = teamsFromSlot(koMatch.awaySlot, pred, koResults);
+
+  if (!homeTeams || !awayTeams) return ALL_TEAMS;
+
+  const combined = [...new Set([...homeTeams, ...awayTeams])];
+  // Sort alphabetically for readability
+  return combined.sort((a, b) => a.localeCompare(b, "nl"));
+}
+
+// ─── MAIN FORM ────────────────────────────────────────────────────────────────
 
 function KOPredictionsForm({ user, state, onSave, onBack }) {
   const [pred, setPred] = useState(() =>
@@ -124,6 +193,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
             awayDesc={richSlots[m.id]?.away}
             frozen={matchFrozen}
             onSet={set}
+            koResults={state.koResults}
           />
         );
       })}
@@ -166,7 +236,7 @@ function KOInstructions() {
             badge: "W",
             color: "var(--accent)",
             title: "Winnaar",
-            desc: "Welk team gaat door? Bij gelijkspel na 90 min. gaat het door via verlenging of strafschoppen — voorspel de winnaar.",
+            desc: "Welk team gaat door? Bij gelijkspel na 90 min. gaat het door via verlenging of strafschoppen — voorspel de winnaar, niet het eindresultaat.",
           },
           {
             badge: "S",
@@ -287,6 +357,7 @@ function KOMatchCard({
   awayDesc,
   frozen,
   onSet,
+  koResults,
 }) {
   const schema = PTS_KO[m.round] || PTS_KO.r16;
   const predWinner = pred.koWinners?.[m.id];
@@ -302,6 +373,11 @@ function KOMatchCard({
 
   const candidates = winnerCandidates(homeDesc, awayDesc);
   const useButtons = candidates.length >= 1 && candidates.length <= 4;
+
+  // For the dropdown: derive the filtered team list from the slot structure
+  const dropdownTeams = useButtons
+    ? []
+    : getDropdownTeams(homeDesc, awayDesc, m, pred, koResults);
 
   const cardBorder = r?.played
     ? winOk
@@ -498,7 +574,7 @@ function KOMatchCard({
           </div>
         ) : (
           <>
-            {(homeDesc?.type === "label" || awayDesc?.type === "label") && (
+            {dropdownTeams.length < ALL_TEAMS.length && (
               <div
                 style={{
                   fontSize: 11,
@@ -507,7 +583,9 @@ function KOMatchCard({
                   fontStyle: "italic",
                 }}
               >
-                Teams nog niet zeker ({homeDesc?.label} vs {awayDesc?.label})
+                {homeDesc?.type === "label" || awayDesc?.type === "label"
+                  ? `Teams nog niet zeker — alleen mogelijke deelnemers getoond`
+                  : `Alleen mogelijke deelnemers`}
               </div>
             )}
             <select
@@ -529,9 +607,9 @@ function KOMatchCard({
               }}
             >
               <option value="">— selecteer winnaar —</option>
-              {ALL_TEAMS.map((t) => (
+              {dropdownTeams.map((t) => (
                 <option key={t} value={t}>
-                  {FLAG[t]} {t}
+                  {FLAG[t] || "🏳️"} {t}
                 </option>
               ))}
             </select>
