@@ -122,6 +122,16 @@ function AuthScreen({
               {mode === "login" ? "Inloggen →" : "Account aanmaken →"}
             </button>
           </div>
+          <p
+            style={{
+              fontSize: 11,
+              color: "var(--muted)",
+              marginTop: 12,
+              textAlign: "center",
+            }}
+          >
+            Bij vragen of suggesties, whatsapp Ingmar
+          </p>
           <AdminLoginLink onLogin={onLogin} />
         </div>
       </div>
@@ -300,6 +310,16 @@ function AdminLoginLink({ onLogin }) {
           fontFamily: "var(--font)",
         }}
       >
+        <p
+          style={{
+            fontSize: 11,
+            color: "var(--muted)",
+            marginTop: 12,
+            textAlign: "center",
+          }}
+        >
+          Bij vragen of suggesties, whatsapp Ingmar
+        </p>
         ⚙️ Admin inloggen
       </button>
     </div>
