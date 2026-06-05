@@ -261,6 +261,7 @@ export default function App() {
   }, [loadState]);
 
   // Restore session after state loads
+  // Restore session after state loads
   useEffect(() => {
     if (loadStatus !== "ready" || !state) return;
     const saved = loadSession();
@@ -273,8 +274,12 @@ export default function App() {
     if (userExists) {
       setSession(saved);
       setScreen("overview");
+    } else {
+      // Gebruiker niet gevonden in geladen state — wis sessie niet zomaar
+      console.warn("Sessie gebruiker niet gevonden in state:", saved);
+      // Optioneel: saveSession(null); ← alleen uncommenten als je de sessie wél wil wissen
     }
-  }, [loadStatus]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [loadStatus]);
 
   const setAndPersist = useCallback((updater) => {
     setState((prev) => {

@@ -43,17 +43,23 @@ async function load() {
       return null;
     }
   }
-  try {
-    const res = await fetch("/api/state");
-    if (!res.ok) {
-      console.error("load() API fout:", res.status, await res.text());
-      return null;
+
+  // Probeer maximaal 3x bij mislukking
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      const res = await fetch("/api/state");
+      if (!res.ok) {
+        console.error(`load() poging ${attempt} mislukt:`, res.status);
+        if (attempt < 3) await new Promise((r) => setTimeout(r, 800 * attempt));
+        continue;
+      }
+      return await res.json();
+    } catch (err) {
+      console.error(`load() netwerk fout poging ${attempt}:`, err);
+      if (attempt < 3) await new Promise((r) => setTimeout(r, 800 * attempt));
     }
-    return await res.json();
-  } catch (err) {
-    console.error("load() netwerk fout:", err);
-    return null;
   }
+  return null;
 }
 
 async function persist(data) {
