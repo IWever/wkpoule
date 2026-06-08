@@ -1980,7 +1980,7 @@ function KOResultsAdmin({ state, updKO }) {
 // ─── EXTRAS ADMIN ─────────────────────────────────────────────────────────────
 
 function ExtrasAdmin({ state, setState }) {
-  const topOuts = deriveTopOuts(state.results);
+  const topOuts = deriveTopOuts(state.results, state.koResults);
   const surpriseProgress = SURPRISE_TEAMS.map((team) => ({
     team,
     stage: deriveSurpriseStage(team, state.koResults),
@@ -2070,7 +2070,7 @@ function ExtrasAdmin({ state, setState }) {
 
       <div style={{ ...S.card(), background: "rgba(88,166,255,.04)" }}>
         <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 8 }}>
-          💥 Toplands uitgeschakeld in groepsfase (automatisch)
+          💥 Toplands die achtste finales niet halen (automatisch)
         </div>
         {topOuts.length === 0 ? (
           <span

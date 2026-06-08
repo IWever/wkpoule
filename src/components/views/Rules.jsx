@@ -60,7 +60,6 @@ function CardTitle({ children }) {
   );
 }
 
-/** A single rule row: label + optional description + points badge */
 function RuleRow({ icon, label, desc, pts, noBorder }) {
   return (
     <div
@@ -107,7 +106,6 @@ function RuleRow({ icon, label, desc, pts, noBorder }) {
   );
 }
 
-/** Consistent points badge used everywhere */
 function PtsBadge({ pts, color = "var(--accent)" }) {
   return (
     <div
@@ -128,7 +126,6 @@ function PtsBadge({ pts, color = "var(--accent)" }) {
   );
 }
 
-/** Two-column grid for small data pills */
 function PillGrid({ items }) {
   return (
     <div
@@ -169,7 +166,6 @@ function PillGrid({ items }) {
   );
 }
 
-/** Horizontal rule between sections */
 function Divider() {
   return (
     <div style={{ borderTop: "1px solid var(--border)", margin: "18px 0" }} />
@@ -262,8 +258,8 @@ function ExtraQuestionsRules() {
         />
         <RuleRow
           icon="💥"
-          label="Welk topland valt af?"
-          desc="Kies een van de 12 hoogst geklasseerde landen die toch niet verder komt dan de groepsfase."
+          label="Welk topland haalt de achtste finales niet?"
+          desc="Kies een van de 12 hoogst geklasseerde landen die de achtste finales niet bereiken — uitgeschakeld in de groepsfase of in de zestiende finales."
           pts={PTS_EXTRA.topOut}
         />
         <RuleRow
@@ -336,8 +332,8 @@ function ExtraQuestionsRules() {
         >
           Kies een van de 12 laagst geklasseerde landen. Verdien punten op basis
           van hoe ver dit land de KO-fase haalt. Punten worden gegeven voor de
-          verste ronde die het land haalt. 3e plek levert evenveel op als halve
-          finale verliezer.
+          verste ronde die het land bereikt. De 3e plek levert evenveel op als
+          een verliezend halve finalist.
         </div>
         <PillGrid
           items={[
@@ -563,6 +559,7 @@ function TipsCard() {
     "KO-voorspellingen open zodra de admin dit aanzet; elke ronde kan apart bevroren worden.",
     "Topscoorders: kies 3 spelers — je verdient punten voor iedere speler die in de top 3 eindigt.",
     "Verrassing: punten voor elke KO-ronde die het land haalt (5/10/20/30/40/50 pt).",
+    "Topland: een topland telt als 'niet gehaald' als het uitvalt in de groepsfase of de zestiende finales.",
     "Clean sheets & groepsdoelpunten: bij gelijkstand zijn meerdere landen goed.",
     "Klik op een wedstrijd of deelnemer in de stand om te vergelijken.",
   ];

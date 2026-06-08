@@ -358,12 +358,67 @@ function NlStageCard({ pred, frozen, set }) {
   );
 }
 
+// ─── SURPRISE TEAM CARD — met volledige puntenlijst ───────────────────────────
+
 function SurpriseTeamCard({ pred, frozen, set }) {
+  const SURPRISE_STAGES = [
+    { stage: "Zestiende finale", pts: PTS_SURPRISE["Zestiende finale"] },
+    { stage: "Achtste finale", pts: PTS_SURPRISE["Achtste finale"] },
+    { stage: "Kwartfinale", pts: PTS_SURPRISE["Kwartfinale"] },
+    { stage: "Halve finale", pts: PTS_SURPRISE["Halve finale"] },
+    { stage: "3e Plaats", pts: PTS_SURPRISE["3e Plaats"] },
+    { stage: "🏆 Wereldkampioen", pts: PTS_SURPRISE["🏆 Wereldkampioen"] },
+  ];
+
   return (
-    <QuestionCard
-      label="🌟 Verrassing van het WK"
-      description="Kies een van de 12 laagst geklasseerde landen. Punten als dit team de halve finale haalt of verder komt."
-    >
+    <div style={S.card()}>
+      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>
+        🌟 Verrassing van het WK
+      </div>
+      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
+        Kies een van de 12 laagst geklasseerde landen. Punten op basis van hoe
+        ver dit land de KO-fase haalt.
+      </div>
+
+      {/* Puntenlijst */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 5,
+          marginBottom: 12,
+        }}
+      >
+        {SURPRISE_STAGES.map(({ stage, pts }) => (
+          <div
+            key={stage}
+            style={{
+              background: "var(--bg)",
+              border: "1px solid var(--border)",
+              borderRadius: 7,
+              padding: "6px 8px",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "var(--accent)",
+                marginBottom: 2,
+              }}
+            >
+              +{pts}
+            </div>
+            <div
+              style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.3 }}
+            >
+              {stage}
+            </div>
+          </div>
+        ))}
+      </div>
+
       <TeamSelect
         value={pred.surpriseTeam}
         onChange={(e) => set(["surpriseTeam"], e.target.value)}
@@ -371,17 +426,18 @@ function SurpriseTeamCard({ pred, frozen, set }) {
         placeholder="— kies jouw verrassing —"
         teams={SURPRISE_TEAMS}
       />
+
       {pred.surpriseTeam && (
         <div style={{ marginTop: 10, fontSize: 11, color: "var(--muted)" }}>
-          Punten als {FLAG[pred.surpriseTeam]} {pred.surpriseTeam}:
+          Punten als{" "}
+          <strong style={{ color: "var(--text)" }}>
+            {FLAG[pred.surpriseTeam]} {pred.surpriseTeam}
+          </strong>{" "}
+          de verste ronde haalt:
           <div
             style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 6 }}
           >
-            {[
-              ["Halve finale verliezend", PTS_SURPRISE["Halve finale"]],
-              ["Finalespeler (verliezend)", PTS_SURPRISE["3e Plaats"]],
-              ["🏆 Wereldkampioen", PTS_SURPRISE["🏆 Wereldkampioen"]],
-            ].map(([stage, p]) => (
+            {SURPRISE_STAGES.map(({ stage, pts }) => (
               <span
                 key={stage}
                 style={{
@@ -393,22 +449,24 @@ function SurpriseTeamCard({ pred, frozen, set }) {
                   fontWeight: 700,
                 }}
               >
-                {stage}: +{p}
+                {stage}: +{pts}
               </span>
             ))}
           </div>
         </div>
       )}
-    </QuestionCard>
+    </div>
   );
 }
+
+// ─── TOP OUT CARD — aangepaste tekst: achtste finales niet halen ──────────────
 
 function TopOutCard({ pred, frozen, set }) {
   return (
     <QuestionCard
-      label="💥 Welk topland haalt de KO-fase niet?"
+      label="💥 Welk topland haalt de achtste finales niet?"
       pts={PTS_EXTRA.topOut}
-      description="Kies een van de 12 hoogst geklasseerde landen die uitgeschakeld worden in de groepsfase."
+      description="Kies een van de 12 hoogst geklasseerde landen die de achtste finales niet bereiken — uitgeschakeld in de groepsfase of in de zestiende finales."
     >
       <TeamSelect
         value={pred.topOut}

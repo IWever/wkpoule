@@ -360,19 +360,56 @@ function buildKOSlots(pred) {
 }
 
 // ─── EXTRA BEREKENINGEN ───────────────────────────────────────────────────────
-function deriveTopOuts(results) {
+
+// deriveTopOuts: geeft toplands terug die de achtste finales NIET halen.
+// Dat zijn teams die uitgeschakeld zijn in de groepsfase (niet in top-2)
+// OF die verloren in de zestiende finale (r32).
+function deriveTopOuts(results, koResults) {
   const actualS = deriveGroupStandingsFromResults(results);
   const eliminated = [];
+
   TOP_TEAMS.forEach((team) => {
     const g = Object.keys(GROUPS).find((g2) => GROUPS[g2].includes(team));
     if (!g) return;
-    const allPlayed = GROUP_MATCHES.filter((m) => m.group === g).every(
+
+    // Stap 1: controleer of de groep volledig gespeeld is
+    const allGroupPlayed = GROUP_MATCHES.filter((m) => m.group === g).every(
       (m) => results[m.id]?.played
     );
-    if (!allPlayed) return;
+    if (!allGroupPlayed) return;
+
     const top2 = [actualS[g]?.winner, actualS[g]?.runnerUp].filter(Boolean);
-    if (top2.length === 2 && !top2.includes(team)) eliminated.push(team);
+    if (top2.length < 2) return;
+
+    // Uitgeschakeld in groepsfase → meteen out
+    if (!top2.includes(team)) {
+      eliminated.push(team);
+      return;
+    }
+
+    // Stap 2: team haalde de zestiende finales — check of het daar verloor
+    if (!koResults) return;
+    const r32Matches = KO_STRUCTURE.filter((m) => m.round === "r32");
+    for (const match of r32Matches) {
+      const r = koResults[match.id];
+      if (!r?.played || !r.winner) continue;
+      // Was dit team deelnemer aan deze wedstrijd én heeft het verloren?
+      const wasHome = match.homeSlot === `1${g}` || match.homeSlot === `2${g}`;
+      const wasAway = match.awaySlot === `1${g}` || match.awaySlot === `2${g}`;
+      if ((wasHome || wasAway) && r.winner !== team) {
+        // Extra check: was het de juiste positie (1 of 2) voor dit team?
+        const teamPos = top2[0] === team ? "1" : "2";
+        const slotMatch =
+          match.homeSlot === `${teamPos}${g}` ||
+          match.awaySlot === `${teamPos}${g}`;
+        if (slotMatch) {
+          eliminated.push(team);
+          return;
+        }
+      }
+    }
   });
+
   return eliminated;
 }
 
@@ -387,7 +424,6 @@ const KO_ROUND_TO_STAGE = {
 };
 
 // deriveSurpriseStage: geeft de hoogste ronde terug die het team haalde
-// Voor verrassing: punten alleen voor halve finale verliezer (sf), 3e plek (3rd), kampioen (final)
 function deriveSurpriseStage(team, koResults) {
   if (!team) return null;
   let furthestIdx = -1;
@@ -537,15 +573,15 @@ function calcPoints(user, results, koResults) {
   )
     pts += PTS_EXTRA.yellowCards;
 
-  // Extra: verrassing (punten alleen voor halve finale verliezer, 3e plek, kampioen)
+  // Extra: verrassing
   if (p.surpriseTeam) {
     const ss = deriveSurpriseStage(p.surpriseTeam, koResults);
     if (ss) pts += PTS_SURPRISE[ss] || 0;
   }
 
-  // Extra: topland eruit
+  // Extra: topland haalt achtste finales niet
   if (p.topOut) {
-    const outs = deriveTopOuts(results);
+    const outs = deriveTopOuts(results, koResults);
     if (outs.includes(p.topOut)) pts += PTS_TOP_OUT;
   }
 
