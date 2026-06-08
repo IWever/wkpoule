@@ -275,9 +275,12 @@ export default function App() {
       setSession(saved);
       setScreen("overview");
     } else {
-      // Gebruiker niet gevonden in geladen state — wis sessie niet zomaar
-      console.warn("Sessie gebruiker niet gevonden in state:", saved);
-      // Optioneel: saveSession(null); ← alleen uncommenten als je de sessie wél wil wissen
+      // Gebruiker bestaat niet meer (bijv. verwijderd door admin) → uitloggen
+      console.warn(
+        "Sessie gebruiker niet gevonden in state, sessie gewist:",
+        saved
+      );
+      saveSession(null);
     }
   }, [loadStatus]);
 
