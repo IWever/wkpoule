@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   load,
   persist,
@@ -237,6 +237,17 @@ export default function App() {
   const [adminStep, setAdminStep] = useState(false);
   const [mainTab, setMainTab] = useState("overview");
 
+  // Debounce timer voor persist — voorkomt dat snelle opeenvolgende
+  // state-wijzigingen elkaar overschrijven in de database
+  const persistTimer = useRef(null);
+
+  const schedulePersist = useCallback((data) => {
+    clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => {
+      persist(data).catch((err) => console.error("Opslaan mislukt:", err));
+    }, 300);
+  }, []);
+
   const urlParams = new URLSearchParams(window.location.search);
   const preRegister =
     urlParams.get("register") !== null ||
@@ -261,7 +272,7 @@ export default function App() {
   }, [loadState]);
 
   // Restore session after state loads
-  // Restore session after state loads
+  // Mist state.users als dependency zodat re-validatie plaatsvindt als users wijzigen
   useEffect(() => {
     if (loadStatus !== "ready" || !state) return;
     const saved = loadSession();
@@ -275,22 +286,29 @@ export default function App() {
       setSession(saved);
       setScreen("overview");
     } else {
-      // Gebruiker bestaat niet meer (bijv. verwijderd door admin) → uitloggen
       console.warn(
         "Sessie gebruiker niet gevonden in state, sessie gewist:",
         saved
       );
       saveSession(null);
     }
-  }, [loadStatus]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loadStatus, state?.users]);
 
-  const setAndPersist = useCallback((updater) => {
-    setState((prev) => {
-      const next = typeof updater === "function" ? updater(prev) : updater;
-      persist(next).catch((err) => console.error("Opslaan mislukt:", err));
-      return next;
-    });
-  }, []);
+  // ─── setAndPersist: persist wordt BUITEN setState aangeroepen ────────────
+  // Hiermee vermijden we bijwerkingen binnen de pure updater-functie,
+  // wat in React Strict Mode dubbele persist-aanroepen veroorzaakte.
+  const setAndPersist = useCallback(
+    (updater) => {
+      setState((prev) => {
+        const next = typeof updater === "function" ? updater(prev) : updater;
+        // Sla persist op via debounced timer, niet direct in de updater
+        schedulePersist(next);
+        return next;
+      });
+    },
+    [schedulePersist]
+  );
 
   if (loadStatus === "loading") return <LoadingScreen />;
   if (loadStatus === "error") return <ErrorScreen onRetry={loadState} />;

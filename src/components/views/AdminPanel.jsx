@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import {
   GROUP_MATCHES,
   KO_STRUCTURE,
@@ -44,53 +44,83 @@ function AdminPanel({ state, setState }) {
   const [tab, setTab] = useState("home");
   const [activeGroup, setActiveGroup] = useState("A");
 
-  const upd = (patch) =>
-    setState((s) => {
-      const ns = { ...s, ...patch };
-      persist(ns);
-      return ns;
-    });
+  // ─── Debounced persist ────────────────────────────────────────────────────
+  // Alle admin-mutaties gaan via useDebouncedPersist zodat snelle opeenvolgende
+  // wijzigingen (bijv. score intikken) niet als losse requests de database in
+  // gaan en elkaar overschrijven.
+  const persistTimer = useRef(null);
 
-  const updResult = (id, field, val) =>
-    setState((s) => {
-      const ns = {
+  const schedulePersist = useCallback((ns) => {
+    clearTimeout(persistTimer.current);
+    persistTimer.current = setTimeout(() => {
+      persist(ns).catch((err) => console.error("Admin persist mislukt:", err));
+    }, 300);
+  }, []);
+
+  // setState wrapper die ook persist inplant
+  const setStateAndPersist = useCallback(
+    (updater) => {
+      setState((prev) => {
+        const ns = typeof updater === "function" ? updater(prev) : updater;
+        schedulePersist(ns);
+        return ns;
+      });
+    },
+    [setState, schedulePersist]
+  );
+
+  // Helpers die de rest van het paneel gebruiken
+  const upd = useCallback(
+    (patch) => setStateAndPersist((s) => ({ ...s, ...patch })),
+    [setStateAndPersist]
+  );
+
+  const updResult = useCallback(
+    (id, field, val) =>
+      setStateAndPersist((s) => ({
         ...s,
         results: {
           ...s.results,
           [id]: { ...(s.results[id] || {}), [field]: val },
         },
-      };
-      persist(ns);
-      return ns;
-    });
+      })),
+    [setStateAndPersist]
+  );
 
-  const updKO = (id, field, val) =>
-    setState((s) => {
-      const ns = {
+  const updKO = useCallback(
+    (id, field, val) =>
+      setStateAndPersist((s) => ({
         ...s,
         koResults: {
           ...s.koResults,
           [id]: { ...(s.koResults[id] || {}), [field]: val },
         },
-      };
-      persist(ns);
-      return ns;
-    });
+      })),
+    [setStateAndPersist]
+  );
 
-  const removeUser = (uid) => {
-    if (!confirm("Verwijderen?")) return;
-    setState((s) => {
-      const ns = { ...s, users: s.users.filter((u) => u.id !== uid) };
-      persist(ns);
-      return ns;
-    });
-  };
+  const removeUser = useCallback(
+    (uid) => {
+      if (!confirm("Verwijderen?")) return;
+      setStateAndPersist((s) => ({
+        ...s,
+        users: s.users.filter((u) => u.id !== uid),
+      }));
+    },
+    [setStateAndPersist]
+  );
 
   const frozenRounds = state.koFrozenRounds || {};
-  const toggleKORound = (roundKey) => {
-    const next = { ...frozenRounds, [roundKey]: !frozenRounds[roundKey] };
-    upd({ koFrozenRounds: next, koFrozen: Object.values(next).some(Boolean) });
-  };
+  const toggleKORound = useCallback(
+    (roundKey) => {
+      const next = { ...frozenRounds, [roundKey]: !frozenRounds[roundKey] };
+      upd({
+        koFrozenRounds: next,
+        koFrozen: Object.values(next).some(Boolean),
+      });
+    },
+    [frozenRounds, upd]
+  );
 
   const TABS = [
     { id: "home", label: "🏠 Overzicht" },
@@ -132,10 +162,14 @@ function AdminPanel({ state, setState }) {
         />
       )}
       {tab === "competitions" && (
-        <CompetitionsAdmin state={state} setState={setState} />
+        <CompetitionsAdmin state={state} setState={setStateAndPersist} />
       )}
       {tab === "users" && (
-        <UsersAdmin state={state} setState={setState} onRemove={removeUser} />
+        <UsersAdmin
+          state={state}
+          setState={setStateAndPersist}
+          onRemove={removeUser}
+        />
       )}
       {tab === "results" && (
         <ResultsAdmin
@@ -143,11 +177,13 @@ function AdminPanel({ state, setState }) {
           activeGroup={activeGroup}
           setActiveGroup={setActiveGroup}
           updResult={updResult}
-          setState={setState}
+          setState={setStateAndPersist}
         />
       )}
       {tab === "ko" && <KOResultsAdmin state={state} updKO={updKO} />}
-      {tab === "extra" && <ExtrasAdmin state={state} setState={setState} />}
+      {tab === "extra" && (
+        <ExtrasAdmin state={state} setState={setStateAndPersist} />
+      )}
     </div>
   );
 }
@@ -724,7 +760,7 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
   );
 }
 
-// ─── COMPETITIONS ADMIN — met naam wijzigen ───────────────────────────────────
+// ─── COMPETITIONS ADMIN ───────────────────────────────────────────────────────
 
 function CompetitionsAdmin({ state, setState }) {
   const [newName, setNewName] = useState("");
@@ -735,39 +771,26 @@ function CompetitionsAdmin({ state, setState }) {
   function addComp() {
     if (!newName.trim()) return;
     const id = "c_" + Date.now();
-    setState((s) => {
-      const ns = {
-        ...s,
-        competitions: [
-          ...(s.competitions || []),
-          {
-            id,
-            name: newName.trim(),
-            hidden: false,
-            hiddenRegistration: false,
-          },
-        ],
-      };
-      persist(ns);
-      return ns;
-    });
+    setState((s) => ({
+      ...s,
+      competitions: [
+        ...(s.competitions || []),
+        { id, name: newName.trim(), hidden: false, hiddenRegistration: false },
+      ],
+    }));
     setNewName("");
   }
 
   function removeComp(id) {
     if (!confirm("Competitie verwijderen?")) return;
-    setState((s) => {
-      const ns = {
-        ...s,
-        competitions: (s.competitions || []).filter((c) => c.id !== id),
-        users: s.users.map((u) => ({
-          ...u,
-          competitionIds: (u.competitionIds || []).filter((cid) => cid !== id),
-        })),
-      };
-      persist(ns);
-      return ns;
-    });
+    setState((s) => ({
+      ...s,
+      competitions: (s.competitions || []).filter((c) => c.id !== id),
+      users: s.users.map((u) => ({
+        ...u,
+        competitionIds: (u.competitionIds || []).filter((cid) => cid !== id),
+      })),
+    }));
   }
 
   function startEditComp(comp) {
@@ -777,50 +800,38 @@ function CompetitionsAdmin({ state, setState }) {
 
   function saveEditComp(id) {
     if (!editName.trim()) return;
-    setState((s) => {
-      const ns = {
-        ...s,
-        competitions: s.competitions.map((c) =>
-          c.id === id ? { ...c, name: editName.trim() } : c
-        ),
-      };
-      persist(ns);
-      return ns;
-    });
+    setState((s) => ({
+      ...s,
+      competitions: s.competitions.map((c) =>
+        c.id === id ? { ...c, name: editName.trim() } : c
+      ),
+    }));
     setEditingId(null);
   }
 
   function toggleUserInComp(userId, compId) {
-    setState((s) => {
-      const ns = {
-        ...s,
-        users: s.users.map((u) => {
-          if (u.id !== userId) return u;
-          const ids = u.competitionIds || [];
-          return {
-            ...u,
-            competitionIds: ids.includes(compId)
-              ? ids.filter((id) => id !== compId)
-              : [...ids, compId],
-          };
-        }),
-      };
-      persist(ns);
-      return ns;
-    });
+    setState((s) => ({
+      ...s,
+      users: s.users.map((u) => {
+        if (u.id !== userId) return u;
+        const ids = u.competitionIds || [];
+        return {
+          ...u,
+          competitionIds: ids.includes(compId)
+            ? ids.filter((id) => id !== compId)
+            : [...ids, compId],
+        };
+      }),
+    }));
   }
 
   function toggleCompProp(id, prop) {
-    setState((s) => {
-      const ns = {
-        ...s,
-        competitions: s.competitions.map((c) =>
-          c.id === id ? { ...c, [prop]: !c[prop] } : c
-        ),
-      };
-      persist(ns);
-      return ns;
-    });
+    setState((s) => ({
+      ...s,
+      competitions: s.competitions.map((c) =>
+        c.id === id ? { ...c, [prop]: !c[prop] } : c
+      ),
+    }));
   }
 
   return (
@@ -1093,11 +1104,13 @@ function CompetitionsAdmin({ state, setState }) {
   );
 }
 
-// ─── USERS ADMIN — met naam wijzigen ─────────────────────────────────────────
+// ─── USERS ADMIN ──────────────────────────────────────────────────────────────
 
 function UsersAdmin({ state, setState, onRemove }) {
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
+  const [resetId, setResetId] = useState(null);
+  const [resetPw, setResetPw] = useState("");
 
   function startEdit(user) {
     setEditingId(user.id);
@@ -1107,7 +1120,6 @@ function UsersAdmin({ state, setState, onRemove }) {
   function saveEdit(uid) {
     if (!editName.trim()) return;
     const newName = editName.trim();
-    // Check duplicate
     const duplicate = state.users.find(
       (u) => u.id !== uid && u.name.toLowerCase() === newName.toLowerCase()
     );
@@ -1115,44 +1127,33 @@ function UsersAdmin({ state, setState, onRemove }) {
       alert("Deze naam is al in gebruik.");
       return;
     }
-    setState((s) => {
-      const ns = {
-        ...s,
-        users: s.users.map((u) => (u.id === uid ? { ...u, name: newName } : u)),
-      };
-      persist(ns);
-      return ns;
-    });
+    setState((s) => ({
+      ...s,
+      users: s.users.map((u) => (u.id === uid ? { ...u, name: newName } : u)),
+    }));
     setEditingId(null);
   }
 
-  const koAvail = state.koOpen || state.fase === "ko";
-
-  const [resetId, setResetId] = useState(null);
-  const [resetPw, setResetPw] = useState("");
-
   function doReset(uid) {
     if (!resetPw.trim() || resetPw.length < 4) return;
-    setState((s) => {
-      const ns = {
-        ...s,
-        users: s.users.map((u) =>
-          u.id === uid
-            ? {
-                ...u,
-                pwPlain: resetPw,
-                pwHash: hash(resetPw),
-                mustChangePassword: true,
-              }
-            : u
-        ),
-      };
-      persist(ns);
-      return ns;
-    });
+    setState((s) => ({
+      ...s,
+      users: s.users.map((u) =>
+        u.id === uid
+          ? {
+              ...u,
+              pwPlain: resetPw,
+              pwHash: hash(resetPw),
+              mustChangePassword: true,
+            }
+          : u
+      ),
+    }));
     setResetId(null);
     setResetPw("");
   }
+
+  const koAvail = state.koOpen || state.fase === "ko";
 
   return (
     <div>
@@ -1309,7 +1310,6 @@ function UsersAdmin({ state, setState, onRemove }) {
                 </>
               )}
 
-              {/* Reset formulier, toont onder de rij als resetId === u.id */}
               {resetId === u.id && (
                 <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
                   <input
@@ -1513,18 +1513,14 @@ function ResultsAdmin({
   ) {
     setTimeout(
       () =>
-        setState((prev) => {
-          const ns = {
-            ...prev,
-            results: {
-              ...prev.results,
-              [`GW_${activeGroup}`]: s.winner,
-              [`GR_${activeGroup}`]: s.runnerUp,
-            },
-          };
-          persist(ns);
-          return ns;
-        }),
+        setState((prev) => ({
+          ...prev,
+          results: {
+            ...prev.results,
+            [`GW_${activeGroup}`]: s.winner,
+            [`GR_${activeGroup}`]: s.runnerUp,
+          },
+        })),
       0
     );
   }
@@ -1987,11 +1983,10 @@ function ExtrasAdmin({ state, setState }) {
   })).filter((s) => s.stage && PTS_SURPRISE[s.stage] > 0);
 
   function setResult(patch) {
-    setState((s) => {
-      const ns = { ...s, results: { ...s.results, ...patch } };
-      persist(ns);
-      return ns;
-    });
+    setState((s) => ({
+      ...s,
+      results: { ...s.results, ...patch },
+    }));
   }
 
   return (
@@ -2052,7 +2047,6 @@ function ExtrasAdmin({ state, setState }) {
         </select>
       </div>
 
-      {/* Meeste clean sheets — admin selecteert meerdere */}
       <MultiTeamAdmin
         label="🧤 Meeste clean sheets (meerdere landen mogelijk bij gelijkstand)"
         resultKey="MOST_CLEAN_SHEETS"
@@ -2060,7 +2054,6 @@ function ExtrasAdmin({ state, setState }) {
         setState={setState}
       />
 
-      {/* Meeste doelpunten groepsfase — admin selecteert meerdere */}
       <MultiTeamAdmin
         label="⚽ Meeste doelpunten groepsfase (meerdere landen mogelijk bij gelijkstand)"
         resultKey="MOST_GROUP_GOALS"
@@ -2142,7 +2135,6 @@ function ExtrasAdmin({ state, setState }) {
 }
 
 // ─── MULTI-TEAM ADMIN SELECTOR ────────────────────────────────────────────────
-// Admin kan meerdere landen selecteren (bij gelijkstand)
 
 function MultiTeamAdmin({ label, resultKey, state, setState }) {
   const current = Array.isArray(state.results[resultKey])
@@ -2157,11 +2149,10 @@ function MultiTeamAdmin({ label, resultKey, state, setState }) {
     const next = current.includes(team)
       ? current.filter((t) => t !== team)
       : [...current, team];
-    setState((s) => {
-      const ns = { ...s, results: { ...s.results, [resultKey]: next } };
-      persist(ns);
-      return ns;
-    });
+    setState((s) => ({
+      ...s,
+      results: { ...s.results, [resultKey]: next },
+    }));
   }
 
   function addTeam() {
@@ -2286,11 +2277,10 @@ function TopScorerAdmin({ state, setState }) {
       ...topScorers,
       { name: newPlayer, rank, country: newCountry },
     ];
-    setState((s) => {
-      const ns = { ...s, results: { ...s.results, TOP_SCORERS: updated } };
-      persist(ns);
-      return ns;
-    });
+    setState((s) => ({
+      ...s,
+      results: { ...s.results, TOP_SCORERS: updated },
+    }));
     setNewPlayer("");
     setNewCountry("");
     setNewRank(1);
@@ -2298,22 +2288,20 @@ function TopScorerAdmin({ state, setState }) {
 
   function removeScorer(name) {
     const updated = topScorers.filter((s) => s.name !== name);
-    setState((s) => {
-      const ns = { ...s, results: { ...s.results, TOP_SCORERS: updated } };
-      persist(ns);
-      return ns;
-    });
+    setState((s) => ({
+      ...s,
+      results: { ...s.results, TOP_SCORERS: updated },
+    }));
   }
 
   function updateRank(name, rank) {
     const updated = topScorers.map((s) =>
       s.name === name ? { ...s, rank: parseInt(rank, 10) } : s
     );
-    setState((s) => {
-      const ns = { ...s, results: { ...s.results, TOP_SCORERS: updated } };
-      persist(ns);
-      return ns;
-    });
+    setState((s) => ({
+      ...s,
+      results: { ...s.results, TOP_SCORERS: updated },
+    }));
   }
 
   const rankColors = {
