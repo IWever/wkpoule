@@ -293,7 +293,7 @@ export default function App() {
       saveSession(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadStatus, state?.users]);
+  }, [loadStatus]);
 
   // ─── setAndPersist: persist wordt BUITEN setState aangeroepen ────────────
   // Hiermee vermijden we bijwerkingen binnen de pure updater-functie,
