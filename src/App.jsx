@@ -287,6 +287,32 @@ export default function App() {
     });
   }, []);
 
+  // savePred hier zodat alle hooks vóór conditionele returns staan (Rules of Hooks)
+  const savePred = useCallback(
+    (pred) => {
+      return new Promise((resolve) => {
+        // Lokale state direct bijwerken voor responsieve UI
+        setState((prev) => ({
+          ...prev,
+          users: prev.users.map((u) =>
+            u.id === session ? { ...u, predictions: pred } : u
+          ),
+        }));
+        // Debounced DB-write: 400ms wachten zodat snel typen wordt samengevoegd
+        clearTimeout(predTimerRef.current);
+        predTimerRef.current = setTimeout(() => {
+          persistUserPredictions(session, pred).catch((err) =>
+            console.error("Predictions opslaan mislukt:", err)
+          );
+        }, 400);
+        // Direct true teruggeven zodat de form de "✓ Opgeslagen" indicator toont
+        resolve(true);
+      });
+    },
+    [session]
+  );
+
+  // Early returns NA alle hooks
   if (loadStatus === "loading") return <LoadingScreen />;
   if (loadStatus === "error") return <ErrorScreen onRetry={loadState} />;
 
@@ -343,34 +369,6 @@ export default function App() {
     saveSession(userId);
     setScreen("overview");
   };
-
-  // ─── savePred ─────────────────────────────────────────────────────────────
-  // Gebruikt persistUserPredictions() (type=user) zodat alleen de predictions
-  // van deze gebruiker worden bijgewerkt. Debounced via useRef zodat snel
-  // aaneenvolgende veld-invullingen worden samengevoegd tot één DB-write.
-  const savePred = useCallback(
-    (pred) => {
-      return new Promise((resolve) => {
-        // Lokale state direct bijwerken voor responsieve UI
-        setState((prev) => ({
-          ...prev,
-          users: prev.users.map((u) =>
-            u.id === session ? { ...u, predictions: pred } : u
-          ),
-        }));
-        // Debounced DB-write: 400ms wachten zodat snel typen wordt samengevoegd
-        clearTimeout(predTimerRef.current);
-        predTimerRef.current = setTimeout(() => {
-          persistUserPredictions(session, pred).catch((err) =>
-            console.error("Predictions opslaan mislukt:", err)
-          );
-        }, 400);
-        // Direct true teruggeven zodat de form de "✓ Opgeslagen" indicator toont
-        resolve(true);
-      });
-    },
-    [session]
-  );
 
   const logout = () => {
     setSession(null);
