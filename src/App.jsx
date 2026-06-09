@@ -231,6 +231,9 @@ export default function App() {
   const [adminStep, setAdminStep] = useState(false);
   const [mainTab, setMainTab] = useState("overview");
 
+  // useRef moet vóór alle conditionele returns staan (Rules of Hooks)
+  const predTimerRef = useRef(null);
+
   const urlParams = new URLSearchParams(window.location.search);
   const preRegister =
     urlParams.get("register") !== null ||
@@ -345,8 +348,6 @@ export default function App() {
   // Gebruikt persistUserPredictions() (type=user) zodat alleen de predictions
   // van deze gebruiker worden bijgewerkt. Debounced via useRef zodat snel
   // aaneenvolgende veld-invullingen worden samengevoegd tot één DB-write.
-  const predTimerRef = useRef(null);
-
   const savePred = useCallback(
     (pred) => {
       return new Promise((resolve) => {
