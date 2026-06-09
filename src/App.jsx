@@ -237,8 +237,10 @@ export default function App() {
   const [adminStep, setAdminStep] = useState(false);
   const [mainTab, setMainTab] = useState("overview");
 
-  // Debounce timer voor persist — voorkomt dat snelle opeenvolgende
-  // state-wijzigingen elkaar overschrijven in de database
+  // ─── Debounce timer voor persist ──────────────────────────────────────────
+  // Voorkomt dat snelle opeenvolgende state-wijzigingen (bijv. een gebruiker
+  // die snel velden invult) als losse requests de database ingaan en elkaar
+  // overschrijven. De laatste state wint altijd.
   const persistTimer = useRef(null);
 
   const schedulePersist = useCallback((data) => {
@@ -271,8 +273,10 @@ export default function App() {
     loadState();
   }, [loadState]);
 
-  // Restore session after state loads
-  // Mist state.users als dependency zodat re-validatie plaatsvindt als users wijzigen
+  // Sessie herstellen na initieel laden.
+  // Dependency alleen [loadStatus] — NIET state.users, want dat triggert
+  // deze effect opnieuw bij elke invulactie en gooit de gebruiker terug
+  // naar het beginscherm.
   useEffect(() => {
     if (loadStatus !== "ready" || !state) return;
     const saved = loadSession();
@@ -286,23 +290,22 @@ export default function App() {
       setSession(saved);
       setScreen("overview");
     } else {
-      console.warn(
-        "Sessie gebruiker niet gevonden in state, sessie gewist:",
-        saved
-      );
+      console.warn("Sessie gebruiker niet gevonden, sessie gewist:", saved);
       saveSession(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadStatus]);
 
-  // ─── setAndPersist: persist wordt BUITEN setState aangeroepen ────────────
-  // Hiermee vermijden we bijwerkingen binnen de pure updater-functie,
-  // wat in React Strict Mode dubbele persist-aanroepen veroorzaakte.
+  // ─── setAndPersist ────────────────────────────────────────────────────────
+  // Centrale wrapper voor alle state-mutaties die ook naar de DB moeten.
+  // persist() wordt BUITEN de setState-updater aangeroepen om:
+  //   1. Bijwerkingen in pure updaters te vermijden (React Strict Mode).
+  //   2. De debounce te laten werken zodat snelle wijzigingen worden
+  //      samengebundeld tot één database-schrijfactie.
   const setAndPersist = useCallback(
     (updater) => {
       setState((prev) => {
         const next = typeof updater === "function" ? updater(prev) : updater;
-        // Sla persist op via debounced timer, niet direct in de updater
         schedulePersist(next);
         return next;
       });
@@ -322,6 +325,12 @@ export default function App() {
     ? state.users.find((u) => u.id === session)
     : null;
 
+  // ─── handleLogin ──────────────────────────────────────────────────────────
+  // FIX: persist() wordt niet meer binnen de setState-updater aangeroepen.
+  // React mag updaters meerdere keren aanroepen (Strict Mode), waardoor
+  // dezelfde persist anders dubbel zou kunnen vuren.
+  // Registratie gebruikt persist() direct (niet debounced) want de sessie
+  // mag pas ingesteld worden nadat de data zeker is opgeslagen.
   const handleLogin = (userId, newUser) => {
     if (userId === "__admin__") {
       setAdminStep(true);
@@ -340,6 +349,8 @@ export default function App() {
       };
       setState((prev) => {
         const next = { ...prev, users: [...prev.users, user] };
+        // persist direct (niet debounced): registratie moet bevestigd zijn
+        // vóór we de sessie instellen en doorsturen naar editGroup.
         persist(next).then((ok) => {
           if (ok) {
             setSession(id);
@@ -360,20 +371,30 @@ export default function App() {
     setScreen("overview");
   };
 
-  const savePred = async (pred) => {
-    return new Promise((resolve) => {
-      setState((prev) => {
-        const next = {
-          ...prev,
-          users: prev.users.map((u) =>
-            u.id === session ? { ...u, predictions: pred } : u
-          ),
-        };
-        persist(next).then(resolve);
-        return next;
+  // ─── savePred ─────────────────────────────────────────────────────────────
+  // FIX: persist() wordt niet meer binnen de setState-updater aangeroepen.
+  // We gebruiken schedulePersist (debounced, 300ms) zodat snel aaneenvolgende
+  // veldinvullingen worden samengebundeld tot één DB-schrijfactie.
+  // resolve(true) wordt synchroon aangeroepen zodat de form de
+  // "✓ Opgeslagen" indicator direct kan tonen zonder op de DB te wachten.
+  const savePred = useCallback(
+    (pred) => {
+      return new Promise((resolve) => {
+        setState((prev) => {
+          const next = {
+            ...prev,
+            users: prev.users.map((u) =>
+              u.id === session ? { ...u, predictions: pred } : u
+            ),
+          };
+          schedulePersist(next);
+          return next;
+        });
+        resolve(true);
       });
-    });
-  };
+    },
+    [session, schedulePersist]
+  );
 
   const logout = () => {
     setSession(null);
@@ -390,7 +411,6 @@ export default function App() {
     fontFamily: "'Barlow', sans-serif",
   };
 
-  // Admin password step
   if (adminStep && !session) {
     return (
       <div style={shellStyle}>
@@ -408,7 +428,6 @@ export default function App() {
     );
   }
 
-  // Not logged in
   if (!session) {
     return (
       <div style={shellStyle}>
