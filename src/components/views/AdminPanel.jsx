@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from "react";
+import React, { useState, useRef } from "react";
 import {
   GROUP_MATCHES,
   KO_STRUCTURE,
@@ -22,10 +22,10 @@ import {
   resolveSlotRich,
   deriveSurpriseStage,
   deriveTopOuts,
-  persist,
   fmtDateTime,
   hash,
 } from "../../pouleEngine";
+import { persistAdmin } from "../../persist-helpers";
 import { S } from "../../styles/ui";
 import { Alert, SlotDisplay, TabBar } from "../common";
 
@@ -44,83 +44,90 @@ function AdminPanel({ state, setState }) {
   const [tab, setTab] = useState("home");
   const [activeGroup, setActiveGroup] = useState("A");
 
-  // ─── Debounced persist ────────────────────────────────────────────────────
-  // Alle admin-mutaties gaan via useDebouncedPersist zodat snelle opeenvolgende
-  // wijzigingen (bijv. score intikken) niet als losse requests de database in
-  // gaan en elkaar overschrijven.
+  // Debounced persist — 400ms zodat snel aaneenvolgende score-invoer
+  // wordt samengevoegd tot één DB-write.
   const persistTimer = useRef(null);
 
-  const schedulePersist = useCallback((ns) => {
+  function scheduleAdminPersist(ns, deletedIds = []) {
     clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(() => {
-      persist(ns).catch((err) => console.error("Admin persist mislukt:", err));
-    }, 300);
-  }, []);
+      persistAdmin(ns, deletedIds).catch((err) =>
+        console.error("Admin persist mislukt:", err)
+      );
+    }, 400);
+  }
 
-  // setState wrapper die ook persist inplant
-  const setStateAndPersist = useCallback(
-    (updater) => {
-      setState((prev) => {
-        const ns = typeof updater === "function" ? updater(prev) : updater;
-        schedulePersist(ns);
-        return ns;
-      });
-    },
-    [setState, schedulePersist]
-  );
+  // Centrale state-updater voor AdminPanel.
+  // setState hier is setAndPersist uit App.jsx (werkt alleen lokaal).
+  // persistAdmin() wordt los aangeroepen voor de DB-write.
+  function upd(patch) {
+    setState((s) => {
+      const ns = { ...s, ...patch };
+      scheduleAdminPersist(ns);
+      return ns;
+    });
+  }
 
-  // Helpers die de rest van het paneel gebruiken
-  const upd = useCallback(
-    (patch) => setStateAndPersist((s) => ({ ...s, ...patch })),
-    [setStateAndPersist]
-  );
-
-  const updResult = useCallback(
-    (id, field, val) =>
-      setStateAndPersist((s) => ({
+  function updResult(id, field, val) {
+    setState((s) => {
+      const ns = {
         ...s,
         results: {
           ...s.results,
           [id]: { ...(s.results[id] || {}), [field]: val },
         },
-      })),
-    [setStateAndPersist]
-  );
+      };
+      scheduleAdminPersist(ns);
+      return ns;
+    });
+  }
 
-  const updKO = useCallback(
-    (id, field, val) =>
-      setStateAndPersist((s) => ({
+  function updKO(id, field, val) {
+    setState((s) => {
+      const ns = {
         ...s,
         koResults: {
           ...s.koResults,
           [id]: { ...(s.koResults[id] || {}), [field]: val },
         },
-      })),
-    [setStateAndPersist]
-  );
+      };
+      scheduleAdminPersist(ns);
+      return ns;
+    });
+  }
 
-  const removeUser = useCallback(
-    (uid) => {
-      if (!confirm("Verwijderen?")) return;
-      setStateAndPersist((s) => ({
-        ...s,
-        users: s.users.filter((u) => u.id !== uid),
-      }));
-    },
-    [setStateAndPersist]
-  );
+  function removeUser(uid) {
+    if (!confirm("Verwijderen?")) return;
+    setState((prev) => {
+      const next = {
+        ...prev,
+        users: prev.users.filter((u) => u.id !== uid),
+      };
+      // Stuur de verwijderde id expliciet mee zodat de server onderscheid
+      // kan maken tussen een admin-delete en een nieuwe registratie.
+      persistAdmin(next, [uid]).catch((err) =>
+        console.error("Verwijderen mislukt:", err)
+      );
+      return next;
+    });
+  }
 
   const frozenRounds = state.koFrozenRounds || {};
-  const toggleKORound = useCallback(
-    (roundKey) => {
-      const next = { ...frozenRounds, [roundKey]: !frozenRounds[roundKey] };
-      upd({
-        koFrozenRounds: next,
-        koFrozen: Object.values(next).some(Boolean),
-      });
-    },
-    [frozenRounds, upd]
-  );
+
+  function toggleKORound(roundKey) {
+    const next = { ...frozenRounds, [roundKey]: !frozenRounds[roundKey] };
+    upd({ koFrozenRounds: next, koFrozen: Object.values(next).some(Boolean) });
+  }
+
+  // setState wrapper voor child-panels die setState doorgeven krijgen.
+  // Zij roepen setState(updater) aan — wij persisten daarna.
+  function setStateAndPersist(updater) {
+    setState((prev) => {
+      const ns = typeof updater === "function" ? updater(prev) : updater;
+      scheduleAdminPersist(ns);
+      return ns;
+    });
+  }
 
   const TABS = [
     { id: "home", label: "🏠 Overzicht" },
@@ -1506,24 +1513,23 @@ function ResultsAdmin({
     (m) => m.group === activeGroup
   ).every((m) => state.results[m.id]?.played);
 
-  if (
-    allGroupPlayed &&
-    s?.winner &&
-    state.results[`GW_${activeGroup}`] !== s.winner
-  ) {
-    setTimeout(
-      () =>
-        setState((prev) => ({
-          ...prev,
-          results: {
-            ...prev.results,
-            [`GW_${activeGroup}`]: s.winner,
-            [`GR_${activeGroup}`]: s.runnerUp,
-          },
-        })),
-      0
-    );
-  }
+  // Groepswinnaars automatisch bijwerken via useEffect ipv tijdens render
+  React.useEffect(() => {
+    if (
+      allGroupPlayed &&
+      s?.winner &&
+      state.results[`GW_${activeGroup}`] !== s.winner
+    ) {
+      setState((prev) => ({
+        ...prev,
+        results: {
+          ...prev.results,
+          [`GW_${activeGroup}`]: s.winner,
+          [`GR_${activeGroup}`]: s.runnerUp,
+        },
+      }));
+    }
+  }, [allGroupPlayed, activeGroup, s?.winner, s?.runnerUp]);
 
   return (
     <div>

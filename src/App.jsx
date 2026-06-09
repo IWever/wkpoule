@@ -1,12 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
-import {
-  load,
-  persist,
-  hash,
-  blank,
-  saveSession,
-  loadSession,
-} from "./pouleEngine";
+import { load, hash, blank, saveSession, loadSession } from "./pouleEngine";
+import { persistUserPredictions, persistRegister } from "./persist-helpers";
 import { AuthScreen, AdminLogin } from "./components/auth";
 import {
   GroupPredictionsForm,
@@ -237,19 +231,6 @@ export default function App() {
   const [adminStep, setAdminStep] = useState(false);
   const [mainTab, setMainTab] = useState("overview");
 
-  // ─── Debounce timer voor persist ──────────────────────────────────────────
-  // Voorkomt dat snelle opeenvolgende state-wijzigingen (bijv. een gebruiker
-  // die snel velden invult) als losse requests de database ingaan en elkaar
-  // overschrijven. De laatste state wint altijd.
-  const persistTimer = useRef(null);
-
-  const schedulePersist = useCallback((data) => {
-    clearTimeout(persistTimer.current);
-    persistTimer.current = setTimeout(() => {
-      persist(data).catch((err) => console.error("Opslaan mislukt:", err));
-    }, 300);
-  }, []);
-
   const urlParams = new URLSearchParams(window.location.search);
   const preRegister =
     urlParams.get("register") !== null ||
@@ -274,9 +255,6 @@ export default function App() {
   }, [loadState]);
 
   // Sessie herstellen na initieel laden.
-  // Dependency alleen [loadStatus] — NIET state.users, want dat triggert
-  // deze effect opnieuw bij elke invulactie en gooit de gebruiker terug
-  // naar het beginscherm.
   useEffect(() => {
     if (loadStatus !== "ready" || !state) return;
     const saved = loadSession();
@@ -296,22 +274,15 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loadStatus]);
 
-  // ─── setAndPersist ────────────────────────────────────────────────────────
-  // Centrale wrapper voor alle state-mutaties die ook naar de DB moeten.
-  // persist() wordt BUITEN de setState-updater aangeroepen om:
-  //   1. Bijwerkingen in pure updaters te vermijden (React Strict Mode).
-  //   2. De debounce te laten werken zodat snelle wijzigingen worden
-  //      samengebundeld tot één database-schrijfactie.
-  const setAndPersist = useCallback(
-    (updater) => {
-      setState((prev) => {
-        const next = typeof updater === "function" ? updater(prev) : updater;
-        schedulePersist(next);
-        return next;
-      });
-    },
-    [schedulePersist]
-  );
+  // ─── setAndPersist voor admin ─────────────────────────────────────────────
+  // Alleen gebruikt door AdminPanel via de setState prop.
+  // AdminPanel roept intern persistAdmin() aan — zie AdminPanel.jsx.
+  const setAndPersist = useCallback((updater) => {
+    setState((prev) => {
+      const next = typeof updater === "function" ? updater(prev) : updater;
+      return next;
+    });
+  }, []);
 
   if (loadStatus === "loading") return <LoadingScreen />;
   if (loadStatus === "error") return <ErrorScreen onRetry={loadState} />;
@@ -326,11 +297,8 @@ export default function App() {
     : null;
 
   // ─── handleLogin ──────────────────────────────────────────────────────────
-  // FIX: persist() wordt niet meer binnen de setState-updater aangeroepen.
-  // React mag updaters meerdere keren aanroepen (Strict Mode), waardoor
-  // dezelfde persist anders dubbel zou kunnen vuren.
-  // Registratie gebruikt persist() direct (niet debounced) want de sessie
-  // mag pas ingesteld worden nadat de data zeker is opgeslagen.
+  // Registratie gebruikt persistRegister() (type=register) zodat alleen de
+  // nieuwe user wordt toegevoegd zonder andere users te overschrijven.
   const handleLogin = (userId, newUser) => {
     if (userId === "__admin__") {
       setAdminStep(true);
@@ -347,22 +315,24 @@ export default function App() {
         locked: false,
         competitionIds: newUser.competitionIds || [],
       };
-      setState((prev) => {
-        const next = { ...prev, users: [...prev.users, user] };
-        // persist direct (niet debounced): registratie moet bevestigd zijn
-        // vóór we de sessie instellen en doorsturen naar editGroup.
-        persist(next).then((ok) => {
-          if (ok) {
-            setSession(id);
-            saveSession(id);
-            setScreen("editGroup");
-          } else {
-            alert(
-              "Registratie mislukt — controleer je verbinding en probeer opnieuw."
-            );
-          }
-        });
-        return next;
+      // Optimistisch de lokale state bijwerken
+      setState((prev) => ({ ...prev, users: [...prev.users, user] }));
+      // Stuur alleen de nieuwe user naar de server (race-condition-vrij)
+      persistRegister(user).then((ok) => {
+        if (ok) {
+          setSession(id);
+          saveSession(id);
+          setScreen("editGroup");
+        } else {
+          // Registratie mislukt — rollback lokale state
+          setState((prev) => ({
+            ...prev,
+            users: prev.users.filter((u) => u.id !== id),
+          }));
+          alert(
+            "Registratie mislukt — controleer je verbinding en probeer opnieuw."
+          );
+        }
       });
       return;
     }
@@ -372,28 +342,33 @@ export default function App() {
   };
 
   // ─── savePred ─────────────────────────────────────────────────────────────
-  // FIX: persist() wordt niet meer binnen de setState-updater aangeroepen.
-  // We gebruiken schedulePersist (debounced, 300ms) zodat snel aaneenvolgende
-  // veldinvullingen worden samengebundeld tot één DB-schrijfactie.
-  // resolve(true) wordt synchroon aangeroepen zodat de form de
-  // "✓ Opgeslagen" indicator direct kan tonen zonder op de DB te wachten.
+  // Gebruikt persistUserPredictions() (type=user) zodat alleen de predictions
+  // van deze gebruiker worden bijgewerkt. Debounced via useRef zodat snel
+  // aaneenvolgende veld-invullingen worden samengevoegd tot één DB-write.
+  const predTimerRef = useRef(null);
+
   const savePred = useCallback(
     (pred) => {
       return new Promise((resolve) => {
-        setState((prev) => {
-          const next = {
-            ...prev,
-            users: prev.users.map((u) =>
-              u.id === session ? { ...u, predictions: pred } : u
-            ),
-          };
-          schedulePersist(next);
-          return next;
-        });
+        // Lokale state direct bijwerken voor responsieve UI
+        setState((prev) => ({
+          ...prev,
+          users: prev.users.map((u) =>
+            u.id === session ? { ...u, predictions: pred } : u
+          ),
+        }));
+        // Debounced DB-write: 400ms wachten zodat snel typen wordt samengevoegd
+        clearTimeout(predTimerRef.current);
+        predTimerRef.current = setTimeout(() => {
+          persistUserPredictions(session, pred).catch((err) =>
+            console.error("Predictions opslaan mislukt:", err)
+          );
+        }, 400);
+        // Direct true teruggeven zodat de form de "✓ Opgeslagen" indicator toont
         resolve(true);
       });
     },
-    [session, schedulePersist]
+    [session]
   );
 
   const logout = () => {
@@ -452,19 +427,19 @@ export default function App() {
         <ChangePasswordScreen
           user={updatedUser}
           onSave={(newPw) => {
-            setAndPersist((s) => ({
+            const updated = {
+              ...updatedUser,
+              pwPlain: newPw,
+              pwHash: hash(newPw),
+              mustChangePassword: false,
+            };
+            setState((s) => ({
               ...s,
-              users: s.users.map((u) =>
-                u.id === session
-                  ? {
-                      ...u,
-                      pwPlain: newPw,
-                      pwHash: hash(newPw),
-                      mustChangePassword: false,
-                    }
-                  : u
-              ),
+              users: s.users.map((u) => (u.id === session ? updated : u)),
             }));
+            persistUserPredictions(session, updated.predictions).catch(
+              console.error
+            );
           }}
         />
       </div>
