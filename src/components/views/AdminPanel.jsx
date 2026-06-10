@@ -84,13 +84,16 @@ function AdminPanel({ state, setState }) {
 
   function updKO(id, field, val) {
     setState((s) => {
-      const ns = {
-        ...s,
-        koResults: {
-          ...s.koResults,
-          [id]: { ...(s.koResults[id] || {}), [field]: val },
-        },
-      };
+      const koResults =
+        field === "value"
+          ? // N3-slot: sla op als koResults["N3_R32_1_home"] = "Haïti"
+            { ...s.koResults, [id]: val }
+          : // Normaal: sla op als koResults["R32_1"].winner = "..."
+            {
+              ...s.koResults,
+              [id]: { ...(s.koResults[id] || {}), [field]: val },
+            };
+      const ns = { ...s, koResults };
       scheduleAdminPersist(ns);
       return ns;
     });
@@ -1799,6 +1802,54 @@ function AdminStandingTable({ rows }) {
 }
 
 // ─── KO RESULTS ADMIN ─────────────────────────────────────────────────────────
+function N3SlotPicker({
+  slot,
+  matchId,
+  side,
+  koResults,
+  updKO,
+  allTeams,
+  flag,
+}) {
+  if (!/^N3/.test(slot)) return null;
+  const key = `N3_${matchId}_${side}`;
+  const current = koResults[key] || "";
+  return (
+    <div style={{ marginTop: 6 }}>
+      <div
+        style={{
+          fontSize: 11,
+          color: "var(--orange)",
+          marginBottom: 4,
+          fontWeight: 700,
+        }}
+      >
+        ⚠️ Beste nr. 3 — stel handmatig in
+      </div>
+      <select
+        value={current}
+        onChange={(e) => updKO(key, "value", e.target.value)}
+        style={{
+          width: "100%",
+          background: "var(--bg)",
+          color: current ? "var(--text)" : "var(--muted)",
+          border: `1px solid ${current ? "var(--orange)" : "var(--border)"}`,
+          borderRadius: 6,
+          padding: "6px 10px",
+          fontSize: 13,
+          fontFamily: "var(--font)",
+        }}
+      >
+        <option value="">— kies beste nr. 3 —</option>
+        {allTeams.map((t) => (
+          <option key={t} value={t}>
+            {flag[t] || "🏳️"} {t}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+}
 
 function KOResultsAdmin({ state, updKO }) {
   return (
@@ -1883,6 +1934,24 @@ function KOResultsAdmin({ state, updKO }) {
               <div style={{ flex: 1 }}>
                 <SlotDisplay desc={awayDesc} align="left" size={13} />
               </div>
+              <N3SlotPicker
+                slot={m.homeSlot}
+                matchId={m.id}
+                side="home"
+                koResults={state.koResults}
+                updKO={updKO}
+                allTeams={ALL_TEAMS}
+                flag={FLAG}
+              />
+              <N3SlotPicker
+                slot={m.awaySlot}
+                matchId={m.id}
+                side="away"
+                koResults={state.koResults}
+                updKO={updKO}
+                allTeams={ALL_TEAMS}
+                flag={FLAG}
+              />
             </div>
             <div
               style={{
