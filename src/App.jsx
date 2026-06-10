@@ -233,6 +233,8 @@ export default function App() {
 
   // useRef moet vóór alle conditionele returns staan (Rules of Hooks)
   const predTimerRef = useRef(null);
+  // Bewaar laatste pending write zodat we kunnen flushen bij navigatie
+  const pendingPredRef = useRef(null);
 
   const urlParams = new URLSearchParams(window.location.search);
   const preRegister =
@@ -288,29 +290,62 @@ export default function App() {
   }, []);
 
   // savePred hier zodat alle hooks vóór conditionele returns staan (Rules of Hooks)
+  // resolve() wordt pas aangeroepen NA bevestiging van de server, zodat
+  // "✓ Opgeslagen" alleen verschijnt als de DB-write echt gelukt is.
+  // De debounce zorgt dat snel aaneenvolgende invoer wordt samengevoegd;
+  // pas de laatste write geeft de uitkomst terug aan de form.
   const savePred = useCallback(
     (pred) => {
+      // Lokale state direct bijwerken voor responsieve UI
+      setState((prev) => ({
+        ...prev,
+        users: prev.users.map((u) =>
+          u.id === session ? { ...u, predictions: pred } : u
+        ),
+      }));
+
+      // Bewaar de laatste pred zodat we kunnen flushen bij navigatie
+      pendingPredRef.current = { session, pred };
+
+      // Annuleer eventuele lopende debounce
+      clearTimeout(predTimerRef.current);
+
+      // Geef een Promise terug die resolved zodra de DB-write klaar is.
+      // Door 400ms te wachten worden snelle opeenvolgende invulacties
+      // samengevoegd tot één write — de Promise resolved na die laatste.
       return new Promise((resolve) => {
-        // Lokale state direct bijwerken voor responsieve UI
-        setState((prev) => ({
-          ...prev,
-          users: prev.users.map((u) =>
-            u.id === session ? { ...u, predictions: pred } : u
-          ),
-        }));
-        // Debounced DB-write: 400ms wachten zodat snel typen wordt samengevoegd
-        clearTimeout(predTimerRef.current);
-        predTimerRef.current = setTimeout(() => {
-          persistUserPredictions(session, pred).catch((err) =>
-            console.error("Predictions opslaan mislukt:", err)
+        predTimerRef.current = setTimeout(async () => {
+          const ok = await persistUserPredictions(session, pred).catch(
+            (err) => {
+              console.error("Predictions opslaan mislukt:", err);
+              return false;
+            }
           );
+          pendingPredRef.current = null;
+          resolve(ok !== false);
         }, 400);
-        // Direct true teruggeven zodat de form de "✓ Opgeslagen" indicator toont
-        resolve(true);
       });
     },
     [session]
   );
+
+  // Flush pending write bij page unload (tab sluiten, refreshen)
+  // zodat wijzigingen niet verloren gaan als de gebruiker snel navigeert
+  useEffect(() => {
+    function handleUnload() {
+      if (pendingPredRef.current) {
+        const { session: s, pred: p } = pendingPredRef.current;
+        clearTimeout(predTimerRef.current);
+        // sendBeacon is fire-and-forget maar werkt wel tijdens unload
+        navigator.sendBeacon(
+          "/api/state?type=user",
+          JSON.stringify({ userId: s, predictions: p })
+        );
+      }
+    }
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
+  }, []);
 
   // Early returns NA alle hooks
   if (loadStatus === "loading") return <LoadingScreen />;
