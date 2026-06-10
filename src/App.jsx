@@ -1,6 +1,10 @@
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { load, hash, blank, saveSession, loadSession } from "./pouleEngine";
-import { persistUserPredictions, persistRegister } from "./persist-helpers";
+import {
+  persistUserPredictions,
+  persistRegister,
+  persistUserProfile,
+} from "./persist-helpers";
 import { AuthScreen, AdminLogin } from "./components/auth";
 import {
   GroupPredictionsForm,
@@ -471,9 +475,11 @@ export default function App() {
               ...s,
               users: s.users.map((u) => (u.id === session ? updated : u)),
             }));
-            persistUserPredictions(session, updated.predictions).catch(
-              console.error
-            );
+            persistUserProfile(session, {
+              pwPlain: newPw,
+              pwHash: hash(newPw),
+              mustChangePassword: false,
+            }).catch(console.error);
           }}
         />
       </div>

@@ -72,6 +72,27 @@ export async function persistRegister(user) {
   }
 }
 
+// ─── GEBRUIKERSPROFIEL: wachtwoord bijwerken ──────────────────────────────
+
+export async function persistUserProfile(userId, profile) {
+  if (IS_DEV) return devSave({ _dev: true });
+  try {
+    const res = await fetch("/api/state?type=userprofile", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId, profile }),
+    });
+    if (!res.ok) {
+      console.error("persistUserProfile fout:", res.status);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("persistUserProfile netwerk fout:", err);
+    return false;
+  }
+}
+
 // ─── ADMIN: volledige state opslaan ──────────────────────────────────────────
 // Optioneel: geef deletedUserIds mee zodat de server weet welke users bewust
 // verwijderd zijn (ipv registraties die tijdens de write plaatsvonden).

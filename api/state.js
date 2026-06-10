@@ -127,7 +127,35 @@ export default async function handler(req, res) {
         if (alreadyExists) {
           return res.status(200).json({ ok: true, skipped: true });
         }
+        if (type === "userprofile") {
+          const { userId, profile } = req.body || {};
+          if (!userId || !profile) {
+            return res
+              .status(400)
+              .json({ error: "userId en profile zijn verplicht." });
+          }
 
+          const rows = await sql`SELECT data FROM poule_state WHERE id = 1`;
+          const existing = rows.length > 0 ? rows[0].data : null;
+          if (!existing)
+            return res.status(404).json({ error: "Geen state gevonden." });
+
+          const merged = {
+            ...existing,
+            users: (existing.users || []).map((u) =>
+              u.id === userId ? { ...u, ...profile } : u
+            ),
+          };
+
+          await sql`
+            INSERT INTO poule_state (id, data, updated_at)
+            VALUES (1, ${JSON.stringify(merged)}::jsonb, NOW())
+            ON CONFLICT (id)
+            DO UPDATE SET data = EXCLUDED.data, updated_at = NOW()
+          `;
+
+          return res.status(200).json({ ok: true });
+        }
         const merged = { ...base, users: [...(base.users || []), user] };
 
         await sql`
