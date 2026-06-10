@@ -250,7 +250,22 @@ function resolveSlotRich(slot, ctx) {
     if (adminTeam) return { type: "team", team: adminTeam };
     return { type: "label", label: slotLabel(slot) };
   }
-  if (/^N3/.test(slot)) return { type: "label", label: "Beste nr. 3" };
+
+  if (/^N3/.test(slot)) {
+    // Admin kan handmatig een beste-nr-3 team instellen via koResults["N3_<matchId>"]
+    // De matchId wordt meegegeven via ctx zodat per wedstrijd een ander team kan.
+    // We zoeken welke match dit N3-slot als home of away heeft.
+    const koMatch = KO_STRUCTURE.find(
+      (m) => m.homeSlot === slot || m.awaySlot === slot
+    );
+    if (koMatch) {
+      const side = koMatch.homeSlot === slot ? "home" : "away";
+      const adminTeam = adminKoResults?.[`N3_${koMatch.id}_${side}`];
+      if (adminTeam) return { type: "team", team: adminTeam };
+    }
+    return { type: "label", label: "Beste nr. 3" };
+  }
+
   if (slot.charAt(0) === "W") {
     const matchId = slot.slice(1);
     if (adminKoResults?.[matchId]?.played)
@@ -318,6 +333,11 @@ function buildRichKOSlots(pred, results, koResults) {
       if (pred.koWinners[k]) koWinners[k] = pred.koWinners[k];
     });
   }
+  if (koResults) {
+    Object.keys(koResults).forEach((k) => {
+      if (k.startsWith("N3_")) koWinners[k] = koResults[k];
+    });
+  }
   const ctx = {
     adminStandings,
     adminComplete,
@@ -342,7 +362,19 @@ function resolveSlot(slot, pred, koWinners) {
     const s = deriveGroupStandings(pred);
     return rank === "1" ? s[g]?.winner : s[g]?.runnerUp;
   }
-  if (/^N3/.test(slot)) return null;
+  if (/^N3/.test(slot)) {
+    // Gebruik adminKoResults als die meegegeven wordt, anders null
+    if (!koWinners) return null;
+    const koMatch = KO_STRUCTURE.find(
+      (m) => m.homeSlot === slot || m.awaySlot === slot
+    );
+    if (koMatch) {
+      const side = koMatch.homeSlot === slot ? "home" : "away";
+      return koWinners[`N3_${koMatch.id}_${side}`] || null;
+    }
+    return null;
+  }
+
   if (slot.charAt(0) === "W") return koWinners?.[slot.slice(1)] || null;
   return null;
 }
