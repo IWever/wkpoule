@@ -199,7 +199,13 @@ export default async function handler(req, res) {
           // Bestaande users mergen: verwijderde eruit, gewijzigde bijwerken
           const mergedUsers = existingUsers
             .filter((u) => !deletedIds.has(u.id))
-            .map((u) => (incomingById[u.id] ? incomingById[u.id] : u));
+            .map((u) => {
+              if (!incomingById[u.id]) return u;
+              return {
+                ...incomingById[u.id],
+                predictions: u.predictions,
+              };
+            });
 
           // Nieuwe users toevoegen die nog niet bestonden
           const existingIds = new Set(existingUsers.map((u) => u.id));
