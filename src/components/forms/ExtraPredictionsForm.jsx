@@ -20,7 +20,8 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
     JSON.parse(JSON.stringify(user.predictions || {}))
   );
   const [saved, setSaved] = useState(false);
-  const frozen = state.extraFrozen;
+  const unlocked = (state.unlockedUsers || []).includes(user.id);
+  const frozen = state.extraFrozen && !unlocked;
 
   // FIX: onSave buiten de setPred updater aanroepen
   async function set(path, val) {
@@ -100,14 +101,24 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
 function QuestionCard({ label, pts, description, children }) {
   return (
     <div style={S.card()}>
-      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: description ? 4 : 10 }}>
+      <div
+        style={{
+          fontSize: 13,
+          color: "var(--muted)",
+          marginBottom: description ? 4 : 10,
+        }}
+      >
         {label}{" "}
         {pts !== undefined && (
-          <span style={{ color: "var(--accent)", fontWeight: 700 }}>+{pts} pt</span>
+          <span style={{ color: "var(--accent)", fontWeight: 700 }}>
+            +{pts} pt
+          </span>
         )}
       </div>
       {description && (
-        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>{description}</div>
+        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
+          {description}
+        </div>
       )}
       {children}
     </div>
@@ -122,15 +133,22 @@ function TeamSelect({ value, onChange, disabled, placeholder, teams }) {
       onChange={onChange}
       disabled={disabled}
       style={{
-        background: "var(--bg)", color: "var(--text)",
-        border: "1px solid var(--border)", borderRadius: 6,
-        padding: "8px 12px", fontSize: 14, width: "100%",
-        opacity: disabled ? 0.6 : 1, fontFamily: "var(--font)",
+        background: "var(--bg)",
+        color: "var(--text)",
+        border: "1px solid var(--border)",
+        borderRadius: 6,
+        padding: "8px 12px",
+        fontSize: 14,
+        width: "100%",
+        opacity: disabled ? 0.6 : 1,
+        fontFamily: "var(--font)",
       }}
     >
       <option value="">{placeholder}</option>
       {sorted.map((t) => (
-        <option key={t} value={t}>{FLAG[t] || "🏳️"} {t}</option>
+        <option key={t} value={t}>
+          {FLAG[t] || "🏳️"} {t}
+        </option>
       ))}
     </select>
   );
@@ -168,9 +186,18 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
       </div>
       <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 12 }}>
         Verdien punten per rank: 1e ={" "}
-        <strong style={{ color: "var(--accent)" }}>+{PTS_TOPSCORER_RANK[1]}</strong>, 2e ={" "}
-        <strong style={{ color: "var(--accent)" }}>+{PTS_TOPSCORER_RANK[2]}</strong>, 3e ={" "}
-        <strong style={{ color: "var(--accent)" }}>+{PTS_TOPSCORER_RANK[3]}</strong> pt
+        <strong style={{ color: "var(--accent)" }}>
+          +{PTS_TOPSCORER_RANK[1]}
+        </strong>
+        , 2e ={" "}
+        <strong style={{ color: "var(--accent)" }}>
+          +{PTS_TOPSCORER_RANK[2]}
+        </strong>
+        , 3e ={" "}
+        <strong style={{ color: "var(--accent)" }}>
+          +{PTS_TOPSCORER_RANK[3]}
+        </strong>{" "}
+        pt
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {[0, 1, 2].map((i) => {
@@ -178,7 +205,9 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
           const player = topScorers[i] || "";
           const allPlayers = country
             ? [...(PLAYERS_BY_COUNTRY[country] || [])].sort((a, b) =>
-                b.kwal !== a.kwal ? b.kwal - a.kwal : a.name.localeCompare(b.name)
+                b.kwal !== a.kwal
+                  ? b.kwal - a.kwal
+                  : a.name.localeCompare(b.name)
               )
             : [];
 
@@ -187,8 +216,11 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
               key={i}
               style={{
                 background: "var(--bg)",
-                border: `1px solid ${player ? "rgba(88,166,255,.3)" : "var(--border)"}`,
-                borderRadius: 8, padding: "10px 12px",
+                border: `1px solid ${
+                  player ? "rgba(88,166,255,.3)" : "var(--border)"
+                }`,
+                borderRadius: 8,
+                padding: "10px 12px",
               }}
             >
               <select
@@ -196,16 +228,26 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
                 value={country}
                 onChange={(e) => setTopScorerCountry(i, e.target.value)}
                 style={{
-                  background: "var(--card)", color: "var(--text)",
-                  border: "1px solid var(--border)", borderRadius: 6,
-                  padding: "7px 10px", fontSize: 13, width: "100%",
-                  marginBottom: 8, opacity: frozen ? 0.6 : 1, fontFamily: "var(--font)",
+                  background: "var(--card)",
+                  color: "var(--text)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 6,
+                  padding: "7px 10px",
+                  fontSize: 13,
+                  width: "100%",
+                  marginBottom: 8,
+                  opacity: frozen ? 0.6 : 1,
+                  fontFamily: "var(--font)",
                 }}
               >
                 <option value="">— kies een land —</option>
-                {Object.keys(PLAYERS_BY_COUNTRY).sort().map((c) => (
-                  <option key={c} value={c}>{FLAG[c] || "🏳️"} {c}</option>
-                ))}
+                {Object.keys(PLAYERS_BY_COUNTRY)
+                  .sort()
+                  .map((c) => (
+                    <option key={c} value={c}>
+                      {FLAG[c] || "🏳️"} {c}
+                    </option>
+                  ))}
               </select>
 
               {country ? (
@@ -214,31 +256,56 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry }) {
                   value={player}
                   onChange={(e) => setTopScorer(i, e.target.value)}
                   style={{
-                    background: "var(--card)", color: "var(--text)",
-                    border: `1px solid ${player ? "var(--accent)" : "var(--border)"}`,
-                    borderRadius: 6, padding: "7px 10px", fontSize: 13,
-                    width: "100%", opacity: frozen ? 0.6 : 1, fontFamily: "var(--font)",
+                    background: "var(--card)",
+                    color: "var(--text)",
+                    border: `1px solid ${
+                      player ? "var(--accent)" : "var(--border)"
+                    }`,
+                    borderRadius: 6,
+                    padding: "7px 10px",
+                    fontSize: 13,
+                    width: "100%",
+                    opacity: frozen ? 0.6 : 1,
+                    fontFamily: "var(--font)",
                   }}
                 >
                   <option value="">— kies een speler —</option>
                   {allPlayers.map((pl) => (
                     <option key={pl.name} value={pl.name}>
-                      {pl.name}{pl.kwal > 0 ? ` (${pl.kwal} kwal. goals)` : ""}
+                      {pl.name}
+                      {pl.kwal > 0 ? ` (${pl.kwal} kwal. goals)` : ""}
                     </option>
                   ))}
                 </select>
               ) : (
-                <div style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--muted)",
+                    fontStyle: "italic",
+                  }}
+                >
                   Kies eerst een land om spelers te zien
                 </div>
               )}
 
               {player && country && (
-                <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                <div
+                  style={{
+                    marginTop: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
                   <span style={{ fontSize: 20 }}>{FLAG[country] || "🏳️"}</span>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 13 }}>{player}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)" }}>{country}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13 }}>
+                      {player}
+                    </div>
+                    <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                      {country}
+                    </div>
                   </div>
                 </div>
               )}
@@ -258,14 +325,23 @@ function NlStageCard({ pred, frozen, set }) {
         value={pred.nlStage || ""}
         onChange={(e) => set(["nlStage"], e.target.value)}
         style={{
-          background: "var(--bg)", color: "var(--text)",
-          border: "1px solid var(--border)", borderRadius: 6,
-          padding: "8px 12px", fontSize: 14, width: "100%",
-          opacity: frozen ? 0.6 : 1, fontFamily: "var(--font)",
+          background: "var(--bg)",
+          color: "var(--text)",
+          border: "1px solid var(--border)",
+          borderRadius: 6,
+          padding: "8px 12px",
+          fontSize: 14,
+          width: "100%",
+          opacity: frozen ? 0.6 : 1,
+          fontFamily: "var(--font)",
         }}
       >
         <option value="">— selecteer fase —</option>
-        {NL_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
+        {NL_STAGES.map((s) => (
+          <option key={s} value={s}>
+            {s}
+          </option>
+        ))}
       </select>
     </QuestionCard>
   );
@@ -283,15 +359,47 @@ function SurpriseTeamCard({ pred, frozen, set }) {
 
   return (
     <div style={S.card()}>
-      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>🌟 Verrassing van het WK</div>
-      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
-        Kies een van de 12 laagst geklasseerde landen. Punten op basis van hoe ver dit land de KO-fase haalt.
+      <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 4 }}>
+        🌟 Verrassing van het WK
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 5, marginBottom: 12 }}>
+      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
+        Kies een van de 12 laagst geklasseerde landen. Punten op basis van hoe
+        ver dit land de KO-fase haalt.
+      </div>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(3, 1fr)",
+          gap: 5,
+          marginBottom: 12,
+        }}
+      >
         {SURPRISE_STAGES.map(({ stage, pts }) => (
-          <div key={stage} style={{ background: "var(--bg)", border: "1px solid var(--border)", borderRadius: 7, padding: "6px 8px", textAlign: "center" }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "var(--accent)", marginBottom: 2 }}>+{pts}</div>
-            <div style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.3 }}>{stage}</div>
+          <div
+            key={stage}
+            style={{
+              background: "var(--bg)",
+              border: "1px solid var(--border)",
+              borderRadius: 7,
+              padding: "6px 8px",
+              textAlign: "center",
+            }}
+          >
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "var(--accent)",
+                marginBottom: 2,
+              }}
+            >
+              +{pts}
+            </div>
+            <div
+              style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.3 }}
+            >
+              {stage}
+            </div>
           </div>
         ))}
       </div>
@@ -326,24 +434,54 @@ function TopOutCard({ pred, frozen, set }) {
 
 function MostCleanSheetsCard({ pred, frozen, set }) {
   return (
-    <QuestionCard label="🧤 Meeste clean sheets" pts={PTS_EXTRA.mostCleanSheets} description="Welk land houdt op het hele toernooi de meeste clean sheets (nul gehouden)?">
-      <TeamSelect value={pred.mostCleanSheets} onChange={(e) => set(["mostCleanSheets"], e.target.value)} disabled={frozen} placeholder="— selecteer land —" teams={ALL_TEAMS} />
+    <QuestionCard
+      label="🧤 Meeste clean sheets"
+      pts={PTS_EXTRA.mostCleanSheets}
+      description="Welk land houdt op het hele toernooi de meeste clean sheets (nul gehouden)?"
+    >
+      <TeamSelect
+        value={pred.mostCleanSheets}
+        onChange={(e) => set(["mostCleanSheets"], e.target.value)}
+        disabled={frozen}
+        placeholder="— selecteer land —"
+        teams={ALL_TEAMS}
+      />
     </QuestionCard>
   );
 }
 
 function YellowCardsCard({ pred, frozen, set }) {
   return (
-    <QuestionCard label="🟨 Meeste gele kaarten" pts={PTS_EXTRA.yellowCards} description="Welk land heeft aan het einde van het toernooi de meeste gele kaarten ontvangen?">
-      <TeamSelect value={pred.yellowCards} onChange={(e) => set(["yellowCards"], e.target.value)} disabled={frozen} placeholder="— selecteer land —" teams={ALL_TEAMS} />
+    <QuestionCard
+      label="🟨 Meeste gele kaarten"
+      pts={PTS_EXTRA.yellowCards}
+      description="Welk land heeft aan het einde van het toernooi de meeste gele kaarten ontvangen?"
+    >
+      <TeamSelect
+        value={pred.yellowCards}
+        onChange={(e) => set(["yellowCards"], e.target.value)}
+        disabled={frozen}
+        placeholder="— selecteer land —"
+        teams={ALL_TEAMS}
+      />
     </QuestionCard>
   );
 }
 
 function MostGroupGoalsCard({ pred, frozen, set }) {
   return (
-    <QuestionCard label="⚽ Meeste doelpunten groepsfase" pts={PTS_EXTRA.mostGroupGoals} description="Welk land scoort de meeste doelpunten tijdens de groepsfase?">
-      <TeamSelect value={pred.mostGroupGoals} onChange={(e) => set(["mostGroupGoals"], e.target.value)} disabled={frozen} placeholder="— selecteer land —" teams={ALL_TEAMS} />
+    <QuestionCard
+      label="⚽ Meeste doelpunten groepsfase"
+      pts={PTS_EXTRA.mostGroupGoals}
+      description="Welk land scoort de meeste doelpunten tijdens de groepsfase?"
+    >
+      <TeamSelect
+        value={pred.mostGroupGoals}
+        onChange={(e) => set(["mostGroupGoals"], e.target.value)}
+        disabled={frozen}
+        placeholder="— selecteer land —"
+        teams={ALL_TEAMS}
+      />
     </QuestionCard>
   );
 }

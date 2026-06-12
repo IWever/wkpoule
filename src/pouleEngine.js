@@ -108,6 +108,7 @@ function blank() {
       final: false,
     },
     competitions: [],
+    unlockedUsers: [],
   };
 }
 
