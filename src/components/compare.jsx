@@ -1,6 +1,11 @@
 import React, { useState } from "react";
 import { GROUPS, GROUP_MATCHES, PTS_KO, FLAG } from "../data/tournamentData";
-import { calcGroupMatchPts, calcPoints, buildRichKOSlots, fmtDateTime } from "../pouleEngine";
+import {
+  calcGroupMatchPts,
+  calcPoints,
+  buildRichKOSlots,
+  fmtDateTime,
+} from "../pouleEngine";
 import { S } from "../styles/ui";
 import { SlotDisplay } from "./common";
 
@@ -43,14 +48,31 @@ function Overlay({ onClose, children }) {
 
 function OverlayHeader({ title, subtitle, onClose }) {
   return (
-    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        marginBottom: 14,
+      }}
+    >
       <div>
         <div style={{ fontWeight: 700, fontSize: 15 }}>{title}</div>
-        {subtitle && <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{subtitle}</div>}
+        {subtitle && (
+          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>
+            {subtitle}
+          </div>
+        )}
       </div>
       <button
         onClick={onClose}
-        style={{ background: "none", border: "none", color: "var(--muted)", fontSize: 22, cursor: "pointer" }}
+        style={{
+          background: "none",
+          border: "none",
+          color: "var(--muted)",
+          fontSize: 22,
+          cursor: "pointer",
+        }}
       >
         ×
       </button>
@@ -68,26 +90,415 @@ function resultBg(res, played) {
   return played ? "rgba(248,81,73,.1)" : "var(--bg)";
 }
 
+// ─── SCORE HEATMAP ────────────────────────────────────────────────────────────
+
+const MAX_GOALS = 5;
+
+function buildGrid(preds) {
+  const grid = {};
+  preds.forEach(({ home, away }) => {
+    const key = `${home}-${away}`;
+    grid[key] = (grid[key] || 0) + 1;
+  });
+  return grid;
+}
+
+function ScoreHeatmap({ match, state, currentUserId }) {
+  const [hovered, setHovered] = useState(null);
+  const result = state.results[match.id];
+
+  const preds = state.users
+    .map((u) => u.predictions?.matches?.[match.id])
+    .filter((p) => p?.home !== undefined && p.home !== "")
+    .map((p) => ({ home: parseInt(p.home, 10), away: parseInt(p.away, 10) }));
+
+  const grid = buildGrid(preds);
+  const total = preds.length;
+  const maxCount = total > 0 ? Math.max(...Object.values(grid)) : 1;
+
+  const actual = result?.played
+    ? { home: parseInt(result.home, 10), away: parseInt(result.away, 10) }
+    : null;
+
+  const cols = Array.from({ length: MAX_GOALS + 1 }, (_, i) => i);
+  const rows = Array.from({ length: MAX_GOALS + 1 }, (_, i) => MAX_GOALS - i);
+
+  function countFor(h, a) {
+    return grid[`${h}-${a}`] || 0;
+  }
+
+  function cellBg(h, a, count) {
+    const isActual = actual && h === actual.home && a === actual.away;
+    if (isActual)
+      return `rgba(63,185,80,${Math.max(
+        0.12 + (count / maxCount) * 0.88,
+        0.18
+      )})`;
+    if (count === 0) return "rgba(255,255,255,0.03)";
+    return `rgba(88,166,255,${0.12 + (count / maxCount) * 0.88})`;
+  }
+
+  function cellBorder(h, a) {
+    if (actual && h === actual.home && a === actual.away)
+      return "1.5px solid rgba(63,185,80,.7)";
+    return "1px solid rgba(48,54,61,.5)";
+  }
+
+  const hovCount = hovered ? countFor(hovered.home, hovered.away) : 0;
+
+  const top3 = Object.entries(grid)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3);
+
+  return (
+    <div>
+      {/* Tooltip */}
+      <div
+        style={{
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 10,
+        }}
+      >
+        {hovered ? (
+          <div
+            style={{
+              background:
+                hovCount > 0 ? "rgba(88,166,255,.1)" : "rgba(255,255,255,.04)",
+              border: `1px solid ${
+                hovCount > 0 ? "rgba(88,166,255,.3)" : "var(--border)"
+              }`,
+              borderRadius: 8,
+              padding: "5px 14px",
+              fontSize: 13,
+              color: "var(--text)",
+              display: "flex",
+              gap: 10,
+              alignItems: "center",
+            }}
+          >
+            <span style={{ fontWeight: 700 }}>
+              {FLAG[match.home] || ""} {hovered.home} – {hovered.away}{" "}
+              {FLAG[match.away] || ""}
+            </span>
+            <span style={{ color: "var(--muted)" }}>·</span>
+            <span
+              style={{
+                color: hovCount > 0 ? "var(--accent)" : "var(--muted)",
+                fontWeight: 700,
+              }}
+            >
+              {hovCount > 0
+                ? `${hovCount}× (${Math.round((hovCount / total) * 100)}%)`
+                : "niemand"}
+            </span>
+          </div>
+        ) : (
+          <div
+            style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}
+          >
+            Hover over een cel voor details
+          </div>
+        )}
+      </div>
+
+      {/* Grid */}
+      <div style={{ display: "flex", gap: 0 }}>
+        {/* Y-axis label */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 24,
+            paddingBottom: 28,
+          }}
+        >
+          <div
+            style={{
+              writingMode: "vertical-rl",
+              transform: "rotate(180deg)",
+              fontSize: 10,
+              color: "var(--muted)",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              userSelect: "none",
+            }}
+          >
+            {FLAG[match.home] || ""} doelpunten
+          </div>
+        </div>
+
+        <div style={{ flex: 1 }}>
+          {rows.map((homeGoals) => (
+            <div
+              key={homeGoals}
+              style={{ display: "flex", alignItems: "center", marginBottom: 3 }}
+            >
+              {/* Row label */}
+              <div
+                style={{
+                  width: 18,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color:
+                    actual && homeGoals === actual.home
+                      ? "var(--green)"
+                      : "var(--muted)",
+                  textAlign: "center",
+                  flexShrink: 0,
+                  marginRight: 4,
+                }}
+              >
+                {homeGoals}
+              </div>
+
+              {/* Cells */}
+              {cols.map((awayGoals) => {
+                const count = countFor(homeGoals, awayGoals);
+                const isHovered =
+                  hovered?.home === homeGoals && hovered?.away === awayGoals;
+                return (
+                  <div
+                    key={awayGoals}
+                    onMouseEnter={() =>
+                      setHovered({ home: homeGoals, away: awayGoals })
+                    }
+                    onMouseLeave={() => setHovered(null)}
+                    style={{
+                      flex: 1,
+                      aspectRatio: "1",
+                      marginRight: awayGoals < MAX_GOALS ? 3 : 0,
+                      background: cellBg(homeGoals, awayGoals, count),
+                      border: cellBorder(homeGoals, awayGoals),
+                      borderRadius: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: count > 0 ? "pointer" : "default",
+                      transition: "transform 0.1s",
+                      transform: isHovered ? "scale(1.15)" : "scale(1)",
+                      position: "relative",
+                      zIndex: isHovered ? 2 : 1,
+                    }}
+                  >
+                    {count > 0 && (
+                      <span
+                        style={{
+                          fontSize: count >= 3 ? 12 : 10,
+                          fontWeight: 900,
+                          color:
+                            actual &&
+                            homeGoals === actual.home &&
+                            awayGoals === actual.away
+                              ? "rgba(63,185,80,.95)"
+                              : `rgba(255,255,255,${
+                                  0.5 + (count / maxCount) * 0.5
+                                })`,
+                          lineHeight: 1,
+                        }}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+
+          {/* X-axis labels */}
+          <div style={{ display: "flex", marginTop: 5 }}>
+            <div style={{ width: 22, marginRight: 4 }} />
+            {cols.map((a) => (
+              <div
+                key={a}
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color:
+                    actual && a === actual.away
+                      ? "var(--green)"
+                      : "var(--muted)",
+                  marginRight: a < MAX_GOALS ? 3 : 0,
+                }}
+              >
+                {a}
+              </div>
+            ))}
+          </div>
+
+          {/* X-axis label */}
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: 5,
+              fontSize: 10,
+              color: "var(--muted)",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}
+          >
+            {FLAG[match.away] || ""} doelpunten
+          </div>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div
+        style={{
+          display: "flex",
+          gap: 14,
+          marginTop: 14,
+          paddingTop: 12,
+          borderTop: "1px solid var(--border)",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <div
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 2,
+              background: "rgba(88,166,255,.7)",
+              border: "1px solid rgba(88,166,255,.4)",
+            }}
+          />
+          <span style={{ fontSize: 11, color: "var(--muted)" }}>
+            Voorspelling
+          </span>
+        </div>
+        {actual && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 2,
+                background: "rgba(63,185,80,.4)",
+                border: "1.5px solid rgba(63,185,80,.7)",
+              }}
+            />
+            <span style={{ fontSize: 11, color: "var(--muted)" }}>
+              Uitslag ({actual.home}–{actual.away})
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Top 3 meest voorspeld */}
+      {top3.length > 0 && (
+        <div style={{ marginTop: 14 }}>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              color: "var(--muted)",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              marginBottom: 8,
+            }}
+          >
+            Meest voorspeld
+          </div>
+          {top3.map(([score, count], i) => {
+            const [sh, sa] = score.split("-").map(Number);
+            const isCorrect =
+              actual && sh === actual.home && sa === actual.away;
+            return (
+              <div
+                key={score}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
+                  padding: "6px 0",
+                  borderBottom:
+                    i < top3.length - 1
+                      ? "1px solid rgba(48,54,61,.4)"
+                      : "none",
+                }}
+              >
+                <span
+                  style={{ fontSize: 11, color: "var(--muted)", width: 16 }}
+                >
+                  #{i + 1}
+                </span>
+                <span
+                  style={{
+                    fontSize: 14,
+                    fontWeight: 800,
+                    color: "var(--text)",
+                    minWidth: 40,
+                  }}
+                >
+                  {sh} – {sa}
+                </span>
+                <div
+                  style={{
+                    flex: 1,
+                    height: 5,
+                    background: "var(--bg)",
+                    borderRadius: 3,
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      height: "100%",
+                      width: `${(count / total) * 100}%`,
+                      background: isCorrect ? "var(--green)" : "var(--accent)",
+                      borderRadius: 3,
+                    }}
+                  />
+                </div>
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    color: isCorrect ? "var(--green)" : "var(--accent)",
+                    minWidth: 52,
+                    textAlign: "right",
+                  }}
+                >
+                  {count}× ({Math.round((count / total) * 100)}%)
+                </span>
+                {isCorrect && (
+                  <span style={{ fontSize: 11, color: "var(--green)" }}>✓</span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── SINGLE MATCH COMPARE ─────────────────────────────────────────────────────
 
 function SingleMatchCompare({ match, state, currentUserId, onClose }) {
   const result = state.results[match.id];
-  const users = state.users
-    .filter((u) => {
-      const pm = u.predictions?.matches?.[match.id];
-      return pm?.home !== undefined && pm.home !== "";
-    })
-    .sort((a, b) => {
-      const pa = calcGroupMatchPts(a.predictions.matches[match.id], result);
-      const pb = calcGroupMatchPts(b.predictions.matches[match.id], result);
-      return (pb?.pts ?? 0) - (pa?.pts ?? 0);
-    });
+  const filledCount = state.users.filter((u) => {
+    const pm = u.predictions?.matches?.[match.id];
+    return pm?.home !== undefined && pm.home !== "";
+  }).length;
 
   return (
     <Overlay onClose={onClose}>
       <OverlayHeader
-        title={`${FLAG[match.home]} ${match.home} vs ${FLAG[match.away]} ${match.away}`}
-        subtitle={`${fmtDateTime(match.dt)} · Poule ${match.group} · Ronde ${match.round}`}
+        title={`${FLAG[match.home]} ${match.home} vs ${FLAG[match.away]} ${
+          match.away
+        }`}
+        subtitle={`${fmtDateTime(match.dt)} · Groep ${match.group} · Ronde ${
+          match.round
+        } · ${filledCount} ingevuld`}
         onClose={onClose}
       />
 
@@ -102,75 +513,32 @@ function SingleMatchCompare({ match, state, currentUserId, onClose }) {
             border: "1px solid rgba(63,185,80,.3)",
           }}
         >
-          <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>Officiële uitslag</div>
-          <div style={{ fontSize: 24, fontWeight: 900 }}>{result.home} – {result.away}</div>
+          <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>
+            Officiële uitslag
+          </div>
+          <div style={{ fontSize: 24, fontWeight: 900 }}>
+            {result.home} – {result.away}
+          </div>
         </div>
       )}
 
-      {users.length === 0 ? (
-        <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: 20 }}>
+      {filledCount === 0 ? (
+        <div
+          style={{
+            color: "var(--muted)",
+            fontSize: 13,
+            textAlign: "center",
+            padding: 20,
+          }}
+        >
           Niemand heeft deze wedstrijd ingevuld.
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-          {users.map((u, i) => {
-            const pm = u.predictions.matches[match.id];
-            const res = calcGroupMatchPts(pm, result);
-            const isMe = u.id === currentUserId;
-            return (
-              <div
-                key={u.id}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
-                  borderRadius: 8,
-                  padding: "10px 12px",
-                  background: resultBg(res, result?.played),
-                  border: `1px solid ${isMe ? "var(--accent)" : "rgba(48,54,61,.6)"}`,
-                }}
-              >
-                <div style={{ fontSize: 16, width: 24 }}>
-                  {["🥇", "🥈", "🥉"][i] || `#${i + 1}`}
-                </div>
-                <div style={{ flex: 1, fontWeight: isMe ? 700 : 400, fontSize: 13 }}>
-                  {u.name}{isMe ? " (jij)" : ""}
-                </div>
-                <div
-                  style={{
-                    fontWeight: 700,
-                    fontSize: 16,
-                    color: isMe ? "var(--accent)" : "var(--text)",
-                    background: "rgba(255,255,255,.06)",
-                    borderRadius: 6,
-                    padding: "3px 10px",
-                    minWidth: 52,
-                    textAlign: "center",
-                  }}
-                >
-                  {pm.home}–{pm.away}
-                </div>
-                {res ? (
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 12,
-                      color: res.pts > 0 ? "var(--green)" : "var(--red)",
-                      minWidth: 60,
-                      textAlign: "right",
-                    }}
-                  >
-                    {res.pts > 0
-                      ? `+${res.pts} ${res.label === "exact" ? "exact" : res.label === "diff" ? "verschil" : "winnaar"}`
-                      : result?.played ? "✗" : ""}
-                  </div>
-                ) : (
-                  <div style={{ minWidth: 60 }} />
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <ScoreHeatmap
+          match={match}
+          state={state}
+          currentUserId={currentUserId}
+        />
       )}
     </Overlay>
   );
@@ -187,7 +555,9 @@ function MatchCompare({ state, currentUserId, onClose }) {
   const matchesToShow =
     groupBy === "poule"
       ? GROUP_MATCHES.filter((m) => m.group === filter.replace("poule_", ""))
-      : GROUP_MATCHES.filter((m) => m.round === parseInt(filter.replace("ronde_", "")));
+      : GROUP_MATCHES.filter(
+          (m) => m.round === parseInt(filter.replace("ronde_", ""))
+        );
 
   const users = state.users.filter((u) =>
     matchesToShow.some((m) => {
@@ -213,11 +583,25 @@ function MatchCompare({ state, currentUserId, onClose }) {
       <OverlayHeader title="Wedstrijden vergelijken" onClose={onClose} />
 
       {/* Group-by toggle */}
-      <div style={{ display: "flex", background: "var(--bg)", borderRadius: 8, padding: 3, marginBottom: 10 }}>
-        {[["poule", "Per poule"], ["ronde", "Per speelronde"]].map(([v, l]) => (
+      <div
+        style={{
+          display: "flex",
+          background: "var(--bg)",
+          borderRadius: 8,
+          padding: 3,
+          marginBottom: 10,
+        }}
+      >
+        {[
+          ["poule", "Per poule"],
+          ["ronde", "Per speelronde"],
+        ].map(([v, l]) => (
           <button
             key={v}
-            onClick={() => { setGroupBy(v); setFilter(v === "poule" ? "poule_A" : "ronde_1"); }}
+            onClick={() => {
+              setGroupBy(v);
+              setFilter(v === "poule" ? "poule_A" : "ronde_1");
+            }}
             style={{
               flex: 1,
               padding: "6px",
@@ -237,7 +621,9 @@ function MatchCompare({ state, currentUserId, onClose }) {
       </div>
 
       {/* Filter chips */}
-      <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 14 }}>
+      <div
+        style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 14 }}
+      >
         {groupBy === "poule"
           ? groups.map((g) => (
               <FilterChip
@@ -258,7 +644,14 @@ function MatchCompare({ state, currentUserId, onClose }) {
       </div>
 
       {sortedUsers.length === 0 ? (
-        <div style={{ color: "var(--muted)", fontSize: 13, textAlign: "center", padding: 20 }}>
+        <div
+          style={{
+            color: "var(--muted)",
+            fontSize: 13,
+            textAlign: "center",
+            padding: 20,
+          }}
+        >
           Niemand heeft wedstrijden in dit filter ingevuld.
         </div>
       ) : (
@@ -298,14 +691,35 @@ function MatchGrid({ matches, users, state, currentUserId, userPts }) {
   const cols = `140px repeat(${users.length}, 1fr)`;
   return (
     <div>
-      <div style={{ display: "grid", gridTemplateColumns: cols, gap: 4, marginBottom: 6, alignItems: "center" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: cols,
+          gap: 4,
+          marginBottom: 6,
+          alignItems: "center",
+        }}
+      >
         <div />
         {users.map((u) => {
           const isMe = u.id === currentUserId;
           return (
-            <div key={u.id} style={{ textAlign: "center", fontSize: 12, fontWeight: isMe ? 700 : 600, color: isMe ? "var(--accent)" : "var(--text)" }}>
-              <div>{u.name}{isMe ? " 👈" : ""}</div>
-              <div style={{ fontSize: 11, color: "var(--muted)" }}>{userPts(u)} pt</div>
+            <div
+              key={u.id}
+              style={{
+                textAlign: "center",
+                fontSize: 12,
+                fontWeight: isMe ? 700 : 600,
+                color: isMe ? "var(--accent)" : "var(--text)",
+              }}
+            >
+              <div>
+                {u.name}
+                {isMe ? " 👈" : ""}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                {userPts(u)} pt
+              </div>
             </div>
           );
         })}
@@ -314,12 +728,27 @@ function MatchGrid({ matches, users, state, currentUserId, userPts }) {
       {matches.map((m) => {
         const result = state.results[m.id];
         return (
-          <div key={m.id} style={{ display: "grid", gridTemplateColumns: cols, gap: 4, marginBottom: 5, alignItems: "center" }}>
-            <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.3 }}>
-              <div style={{ fontWeight: 600, color: "var(--text)", fontSize: 12 }}>
+          <div
+            key={m.id}
+            style={{
+              display: "grid",
+              gridTemplateColumns: cols,
+              gap: 4,
+              marginBottom: 5,
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.3 }}
+            >
+              <div
+                style={{ fontWeight: 600, color: "var(--text)", fontSize: 12 }}
+              >
                 {FLAG[m.home]} {m.home}
               </div>
-              <div style={{ fontSize: 10 }}>vs {FLAG[m.away]} {m.away}</div>
+              <div style={{ fontSize: 10 }}>
+                vs {FLAG[m.away]} {m.away}
+              </div>
               {result?.played && (
                 <div style={{ color: "var(--green)", fontWeight: 700 }}>
                   {result.home}–{result.away}
@@ -339,14 +768,34 @@ function MatchGrid({ matches, users, state, currentUserId, userPts }) {
                     background: resultBg(res, result?.played),
                     borderRadius: 6,
                     padding: "4px 2px",
-                    border: `1px solid ${isMe ? "rgba(88,166,255,.3)" : "rgba(48,54,61,.5)"}`,
+                    border: `1px solid ${
+                      isMe ? "rgba(88,166,255,.3)" : "rgba(48,54,61,.5)"
+                    }`,
                   }}
                 >
-                  <div style={{ fontWeight: 700, fontSize: 13, color: isMe ? "var(--accent)" : "var(--text)" }}>
-                    {hasPred ? `${pm.home}–${pm.away}` : <span style={{ color: "var(--muted)", fontSize: 11 }}>–</span>}
+                  <div
+                    style={{
+                      fontWeight: 700,
+                      fontSize: 13,
+                      color: isMe ? "var(--accent)" : "var(--text)",
+                    }}
+                  >
+                    {hasPred ? (
+                      `${pm.home}–${pm.away}`
+                    ) : (
+                      <span style={{ color: "var(--muted)", fontSize: 11 }}>
+                        –
+                      </span>
+                    )}
                   </div>
                   {res && (
-                    <div style={{ fontSize: 10, fontWeight: 700, color: res.pts > 0 ? "var(--green)" : "var(--red)" }}>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        fontWeight: 700,
+                        color: res.pts > 0 ? "var(--green)" : "var(--red)",
+                      }}
+                    >
                       {res.pts > 0 ? `+${res.pts}` : ""}
                     </div>
                   )}
@@ -397,36 +846,101 @@ function PlayerCompare({ me, other, state, onClose }) {
       <OverlayHeader title="Vergelijking" onClose={onClose} />
 
       {/* Header row */}
-      <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 1fr", gap: 6, marginBottom: 14, alignItems: "center" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "90px 1fr 1fr",
+          gap: 6,
+          marginBottom: 14,
+          alignItems: "center",
+        }}
+      >
         <div />
-        <div style={{ textAlign: "center", fontWeight: 700, fontSize: 14, color: "var(--accent)" }}>
-          {me.name}<br />
+        <div
+          style={{
+            textAlign: "center",
+            fontWeight: 700,
+            fontSize: 14,
+            color: "var(--accent)",
+          }}
+        >
+          {me.name}
+          <br />
           <span style={{ fontWeight: 400, fontSize: 12 }}>{myPts} pt</span>
         </div>
-        <div style={{ textAlign: "center", fontWeight: 700, fontSize: 14, color: "var(--orange)" }}>
-          {other.name}<br />
+        <div
+          style={{
+            textAlign: "center",
+            fontWeight: 700,
+            fontSize: 14,
+            color: "var(--orange)",
+          }}
+        >
+          {other.name}
+          <br />
           <span style={{ fontWeight: 400, fontSize: 12 }}>{otherPts} pt</span>
         </div>
       </div>
 
       {/* Extra predictions */}
-      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 8 }}>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--accent)",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          marginBottom: 8,
+        }}
+      >
         Extra vragen
       </div>
       {[
-        ["Kampioen", myPred.champion ? `${FLAG[myPred.champion] || ""} ${myPred.champion}` : "", otherPred.champion ? `${FLAG[otherPred.champion] || ""} ${otherPred.champion}` : ""],
+        [
+          "Kampioen",
+          myPred.champion
+            ? `${FLAG[myPred.champion] || ""} ${myPred.champion}`
+            : "",
+          otherPred.champion
+            ? `${FLAG[otherPred.champion] || ""} ${otherPred.champion}`
+            : "",
+        ],
         ["Topscorer", myPred.topScorer || "", otherPred.topScorer || ""],
         ["Nederland", myPred.nlStage || "", otherPred.nlStage || ""],
-        ["Verrassing", myPred.surpriseTeam ? `${FLAG[myPred.surpriseTeam] || ""} ${myPred.surpriseTeam}` : "", otherPred.surpriseTeam ? `${FLAG[otherPred.surpriseTeam] || ""} ${otherPred.surpriseTeam}` : ""],
-        ["Topland", myPred.topOut ? `${FLAG[myPred.topOut] || ""} ${myPred.topOut}` : "", otherPred.topOut ? `${FLAG[otherPred.topOut] || ""} ${otherPred.topOut}` : ""],
+        [
+          "Verrassing",
+          myPred.surpriseTeam
+            ? `${FLAG[myPred.surpriseTeam] || ""} ${myPred.surpriseTeam}`
+            : "",
+          otherPred.surpriseTeam
+            ? `${FLAG[otherPred.surpriseTeam] || ""} ${otherPred.surpriseTeam}`
+            : "",
+        ],
+        [
+          "Topland",
+          myPred.topOut ? `${FLAG[myPred.topOut] || ""} ${myPred.topOut}` : "",
+          otherPred.topOut
+            ? `${FLAG[otherPred.topOut] || ""} ${otherPred.topOut}`
+            : "",
+        ],
       ].map(([label, myVal, otherVal]) => (
         <ExtraRow key={label} label={label} myVal={myVal} otherVal={otherVal} />
       ))}
 
       {/* Group-by toggle */}
       <div style={{ marginTop: 18, marginBottom: 10 }}>
-        <div style={{ display: "flex", background: "var(--bg)", borderRadius: 8, padding: 3 }}>
-          {[["ronde", "Per speelronde"], ["poule", "Per poule"]].map(([v, l]) => (
+        <div
+          style={{
+            display: "flex",
+            background: "var(--bg)",
+            borderRadius: 8,
+            padding: 3,
+          }}
+        >
+          {[
+            ["ronde", "Per speelronde"],
+            ["poule", "Per poule"],
+          ].map(([v, l]) => (
             <button
               key={v}
               onClick={() => setGroupBy(v)}
@@ -477,12 +991,25 @@ function ExtraRow({ label, myVal, otherVal }) {
   };
   return (
     <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
-      <div style={{ width: 80, color: "var(--muted)", fontSize: 11, paddingTop: 4 }}>{label}</div>
+      <div
+        style={{
+          width: 80,
+          color: "var(--muted)",
+          fontSize: 11,
+          paddingTop: 4,
+        }}
+      >
+        {label}
+      </div>
       <div style={{ ...cellStyle, color: "var(--accent)" }}>
-        {myVal || <span style={{ color: "var(--muted)", fontWeight: 400 }}>–</span>}
+        {myVal || (
+          <span style={{ color: "var(--muted)", fontWeight: 400 }}>–</span>
+        )}
       </div>
       <div style={{ ...cellStyle, color: "var(--orange)" }}>
-        {otherVal || <span style={{ color: "var(--muted)", fontWeight: 400 }}>–</span>}
+        {otherVal || (
+          <span style={{ color: "var(--muted)", fontWeight: 400 }}>–</span>
+        )}
       </div>
     </div>
   );
@@ -494,12 +1021,45 @@ function CompareSection({ section, me, other, state, mySecPts, otherSecPts }) {
 
   return (
     <div style={{ marginBottom: 16 }}>
-      <div style={{ display: "grid", gridTemplateColumns: "90px 1fr 1fr", gap: 6, marginBottom: 6, alignItems: "center" }}>
-        <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "90px 1fr 1fr",
+          gap: 6,
+          marginBottom: 6,
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--muted)",
+            textTransform: "uppercase",
+          }}
+        >
           {section.label}
         </div>
-        <div style={{ textAlign: "center", fontSize: 11, color: "var(--accent)", fontWeight: 700 }}>{mySecPts} pt</div>
-        <div style={{ textAlign: "center", fontSize: 11, color: "var(--orange)", fontWeight: 700 }}>{otherSecPts} pt</div>
+        <div
+          style={{
+            textAlign: "center",
+            fontSize: 11,
+            color: "var(--accent)",
+            fontWeight: 700,
+          }}
+        >
+          {mySecPts} pt
+        </div>
+        <div
+          style={{
+            textAlign: "center",
+            fontSize: 11,
+            color: "var(--orange)",
+            fontWeight: 700,
+          }}
+        >
+          {otherSecPts} pt
+        </div>
       </div>
 
       {section.matches.map((m) => {
@@ -509,20 +1069,40 @@ function CompareSection({ section, me, other, state, mySecPts, otherSecPts }) {
         const myRes = calcGroupMatchPts(my, r);
         const otRes = calcGroupMatchPts(ot, r);
         const same =
-          my?.home !== undefined && my.home !== "" &&
-          ot?.home !== undefined && ot.home !== "" &&
-          my.home === ot.home && my.away === ot.away;
+          my?.home !== undefined &&
+          my.home !== "" &&
+          ot?.home !== undefined &&
+          ot.home !== "" &&
+          my.home === ot.home &&
+          my.away === ot.away;
         const hasMy = my?.home !== undefined && my.home !== "";
         const hasOt = ot?.home !== undefined && ot.home !== "";
 
         return (
-          <div key={m.id} style={{ display: "grid", gridTemplateColumns: "90px 1fr 1fr", gap: 4, marginBottom: 4, alignItems: "center" }}>
-            <div style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.3 }}>
-              <span style={{ fontWeight: 600, color: "var(--text)" }}>{FLAG[m.home]} {m.home}</span>
+          <div
+            key={m.id}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "90px 1fr 1fr",
+              gap: 4,
+              marginBottom: 4,
+              alignItems: "center",
+            }}
+          >
+            <div
+              style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.3 }}
+            >
+              <span style={{ fontWeight: 600, color: "var(--text)" }}>
+                {FLAG[m.home]} {m.home}
+              </span>
               <br />
-              <span>vs {FLAG[m.away]} {m.away}</span>
+              <span>
+                vs {FLAG[m.away]} {m.away}
+              </span>
               {r?.played && (
-                <div style={{ color: "var(--green)", fontWeight: 700 }}>{r.home}–{r.away}</div>
+                <div style={{ color: "var(--green)", fontWeight: 700 }}>
+                  {r.home}–{r.away}
+                </div>
               )}
             </div>
             {[
@@ -536,14 +1116,28 @@ function CompareSection({ section, me, other, state, mySecPts, otherSecPts }) {
                   borderRadius: 6,
                   padding: "4px 2px",
                   background: resultBg(res, r?.played),
-                  border: `1px solid ${same ? "rgba(88,166,255,.3)" : "rgba(48,54,61,.5)"}`,
+                  border: `1px solid ${
+                    same ? "rgba(88,166,255,.3)" : "rgba(48,54,61,.5)"
+                  }`,
                 }}
               >
                 <div style={{ fontWeight: 700, fontSize: 13, color: accent }}>
-                  {has ? `${pred.home}–${pred.away}` : <span style={{ color: "var(--muted)", fontSize: 11 }}>–</span>}
+                  {has ? (
+                    `${pred.home}–${pred.away}`
+                  ) : (
+                    <span style={{ color: "var(--muted)", fontSize: 11 }}>
+                      –
+                    </span>
+                  )}
                 </div>
                 {res && r?.played && (
-                  <div style={{ fontSize: 10, fontWeight: 700, color: res.pts > 0 ? "var(--green)" : "var(--red)" }}>
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: res.pts > 0 ? "var(--green)" : "var(--red)",
+                    }}
+                  >
                     {res.pts > 0 ? `+${res.pts}` : ""}
                   </div>
                 )}
