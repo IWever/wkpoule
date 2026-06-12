@@ -707,9 +707,6 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
         );
       })}
 
-      {/* ─── ONTGRENDELEN PER DEELNEMER ─────────────────────────────── */}
-      <UserUnlockPanel state={state} onUpd={onUpd} />
-
       <div style={{ ...S.card(), marginTop: 4 }}>
         <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
           ⚔️ KO-fase — per ronde bevriezen
@@ -724,6 +721,7 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
         >
           Bevriezing vóór aanvang eerste wedstrijd van elke ronde.
         </div>
+
         {KO_ROUND_CONFIG.map(({ key, label, date, deadline }) => {
           const frozen = !!frozenRounds[key];
           return (
@@ -758,6 +756,9 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
           );
         })}
       </div>
+
+      {/* ─── ONTGRENDELEN PER DEELNEMER ─────────────────────────────── */}
+      <UserUnlockPanel state={state} onUpd={onUpd} />
     </div>
   );
 }
