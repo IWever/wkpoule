@@ -769,6 +769,11 @@ function UserUnlockPanel({ state, onUpd }) {
   const frozenAny = state.groupFrozen || state.extraFrozen;
   if (!frozenAny) return null;
 
+  const [sortAZ, setSortAZ] = useState(false);
+  const displayUsers = sortAZ
+    ? [...state.users].sort((a, b) => a.name.localeCompare(b.name, "nl"))
+    : state.users;
+
   function toggle(userId) {
     const next = unlocked.includes(userId)
       ? unlocked.filter((id) => id !== userId)
@@ -787,16 +792,44 @@ function UserUnlockPanel({ state, onUpd }) {
       <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>
         🔓 Tijdelijk ontgrendelen per deelnemer
       </div>
-      <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>
-        Ontgrendelde deelnemers kunnen groepsfase en/of extra vragen nog
-        aanpassen, ook als ze globaal bevroren zijn.
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 12,
+        }}
+      >
+        +{" "}
+        <span style={{ fontSize: 12, color: "var(--muted)" }}>
+          Ontgrendelde deelnemers kunnen groepsfase en/of extra vragen nog
+          aanpassen, ook als ze globaal bevroren zijn.
+        </span>
+        <button
+          onClick={() => setSortAZ((s) => !s)}
+          style={{
+            background: sortAZ ? "rgba(88,166,255,.12)" : "none",
+            border: `1px solid ${sortAZ ? "var(--accent)" : "var(--border)"}`,
+            borderRadius: 6,
+            color: sortAZ ? "var(--accent)" : "var(--muted)",
+            padding: "3px 10px",
+            cursor: "pointer",
+            fontSize: 11,
+            fontFamily: "var(--font)",
+            whiteSpace: "nowrap",
+            marginLeft: 10,
+            flexShrink: 0,
+          }}
+        >
+          A→Z
+        </button>
       </div>
       {state.users.length === 0 && (
         <div style={{ fontSize: 12, color: "var(--muted)" }}>
           Geen deelnemers.
         </div>
       )}
-      {state.users.map((u) => {
+      {displayUsers.map((u) => {
         const isUnlocked = unlocked.includes(u.id);
         return (
           <div
@@ -1181,6 +1214,11 @@ function UsersAdmin({ state, setState, onRemove }) {
   const [editName, setEditName] = useState("");
   const [resetId, setResetId] = useState(null);
   const [resetPw, setResetPw] = useState("");
+  const [sortAZ, setSortAZ] = useState(false);
+
+  const displayUsers = sortAZ
+    ? [...state.users].sort((a, b) => a.name.localeCompare(b.name, "nl"))
+    : state.users;
 
   function startEdit(user) {
     setEditingId(user.id);
@@ -1227,10 +1265,33 @@ function UsersAdmin({ state, setState, onRemove }) {
 
   return (
     <div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: 12,
+        }}
+      >
+        <button
+          onClick={() => setSortAZ((s) => !s)}
+          style={{
+            background: sortAZ ? "rgba(88,166,255,.12)" : "none",
+            border: `1px solid ${sortAZ ? "var(--accent)" : "var(--border)"}`,
+            borderRadius: 6,
+            color: sortAZ ? "var(--accent)" : "var(--muted)",
+            padding: "5px 14px",
+            cursor: "pointer",
+            fontSize: 12,
+            fontFamily: "var(--font)",
+          }}
+        >
+          A→Z sorteren
+        </button>
+      </div>
       {state.users.length === 0 && (
         <p style={{ color: "var(--muted)" }}>Nog niemand geregistreerd.</p>
       )}
-      {state.users.map((u) => {
+      {displayUsers.map((u) => {
         const pts = calcPoints(u, state.results, state.koResults);
         const p = u.predictions || {};
         const groupFilled = GROUP_MATCHES.filter(
