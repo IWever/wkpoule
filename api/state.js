@@ -172,6 +172,12 @@ export default async function handler(req, res) {
       // (dit was de oorspronkelijke POST-logica)
       {
         const newState = req.body;
+        console.log(
+          "POST admin users:",
+          newState.users?.length,
+          newState.users?.map((u) => u.name)
+        );
+
         if (!newState || !Array.isArray(newState.users)) {
           return res.status(400).json({ error: "Ongeldige state." });
         }

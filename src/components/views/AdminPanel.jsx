@@ -58,6 +58,12 @@ function AdminPanel({ state, setState }) {
   function upd(patch) {
     setState((s) => {
       const ns = { ...s, ...patch };
+      console.log("upd patch:", JSON.stringify(patch));
+      console.log(
+        "users in ns:",
+        ns.users.length,
+        ns.users.map((u) => u.name)
+      );
       scheduleAdminPersist(ns);
       return ns;
     });
