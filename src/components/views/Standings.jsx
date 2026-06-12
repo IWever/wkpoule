@@ -22,7 +22,9 @@ export function calcPrimaryComp(user, state) {
           pts: calcPoints(u, state.results, state.koResults),
         }))
         .sort((a, b) => b.pts - a.pts);
-      const userRank = ranked.findIndex((u) => u.id === user.id) + 1;
+      const userEntry = ranked.find((u) => u.id === user.id);
+      const userPts = userEntry?.pts ?? 0;
+      const userRank = ranked.filter((u) => u.pts > userPts).length + 1;
       return { comp: c, size: members.length, userRank };
     })
     .sort((a, b) =>
@@ -37,6 +39,11 @@ function Standings({ state, currentUserId, onCompare }) {
     .map((u) => ({ ...u, pts: calcPoints(u, state.results, state.koResults) }))
     .sort((a, b) => b.pts - a.pts);
   const canCompare = state.groupFrozen && currentUserId;
+
+  // Bereken gedeelde rank: iedereen met meer punten telt mee
+  function getRank(pts) {
+    return ranked.filter((u) => u.pts > pts).length + 1;
+  }
 
   return (
     <div>
@@ -63,11 +70,12 @@ function Standings({ state, currentUserId, onCompare }) {
       {ranked.map((u, i) => {
         const isMe = u.id === currentUserId;
         const clickable = canCompare && !isMe;
+        const rank = getRank(u.pts);
         return (
           <StandingRow
             key={u.id}
             user={u}
-            rank={i}
+            rank={rank}
             isMe={isMe}
             clickable={clickable}
             onCompare={() => onCompare(u)}
@@ -78,7 +86,8 @@ function Standings({ state, currentUserId, onCompare }) {
   );
 }
 
-function StandingRow({ user: u, rank: i, isMe, clickable, onCompare }) {
+function StandingRow({ user: u, rank, isMe, clickable, onCompare }) {
+  const i = rank - 1; // voor achterwaartse compatibiliteit (goud/zilver/brons styling)
   return (
     <div
       onClick={clickable ? onCompare : undefined}
@@ -89,13 +98,13 @@ function StandingRow({ user: u, rank: i, isMe, clickable, onCompare }) {
         ...S.card(),
         marginBottom: 8,
         background:
-          i === 0
+          rank === 1
             ? "linear-gradient(135deg,rgba(212,175,55,.12),rgba(212,175,55,.04))"
             : "var(--card)",
         border: `1px solid ${
           isMe
             ? "var(--accent)"
-            : i === 0
+            : rank === 1
             ? "rgba(212,175,55,.35)"
             : "var(--border)"
         }`,
@@ -103,7 +112,7 @@ function StandingRow({ user: u, rank: i, isMe, clickable, onCompare }) {
       }}
     >
       <div style={{ fontSize: 20, width: 32, textAlign: "center" }}>
-        {["🥇", "🥈", "🥉"][i] || `#${i + 1}`}
+        {rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`}
       </div>
       <div style={{ flex: 1, fontWeight: isMe ? 700 : 600 }}>
         {u.name}
@@ -116,7 +125,7 @@ function StandingRow({ user: u, rank: i, isMe, clickable, onCompare }) {
         style={{
           fontSize: 26,
           fontWeight: 900,
-          color: i === 0 ? "var(--gold)" : "var(--accent)",
+          color: rank === 1 ? "var(--gold)" : "var(--accent)",
           fontFamily: "var(--font-display)",
         }}
       >

@@ -44,8 +44,6 @@ function AdminPanel({ state, setState }) {
   const [tab, setTab] = useState("home");
   const [activeGroup, setActiveGroup] = useState("A");
 
-  // Debounced persist — 400ms zodat snel aaneenvolgende score-invoer
-  // wordt samengevoegd tot één DB-write.
   const persistTimer = useRef(null);
 
   function scheduleAdminPersist(ns, deletedIds = []) {
@@ -57,9 +55,6 @@ function AdminPanel({ state, setState }) {
     }, 400);
   }
 
-  // Centrale state-updater voor AdminPanel.
-  // setState hier is setAndPersist uit App.jsx (werkt alleen lokaal).
-  // persistAdmin() wordt los aangeroepen voor de DB-write.
   function upd(patch) {
     setState((s) => {
       const ns = { ...s, ...patch };
@@ -86,10 +81,8 @@ function AdminPanel({ state, setState }) {
     setState((s) => {
       const koResults =
         field === "value"
-          ? // N3-slot: sla op als koResults["N3_R32_1_home"] = "Haïti"
-            { ...s.koResults, [id]: val }
-          : // Normaal: sla op als koResults["R32_1"].winner = "..."
-            {
+          ? { ...s.koResults, [id]: val }
+          : {
               ...s.koResults,
               [id]: { ...(s.koResults[id] || {}), [field]: val },
             };
@@ -106,8 +99,6 @@ function AdminPanel({ state, setState }) {
         ...prev,
         users: prev.users.filter((u) => u.id !== uid),
       };
-      // Stuur de verwijderde id expliciet mee zodat de server onderscheid
-      // kan maken tussen een admin-delete en een nieuwe registratie.
       persistAdmin(next, [uid]).catch((err) =>
         console.error("Verwijderen mislukt:", err)
       );
@@ -122,8 +113,6 @@ function AdminPanel({ state, setState }) {
     upd({ koFrozenRounds: next, koFrozen: Object.values(next).some(Boolean) });
   }
 
-  // setState wrapper voor child-panels die setState doorgeven krijgen.
-  // Zij roepen setState(updater) aan — wij persisten daarna.
   function setStateAndPersist(updater) {
     setState((prev) => {
       const ns = typeof updater === "function" ? updater(prev) : updater;
@@ -732,6 +721,7 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
         >
           Bevriezing vóór aanvang eerste wedstrijd van elke ronde.
         </div>
+
         {KO_ROUND_CONFIG.map(({ key, label, date, deadline }) => {
           const frozen = !!frozenRounds[key];
           return (
@@ -766,6 +756,110 @@ function FreezePanel({ state, onUpd, frozenRounds, onToggleKORound }) {
           );
         })}
       </div>
+
+      {/* ─── ONTGRENDELEN PER DEELNEMER ─────────────────────────────── */}
+      <UserUnlockPanel state={state} onUpd={onUpd} />
+    </div>
+  );
+}
+
+// ─── USER UNLOCK PANEL ────────────────────────────────────────────────────────
+
+function UserUnlockPanel({ state, onUpd }) {
+  const unlocked = state.unlockedUsers || [];
+  const frozenAny = state.groupFrozen || state.extraFrozen;
+  if (!frozenAny) return null;
+
+  const [sortAZ, setSortAZ] = useState(false);
+  const displayUsers = sortAZ
+    ? [...state.users].sort((a, b) => a.name.localeCompare(b.name, "nl"))
+    : state.users;
+
+  function toggle(userId) {
+    const next = unlocked.includes(userId)
+      ? unlocked.filter((id) => id !== userId)
+      : [...unlocked, userId];
+    onUpd({ unlockedUsers: next });
+  }
+
+  return (
+    <div
+      style={{
+        ...S.card(),
+        background: "rgba(63,185,80,.04)",
+        border: "1px solid rgba(63,185,80,.2)",
+      }}
+    >
+      <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>
+        🔓 Tijdelijk ontgrendelen per deelnemer
+      </div>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          marginBottom: 12,
+        }}
+      >
+        +{" "}
+        <span style={{ fontSize: 12, color: "var(--muted)" }}>
+          Ontgrendelde deelnemers kunnen groepsfase en/of extra vragen nog
+          aanpassen, ook als ze globaal bevroren zijn.
+        </span>
+        <button
+          onClick={() => setSortAZ((s) => !s)}
+          style={{
+            background: sortAZ ? "rgba(88,166,255,.12)" : "none",
+            border: `1px solid ${sortAZ ? "var(--accent)" : "var(--border)"}`,
+            borderRadius: 6,
+            color: sortAZ ? "var(--accent)" : "var(--muted)",
+            padding: "3px 10px",
+            cursor: "pointer",
+            fontSize: 11,
+            fontFamily: "var(--font)",
+            whiteSpace: "nowrap",
+            marginLeft: 10,
+            flexShrink: 0,
+          }}
+        >
+          A→Z
+        </button>
+      </div>
+      {state.users.length === 0 && (
+        <div style={{ fontSize: 12, color: "var(--muted)" }}>
+          Geen deelnemers.
+        </div>
+      )}
+      {displayUsers.map((u) => {
+        const isUnlocked = unlocked.includes(u.id);
+        return (
+          <div
+            key={u.id}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "8px 0",
+              borderBottom: "1px solid var(--border)",
+            }}
+          >
+            <span style={{ fontSize: 13 }}>{u.name}</span>
+            <button
+              onClick={() => toggle(u.id)}
+              style={{
+                ...S.btn(isUnlocked ? "var(--green)" : "var(--card2)"),
+                padding: "5px 14px",
+                fontSize: 12,
+                border: `1px solid ${
+                  isUnlocked ? "var(--green)" : "var(--border)"
+                }`,
+              }}
+            >
+              {isUnlocked ? "🔓 Ontgrendeld" : "🔒 Bevroren"}
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -1121,6 +1215,11 @@ function UsersAdmin({ state, setState, onRemove }) {
   const [editName, setEditName] = useState("");
   const [resetId, setResetId] = useState(null);
   const [resetPw, setResetPw] = useState("");
+  const [sortAZ, setSortAZ] = useState(false);
+
+  const displayUsers = sortAZ
+    ? [...state.users].sort((a, b) => a.name.localeCompare(b.name, "nl"))
+    : state.users;
 
   function startEdit(user) {
     setEditingId(user.id);
@@ -1167,10 +1266,33 @@ function UsersAdmin({ state, setState, onRemove }) {
 
   return (
     <div>
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          marginBottom: 12,
+        }}
+      >
+        <button
+          onClick={() => setSortAZ((s) => !s)}
+          style={{
+            background: sortAZ ? "rgba(88,166,255,.12)" : "none",
+            border: `1px solid ${sortAZ ? "var(--accent)" : "var(--border)"}`,
+            borderRadius: 6,
+            color: sortAZ ? "var(--accent)" : "var(--muted)",
+            padding: "5px 14px",
+            cursor: "pointer",
+            fontSize: 12,
+            fontFamily: "var(--font)",
+          }}
+        >
+          A→Z sorteren
+        </button>
+      </div>
       {state.users.length === 0 && (
         <p style={{ color: "var(--muted)" }}>Nog niemand geregistreerd.</p>
       )}
-      {state.users.map((u) => {
+      {displayUsers.map((u) => {
         const pts = calcPoints(u, state.results, state.koResults);
         const p = u.predictions || {};
         const groupFilled = GROUP_MATCHES.filter(
@@ -1516,7 +1638,6 @@ function ResultsAdmin({
     (m) => m.group === activeGroup
   ).every((m) => state.results[m.id]?.played);
 
-  // Groepswinnaars automatisch bijwerken via useEffect ipv tijdens render
   React.useEffect(() => {
     if (
       allGroupPlayed &&
@@ -1802,6 +1923,7 @@ function AdminStandingTable({ rows }) {
 }
 
 // ─── KO RESULTS ADMIN ─────────────────────────────────────────────────────────
+
 function N3SlotPicker({
   slot,
   matchId,

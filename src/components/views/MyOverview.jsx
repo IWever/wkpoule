@@ -62,6 +62,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
         onEditGroup={onEditGroup}
         onEditExtra={onEditExtra}
         onEditKO={onEditKO}
+        userId={user.id}
       />
       <ExtraPredictionsGrid pred={pred} state={state} />
       <MatchTimeline
@@ -228,7 +229,9 @@ function NavCards({
   onEditGroup,
   onEditExtra,
   onEditKO,
+  userId,
 }) {
+  const unlocked = (state.unlockedUsers || []).includes(userId);
   const topScorers = Array.isArray(pred.topScorers)
     ? pred.topScorers.filter(Boolean)
     : pred.topScorer
@@ -264,7 +267,7 @@ function NavCards({
         label="Extra vragen"
         filled={extraFilled}
         total={8}
-        frozen={state.extraFrozen}
+        frozen={state.extraFrozen && !unlocked}
         available
         onClick={onEditExtra}
       />
@@ -273,7 +276,7 @@ function NavCards({
         label="Groepsfase"
         filled={groupFilled}
         total={GROUP_MATCHES.length}
-        frozen={state.groupFrozen}
+        frozen={state.extraFrozen && !unlocked}
         available
         onClick={onEditGroup}
       />
