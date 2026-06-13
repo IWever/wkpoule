@@ -11,7 +11,7 @@ const MATCH_FACTS = {
   A6: "🌍 Durban (Zuid-Afrika) is een van de grootste containerhavens van Afrika. Busan (Zuid-Korea) staat in de mondiale top tien van drukste containerhavens. Twee landen met een sterke maritieme economie — ver van huis, maar nooit ver van de zee.",
 
   // ─── GROEP B ──────────────────────────────────────────────────────────────
-  B1: "🏟️ Vancouver, speelstad van dit duel, is de grootste zeehaven van Canada en verwerkt jaarlijks ruim 3,4 miljoen containers. De vaarroute van hier naar Rotterdam beslaat meer dan 8.500 zeemijl.",
+  B1: "🏟️ Vancouver, speelstad van dit duel, is de grootste zeehaven van Canada en verwerkt jaarlijks ruim 3,4 miljoen containers. De vaarroute van hier naar Amsterdam beslaat meer dan 8.500 zeemijl.",
   B2: "🏆 Qatar was op WK 2022 het eerste gastland ooit dat uitgeschakeld werd in de groepsfase zonder een enkel punt. Ze gaven naar schatting honderden miljarden dollars uit aan infrastructuur — verreweg het duurste WK ooit — en verloren toch alle drie wedstrijden.",
   B3: "🌍 Meer dan 300.000 Bosniërs wonen in Zwitserland — een van de grootste Bosnische diasporagemeenschappen ter wereld. Veel jonge Zwitserse spelers hebben Bosnische roots; soms moeten beide landen strijden om dezelfde talenten.",
   B4: "⚽ Alphonso Davies werd geboren in een vluchtelingenkamp in Ghana en groeide op in Edmonton, Canada. Hij speelt nu voor Bayern München en was de bepalende speler bij Canada's eerste WK-kwalificatie in 36 jaar, in 2022.",
@@ -35,7 +35,7 @@ const MATCH_FACTS = {
   D6: "⚽ Paraguay overleefde op WK 2010 de achtste finale via strafschoppen na een doelloze wedstrijd van 120 minuten tegen Japan. In de penaltyserie miste Japan drie keer; Paraguay won met 5-3. Keeper Justo Villar hield zijn doel schoon in de 120 speelminuten. In de kwartfinale verloor Paraguay vervolgens van Spanje met 0-1.",
 
   // ─── GROEP E ──────────────────────────────────────────────────────────────
-  E1: "🏟️ Curaçao was jarenlang thuisland van Shell's grootste olieraffinaderij buiten Nederland. De historische binnenstad van Willemstad is UNESCO-werelderfgoed en de haven is één van de diepste natuurlijke havens van het Caraïbisch gebied. Het eiland telt 155.000 inwoners: vergelijkbaar met Rotterdam-Noord.",
+  E1: "🏟️ Curaçao was jarenlang thuisland van Shell's grootste olieraffinaderij buiten Nederland. De historische binnenstad van Willemstad is UNESCO-werelderfgoed en de haven is één van de diepste natuurlijke havens van het Caraïbisch gebied. Het eiland telt 155.000 inwoners: vergelijkbaar met Amsterdam-West.",
   E2: "⚽ Ecuador's thuisstadion in Quito ligt op 2.850 meter hoogte. Tegenstanders presteren er statistisch meetbaar slechter dan op zeeniveau. Buiten Quito ontbreekt dat hoogtevoordeel volledig.",
   E3: "🤝 Duitsland en Ivoorkust zaten op WK 2006 in dezelfde groep als Argentinië en Nederland — een van de zwaarste poules ooit. Duitsland versloeg Ivoorkust met 3-0. Het duel Argentinië–Ivoorkust trok extra aandacht doordat Drogba ondanks een blessure toch speelde.",
   E4: "🌍 Curaçao maakt deel uit van het Koninkrijk der Nederlanden maar speelt onder zijn eigen FIFA-lidmaatschap. Mede daardoor groeide het eiland uit tot een exporteur van voetbaltalent: spelers als Leandro Bacuna, Cuco Martina en Riechedly Bazoer kozen voor de blauw-gele kleuren.",
