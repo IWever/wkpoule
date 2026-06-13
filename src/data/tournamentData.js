@@ -175,7 +175,7 @@ const GROUP_MATCHES = [
     group: "D",
     home: "Australië",
     away: "Turkije",
-    dt: "2026-06-13T06:00",
+    dt: "2026-06-14T06:00",
     round: 1,
   },
   {
@@ -183,7 +183,7 @@ const GROUP_MATCHES = [
     group: "D",
     home: "Turkije",
     away: "Paraguay",
-    dt: "2026-06-19T06:00",
+    dt: "2026-06-20T06:00",
     round: 2,
   },
   {
@@ -455,7 +455,7 @@ const GROUP_MATCHES = [
     group: "J",
     home: "Oostenrijk",
     away: "Jordanië",
-    dt: "2026-06-16T06:00",
+    dt: "2026-06-17T06:00",
     round: 1,
   },
   {
@@ -487,7 +487,7 @@ const GROUP_MATCHES = [
     group: "J",
     home: "Algerije",
     away: "Oostenrijk",
-    dt: "2026-06-27T04:00",
+    dt: "2026-06-28T04:00",
     round: 3,
   },
   {
@@ -495,7 +495,7 @@ const GROUP_MATCHES = [
     group: "J",
     home: "Jordanië",
     away: "Argentinië",
-    dt: "2026-06-27T04:00",
+    dt: "2026-06-28T04:00",
     round: 3,
   },
   {
@@ -986,7 +986,7 @@ const DEADLINES = [
     desc: "Vóór aanvang achtste finales (4 jul 19:00)",
   },
   {
-    dt: "2026-07-9T22:00",
+    dt: "2026-07-09T22:00",
     label: "KO-fase: kwartfinales",
     desc: "Vóór aanvang kwartfinales (9 jul 22:00)",
   },
