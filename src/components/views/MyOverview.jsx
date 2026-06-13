@@ -822,7 +822,7 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
           </span>
           {canCompare && (
             <span style={{ fontSize: 9, color: "var(--muted)" }}>
-              vergelijk →
+              info →
             </span>
           )}
         </div>
@@ -1067,4 +1067,4 @@ function KOMatchRow({ m, pred, state }) {
   );
 }
 
-export { MyOverview };
+export { MyOverview, DeadlineBanner };

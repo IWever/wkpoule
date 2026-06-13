@@ -120,6 +120,13 @@ function ScoreHeatmap({ match, state, currentUserId }) {
     ? { home: parseInt(result.home, 10), away: parseInt(result.away, 10) }
     : null;
 
+  const currentUser = state.users.find((u) => u.id === currentUserId);
+  const myPredRaw = currentUser?.predictions?.matches?.[match.id];
+  const myScore =
+    myPredRaw?.home !== undefined && myPredRaw.home !== ""
+      ? { home: parseInt(myPredRaw.home, 10), away: parseInt(myPredRaw.away, 10) }
+      : null;
+
   const cols = Array.from({ length: MAX_GOALS + 1 }, (_, i) => i);
   const rows = Array.from({ length: MAX_GOALS + 1 }, (_, i) => MAX_GOALS - i);
 
@@ -139,9 +146,18 @@ function ScoreHeatmap({ match, state, currentUserId }) {
   }
 
   function cellBorder(h, a) {
-    if (actual && h === actual.home && a === actual.away)
-      return "1.5px solid rgba(63,185,80,.7)";
+    const isActual = actual && h === actual.home && a === actual.away;
+    const isMyScore = myScore && h === myScore.home && a === myScore.away;
+    if (isActual) return "1.5px solid rgba(63,185,80,.7)";
+    if (isMyScore) return "2px solid rgba(255,255,255,.85)";
     return "1px solid rgba(48,54,61,.5)";
+  }
+
+  function cellBoxShadow(h, a) {
+    const isActual = actual && h === actual.home && a === actual.away;
+    const isMyScore = myScore && h === myScore.home && a === myScore.away;
+    if (isMyScore && isActual) return "0 0 0 2.5px rgba(255,255,255,.7)";
+    return undefined;
   }
 
   const hovCount = hovered ? countFor(hovered.home, hovered.away) : 0;
@@ -274,6 +290,7 @@ function ScoreHeatmap({ match, state, currentUserId }) {
                       marginRight: awayGoals < MAX_GOALS ? 3 : 0,
                       background: cellBg(homeGoals, awayGoals, count),
                       border: cellBorder(homeGoals, awayGoals),
+                      boxShadow: cellBoxShadow(homeGoals, awayGoals),
                       borderRadius: 4,
                       display: "flex",
                       alignItems: "center",
@@ -374,6 +391,22 @@ function ScoreHeatmap({ match, state, currentUserId }) {
             Voorspelling
           </span>
         </div>
+        {myScore && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 2,
+                background: "rgba(255,255,255,.06)",
+                border: "2px solid rgba(255,255,255,.85)",
+              }}
+            />
+            <span style={{ fontSize: 11, color: "var(--muted)" }}>
+              Jouw voorspelling ({myScore.home}–{myScore.away})
+            </span>
+          </div>
+        )}
         {actual && (
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <div
@@ -485,10 +518,14 @@ function ScoreHeatmap({ match, state, currentUserId }) {
 
 function SingleMatchCompare({ match, state, currentUserId, onClose }) {
   const result = state.results[match.id];
-  const filledCount = state.users.filter((u) => {
-    const pm = u.predictions?.matches?.[match.id];
-    return pm?.home !== undefined && pm.home !== "";
-  }).length;
+  const matchPreds = state.users
+    .map((u) => u.predictions?.matches?.[match.id])
+    .filter((p) => p?.home !== undefined && p.home !== "")
+    .map((p) => ({ home: parseInt(p.home, 10), away: parseInt(p.away, 10) }));
+  const filledCount = matchPreds.length;
+  const homeWins = matchPreds.filter((p) => p.home > p.away).length;
+  const draws = matchPreds.filter((p) => p.home === p.away).length;
+  const awayWins = matchPreds.filter((p) => p.home < p.away).length;
 
   return (
     <Overlay onClose={onClose}>
@@ -519,6 +556,43 @@ function SingleMatchCompare({ match, state, currentUserId, onClose }) {
           <div style={{ fontSize: 24, fontWeight: 900 }}>
             {result.home} – {result.away}
           </div>
+        </div>
+      )}
+
+      {filledCount > 0 && (
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            marginBottom: 14,
+            alignItems: "stretch",
+          }}
+        >
+          {[
+            { label: `${FLAG[match.home]} Winst`, count: homeWins, color: "var(--green)" },
+            { label: "Gelijk", count: draws, color: "var(--muted)" },
+            { label: `Winst ${FLAG[match.away]}`, count: awayWins, color: "var(--accent)" },
+          ].map(({ label, count, color }) => (
+            <div
+              key={label}
+              style={{
+                flex: 1,
+                ...S.card(),
+                textAlign: "center",
+                padding: "8px 4px",
+              }}
+            >
+              <div style={{ fontSize: 18, fontWeight: 900, color }}>
+                {filledCount > 0 ? Math.round((count / filledCount) * 100) : 0}%
+              </div>
+              <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
+                {label}
+              </div>
+              <div style={{ fontSize: 11, fontWeight: 700, color, marginTop: 1 }}>
+                {count}×
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
@@ -905,7 +979,15 @@ function PlayerCompare({ me, other, state, onClose }) {
             ? `${FLAG[otherPred.champion] || ""} ${otherPred.champion}`
             : "",
         ],
-        ["Topscorer", myPred.topScorer || "", otherPred.topScorer || ""],
+        [
+          "Topscoorders",
+          Array.isArray(myPred.topScorers)
+            ? myPred.topScorers.filter(Boolean).join(", ")
+            : myPred.topScorer || "",
+          Array.isArray(otherPred.topScorers)
+            ? otherPred.topScorers.filter(Boolean).join(", ")
+            : otherPred.topScorer || "",
+        ],
         ["Nederland", myPred.nlStage || "", otherPred.nlStage || ""],
         [
           "Verrassing",
@@ -921,6 +1003,33 @@ function PlayerCompare({ me, other, state, onClose }) {
           myPred.topOut ? `${FLAG[myPred.topOut] || ""} ${myPred.topOut}` : "",
           otherPred.topOut
             ? `${FLAG[otherPred.topOut] || ""} ${otherPred.topOut}`
+            : "",
+        ],
+        [
+          "Gele kaarten",
+          myPred.yellowCards
+            ? `${FLAG[myPred.yellowCards] || ""} ${myPred.yellowCards}`
+            : "",
+          otherPred.yellowCards
+            ? `${FLAG[otherPred.yellowCards] || ""} ${otherPred.yellowCards}`
+            : "",
+        ],
+        [
+          "Clean sheets",
+          myPred.mostCleanSheets
+            ? `${FLAG[myPred.mostCleanSheets] || ""} ${myPred.mostCleanSheets}`
+            : "",
+          otherPred.mostCleanSheets
+            ? `${FLAG[otherPred.mostCleanSheets] || ""} ${otherPred.mostCleanSheets}`
+            : "",
+        ],
+        [
+          "Groep goals",
+          myPred.mostGroupGoals
+            ? `${FLAG[myPred.mostGroupGoals] || ""} ${myPred.mostGroupGoals}`
+            : "",
+          otherPred.mostGroupGoals
+            ? `${FLAG[otherPred.mostGroupGoals] || ""} ${otherPred.mostGroupGoals}`
             : "",
         ],
       ].map(([label, myVal, otherVal]) => (
