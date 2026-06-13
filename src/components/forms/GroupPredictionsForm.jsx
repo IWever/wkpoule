@@ -9,6 +9,7 @@ import {
 } from "../../pouleEngine";
 import { S } from "../../styles/ui";
 import { Alert, TabBar, GroupStandingTable } from "../common";
+import { SingleMatchCompare } from "../compare";
 
 const GROUP_LETTERS = "ABCDEFGHIJKL".split("");
 
@@ -18,6 +19,7 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
   );
   const [activeGroup, setActiveGroup] = useState("A");
   const [saved, setSaved] = useState(false);
+  const [compareMatch, setCompareMatch] = useState(null);
   const unlocked = (state.unlockedUsers || []).includes(user.id);
   const frozen = state.groupFrozen && !unlocked;
 
@@ -69,8 +71,19 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
           frozen={frozen}
           isGroupF={activeGroup === "F"}
           onSet={set}
+          canInfo={state.groupFrozen}
+          onInfo={() => setCompareMatch(m)}
         />
       ))}
+
+      {compareMatch && (
+        <SingleMatchCompare
+          match={compareMatch}
+          state={state}
+          currentUserId={user.id}
+          onClose={() => setCompareMatch(null)}
+        />
+      )}
 
       <GroupStandingPreviews
         activeGroup={activeGroup}
@@ -193,7 +206,7 @@ function TeamLabel({ team, align = "left" }) {
   );
 }
 
-function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
+function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet, canInfo, onInfo }) {
   const res = calcGroupMatchPts(pred.matches?.[m.id], r);
   const borderColor = res
     ? res.label === "exact"
@@ -221,6 +234,22 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet }) {
         <span style={{ fontSize: 10, color: "var(--muted)" }}>
           {m.dt ? fmtDateTime(m.dt) : ""} · Ronde {m.round}
         </span>
+        {canInfo && (
+          <button
+            onClick={onInfo}
+            style={{
+              background: "none",
+              border: "none",
+              color: "var(--muted)",
+              fontSize: 10,
+              cursor: "pointer",
+              padding: "2px 4px",
+              fontFamily: "var(--font)",
+            }}
+          >
+            info →
+          </button>
+        )}
       </div>
       <div
         style={{

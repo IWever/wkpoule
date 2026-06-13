@@ -28,6 +28,7 @@ import {
 import { persistAdmin } from "../../persist-helpers";
 import { S } from "../../styles/ui";
 import { Alert, SlotDisplay, TabBar } from "../common";
+import { DeadlineBanner } from "./MyOverview";
 
 const KO_DATES = {
   r32: "2026-07-01",
@@ -211,6 +212,10 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
   const totalMatches = GROUP_MATCHES.length + KO_STRUCTURE.length;
   const frozenRounds = state.koFrozenRounds || {};
   const nextDeadline = getNextDeadline();
+  const showDeadline = nextDeadline && (() => {
+    const diffMs = new Date(nextDeadline.dt) - new Date();
+    return diffMs > 0 && diffMs <= 5 * 24 * 3600 * 1000;
+  })();
 
   const frozenRoundLabels = {
     r32: "Zestiende finales",
@@ -223,39 +228,7 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
 
   return (
     <div>
-      {nextDeadline && (
-        <div
-          style={{
-            ...S.card(),
-            marginBottom: 18,
-            background: "rgba(240,136,62,.06)",
-            border: "1px solid rgba(240,136,62,.3)",
-            display: "flex",
-            alignItems: "center",
-            gap: 10,
-            padding: "10px 14px",
-          }}
-        >
-          <span style={{ fontSize: 18 }}>⏰</span>
-          <div>
-            <div
-              style={{ fontWeight: 700, fontSize: 13, color: "var(--orange)" }}
-            >
-              Volgende deadline: {nextDeadline.label}
-            </div>
-            <div style={{ fontSize: 11, color: "var(--muted)" }}>
-              {new Date(nextDeadline.dt).toLocaleString("nl-NL", {
-                weekday: "short",
-                day: "numeric",
-                month: "short",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}{" "}
-              · {nextDeadline.desc}
-            </div>
-          </div>
-        </div>
-      )}
+      {showDeadline && <DeadlineBanner deadline={nextDeadline} />}
 
       <div
         style={{

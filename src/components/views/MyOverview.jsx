@@ -42,6 +42,10 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
   const [comparePlayer, setComparePlayer] = useState(null);
   const { last5, next5 } = buildMatchTimeline(state);
   const nextDeadline = getNextDeadline();
+  const showDeadline = nextDeadline && (() => {
+    const diffMs = new Date(nextDeadline.dt) - new Date();
+    return diffMs > 0 && diffMs <= 5 * 24 * 3600 * 1000;
+  })();
   const compRank = primaryComp
     ? {
         rank: primaryComp.userRank,
@@ -52,7 +56,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
 
   return (
     <div>
-      {nextDeadline && <DeadlineBanner deadline={nextDeadline} />}
+      {showDeadline && <DeadlineBanner deadline={nextDeadline} />}
       <WelcomeHeader user={user} />
       <StatCards pts={pts} compRank={compRank} />
       <NavCards
@@ -822,7 +826,7 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
           </span>
           {canCompare && (
             <span style={{ fontSize: 9, color: "var(--muted)" }}>
-              vergelijk →
+              info →
             </span>
           )}
         </div>
@@ -1067,4 +1071,4 @@ function KOMatchRow({ m, pred, state }) {
   );
 }
 
-export { MyOverview };
+export { MyOverview, DeadlineBanner };
