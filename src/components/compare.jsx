@@ -527,6 +527,17 @@ function SingleMatchCompare({ match, state, currentUserId, onClose }) {
   const draws = matchPreds.filter((p) => p.home === p.away).length;
   const awayWins = matchPreds.filter((p) => p.home < p.away).length;
 
+  const currentUser = state.users.find((u) => u.id === currentUserId);
+  const myPredRaw = currentUser?.predictions?.matches?.[match.id];
+  const myScore =
+    myPredRaw?.home !== undefined && myPredRaw.home !== ""
+      ? { home: myPredRaw.home, away: myPredRaw.away }
+      : null;
+
+  const myPts = myScore && result?.played
+    ? calcGroupMatchPts(myPredRaw, result)
+    : null;
+
   return (
     <Overlay onClose={onClose}>
       <OverlayHeader
@@ -539,23 +550,74 @@ function SingleMatchCompare({ match, state, currentUserId, onClose }) {
         onClose={onClose}
       />
 
-      {result?.played && (
+      {(myScore || result?.played) && (
         <div
           style={{
-            textAlign: "center",
-            ...S.card(),
-            padding: "10px",
+            display: "grid",
+            gridTemplateColumns: myScore && result?.played ? "1fr 1fr" : "1fr",
+            gap: 8,
             marginBottom: 14,
-            background: "rgba(63,185,80,.08)",
-            border: "1px solid rgba(63,185,80,.3)",
           }}
         >
-          <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>
-            Officiële uitslag
-          </div>
-          <div style={{ fontSize: 24, fontWeight: 900 }}>
-            {result.home} – {result.away}
-          </div>
+          {myScore && (
+            <div
+              style={{
+                textAlign: "center",
+                ...S.card(),
+                padding: "10px",
+                background: myPts
+                  ? myPts.label === "exact"
+                    ? "rgba(63,185,80,.1)"
+                    : myPts.label === "diff"
+                    ? "rgba(255,193,7,.08)"
+                    : myPts.label === "winner"
+                    ? "rgba(88,166,255,.08)"
+                    : result?.played
+                    ? "rgba(248,81,73,.08)"
+                    : "rgba(255,255,255,.04)"
+                  : "rgba(255,255,255,.04)",
+                border: `2px solid rgba(255,255,255,.7)`,
+              }}
+            >
+              <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>
+                Jouw voorspelling
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 900 }}>
+                {myScore.home} – {myScore.away}
+              </div>
+              {myPts && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    marginTop: 4,
+                    color:
+                      myPts.pts > 0 ? "var(--green)" : "var(--red)",
+                  }}
+                >
+                  {myPts.pts > 0 ? `+${myPts.pts} pt` : "✗ mis"}
+                </div>
+              )}
+            </div>
+          )}
+          {result?.played && (
+            <div
+              style={{
+                textAlign: "center",
+                ...S.card(),
+                padding: "10px",
+                background: "rgba(63,185,80,.08)",
+                border: "1px solid rgba(63,185,80,.3)",
+              }}
+            >
+              <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}>
+                Officiële uitslag
+              </div>
+              <div style={{ fontSize: 24, fontWeight: 900 }}>
+                {result.home} – {result.away}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
