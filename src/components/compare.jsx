@@ -551,6 +551,35 @@ function SingleMatchCompare({ match, state, currentUserId, onClose }) {
         onClose={onClose}
       />
 
+      {MATCH_FACTS[match.id] && (
+        <div
+          style={{
+            marginBottom: 14,
+            padding: "12px 14px",
+            background: "rgba(255,255,255,.03)",
+            border: "1px solid rgba(255,255,255,.08)",
+            borderRadius: 10,
+            borderLeft: "3px solid rgba(88,166,255,.5)",
+          }}
+        >
+          <div
+            style={{
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--accent)",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              marginBottom: 6,
+            }}
+          >
+            Wist je dat...
+          </div>
+          <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.55 }}>
+            {MATCH_FACTS[match.id]}
+          </div>
+        </div>
+      )}
+
       {(myScore || result?.played) && (
         <div
           style={{
@@ -678,34 +707,6 @@ function SingleMatchCompare({ match, state, currentUserId, onClose }) {
         />
       )}
 
-      {MATCH_FACTS[match.id] && (
-        <div
-          style={{
-            marginTop: 18,
-            padding: "12px 14px",
-            background: "rgba(255,255,255,.03)",
-            border: "1px solid rgba(255,255,255,.08)",
-            borderRadius: 10,
-            borderLeft: "3px solid rgba(88,166,255,.5)",
-          }}
-        >
-          <div
-            style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "var(--accent)",
-              textTransform: "uppercase",
-              letterSpacing: "0.08em",
-              marginBottom: 6,
-            }}
-          >
-            Wist je dat...
-          </div>
-          <div style={{ fontSize: 13, color: "var(--text)", lineHeight: 1.55 }}>
-            {MATCH_FACTS[match.id]}
-          </div>
-        </div>
-      )}
     </Overlay>
   );
 }
