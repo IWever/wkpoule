@@ -149,6 +149,7 @@ function StandWithCompare({ state, currentUser }) {
   const [selectedComp, setSelectedComp] = useState(defaultComp);
 
   useEffect(() => {
+    if (selectedComp === "all") return;
     const hasValidSelection = competitions.some((c) => c.id === selectedComp);
     if (competitions.length === 0) {
       if (selectedComp !== null) setSelectedComp(null);
