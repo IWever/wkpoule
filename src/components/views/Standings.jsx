@@ -149,6 +149,7 @@ function StandWithCompare({ state, currentUser }) {
   const [selectedComp, setSelectedComp] = useState(defaultComp);
 
   useEffect(() => {
+    if (selectedComp === "all") return;
     const hasValidSelection = competitions.some((c) => c.id === selectedComp);
     if (competitions.length === 0) {
       if (selectedComp !== null) setSelectedComp(null);
@@ -157,12 +158,15 @@ function StandWithCompare({ state, currentUser }) {
     if (!hasValidSelection && defaultComp) setSelectedComp(defaultComp);
   }, [competitions, defaultComp, selectedComp]);
 
-  const activeCompId = competitions.some((c) => c.id === selectedComp)
-    ? selectedComp
-    : defaultComp;
+  const activeCompId =
+    selectedComp === "all"
+      ? "all"
+      : competitions.some((c) => c.id === selectedComp)
+      ? selectedComp
+      : defaultComp;
 
   const filteredUsers =
-    competitions.length === 0
+    activeCompId === "all" || competitions.length === 0
       ? state.users
       : state.users.filter((u) =>
           (u.competitionIds || []).includes(activeCompId)
@@ -211,6 +215,25 @@ function CompetitionFilter({ competitions, state, activeCompId, onSelect }) {
         Competitie
       </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        <button
+          onClick={() => onSelect("all")}
+          style={{
+            padding: "6px 14px",
+            borderRadius: 20,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+            fontFamily: "var(--font)",
+            border: `1px solid ${activeCompId === "all" ? "var(--accent)" : "var(--border)"}`,
+            background: activeCompId === "all" ? "var(--accent)" : "var(--bg)",
+            color: activeCompId === "all" ? "#fff" : "var(--text)",
+          }}
+        >
+          Alle deelnemers
+          <span style={{ marginLeft: 6, fontSize: 11, opacity: 0.7 }}>
+            ({state.users.length})
+          </span>
+        </button>
         {competitions.map((c) => {
           const memberCount = state.users.filter((u) =>
             (u.competitionIds || []).includes(c.id)
