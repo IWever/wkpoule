@@ -1190,6 +1190,22 @@ function UsersAdmin({ state, setState, onRemove }) {
   const [resetPw, setResetPw] = useState("");
   const [sortAZ, setSortAZ] = useState(false);
 
+  function toggleUserInComp(userId, compId) {
+    setState((s) => ({
+      ...s,
+      users: s.users.map((u) => {
+        if (u.id !== userId) return u;
+        const ids = u.competitionIds || [];
+        return {
+          ...u,
+          competitionIds: ids.includes(compId)
+            ? ids.filter((id) => id !== compId)
+            : [...ids, compId],
+        };
+      }),
+    }));
+  }
+
   const displayUsers = sortAZ
     ? [...state.users].sort((a, b) => a.name.localeCompare(b.name, "nl"))
     : state.users;
@@ -1288,11 +1304,7 @@ function UsersAdmin({ state, setState, onRemove }) {
           !!p.mostGroupGoals,
         ].filter(Boolean).length;
         const koFilled = KO_STRUCTURE.filter((m) => p.koWinners?.[m.id]).length;
-        const userComps = (u.competitionIds || [])
-          .map(
-            (cid) => (state.competitions || []).find((c) => c.id === cid)?.name
-          )
-          .filter(Boolean);
+        const allComps = state.competitions || [];
         const isEditing = editingId === u.id;
 
         return (
@@ -1462,7 +1474,7 @@ function UsersAdmin({ state, setState, onRemove }) {
                 </div>
               )}
             </div>
-            {userComps.length > 0 && (
+            {allComps.length > 0 && (
               <div
                 style={{
                   display: "flex",
@@ -1471,21 +1483,60 @@ function UsersAdmin({ state, setState, onRemove }) {
                   marginBottom: 6,
                 }}
               >
-                {userComps.map((name) => (
-                  <span
-                    key={name}
-                    style={{
-                      fontSize: 11,
-                      background: "rgba(88,166,255,.1)",
-                      border: "1px solid rgba(88,166,255,.2)",
-                      borderRadius: 10,
-                      padding: "1px 8px",
-                      color: "var(--accent)",
-                    }}
-                  >
-                    {name}
-                  </span>
-                ))}
+                {allComps.map((comp) => {
+                  const isMember = (u.competitionIds || []).includes(comp.id);
+                  return isMember ? (
+                    <div
+                      key={comp.id}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
+                        fontSize: 11,
+                        background: "rgba(88,166,255,.1)",
+                        border: "1px solid rgba(88,166,255,.3)",
+                        borderRadius: 10,
+                        padding: "1px 4px 1px 8px",
+                        color: "var(--accent)",
+                      }}
+                    >
+                      {comp.name}
+                      <button
+                        onClick={() => toggleUserInComp(u.id, comp.id)}
+                        title="Verwijderen uit competitie"
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: "pointer",
+                          color: "var(--muted)",
+                          fontSize: 13,
+                          padding: "0 3px",
+                          lineHeight: 1,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      key={comp.id}
+                      onClick={() => toggleUserInComp(u.id, comp.id)}
+                      title="Toevoegen aan competitie"
+                      style={{
+                        background: "none",
+                        border: "1px dashed var(--border)",
+                        borderRadius: 10,
+                        padding: "1px 8px",
+                        fontSize: 11,
+                        color: "var(--muted)",
+                        cursor: "pointer",
+                        fontFamily: "var(--font)",
+                      }}
+                    >
+                      + {comp.name}
+                    </button>
+                  );
+                })}
               </div>
             )}
             <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
