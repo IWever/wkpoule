@@ -9,6 +9,7 @@ import {
 import { deepSet, buildRichKOSlots } from "../../pouleEngine";
 import { S } from "../../styles/ui";
 import { Alert, SlotDisplay, FrozenBadge } from "../common";
+import { SingleKOMatchCompare } from "../compare";
 import { FormHeader } from "./GroupPredictionsForm";
 
 const ROUNDS = [
@@ -66,6 +67,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
   );
   const [saved, setSaved] = useState(false);
   const [activeRound, setActiveRound] = useState("r32");
+  const [compareMatch, setCompareMatch] = useState(null);
 
   const frozenRounds = state.koFrozenRounds || {};
   const legacyFrozen = state.koFrozen && Object.keys(frozenRounds).length === 0;
@@ -159,9 +161,19 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
             frozen={matchFrozen}
             onSet={set}
             koResults={state.koResults}
+            canInfo={matchFrozen}
+            onInfo={() => setCompareMatch(m)}
           />
         );
       })}
+      {compareMatch && (
+        <SingleKOMatchCompare
+          match={compareMatch}
+          state={state}
+          currentUserId={user.id}
+          onClose={() => setCompareMatch(null)}
+        />
+      )}
     </div>
   );
 }
@@ -319,6 +331,8 @@ function KOMatchCard({
   frozen,
   onSet,
   koResults,
+  canInfo,
+  onInfo,
 }) {
   const schema = PTS_KO[m.round] || PTS_KO.r16;
   const predWinner = pred.koWinners?.[m.id];
@@ -347,10 +361,12 @@ function KOMatchCard({
 
   return (
     <div
+      onClick={canInfo ? onInfo : undefined}
       style={{
         ...S.card(),
         marginBottom: 12,
         border: `1px solid ${cardBorder}`,
+        cursor: canInfo ? "pointer" : "default",
       }}
     >
       <div
@@ -375,6 +391,10 @@ function KOMatchCard({
           </div>
           {frozen && <FrozenBadge />}
         </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {canInfo && (
+            <span style={{ fontSize: 10, color: "var(--muted)" }}>info →</span>
+          )}
         {r?.played && (
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             {winOk && (
@@ -394,6 +414,7 @@ function KOMatchCard({
             )}
           </div>
         )}
+        </div>
       </div>
       <div
         style={{

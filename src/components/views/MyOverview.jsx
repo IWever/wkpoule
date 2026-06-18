@@ -21,7 +21,7 @@ import {
   calcTopScorerPts,
 } from "../../pouleEngine";
 import { S } from "../../styles/ui";
-import { SingleMatchCompare, PlayerCompare } from "../compare";
+import { SingleMatchCompare, SingleKOMatchCompare, PlayerCompare } from "../compare";
 import { calcPrimaryComp } from "./Standings";
 
 const KO_DATES = {
@@ -39,6 +39,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
   const primaryComp = calcPrimaryComp(user, state);
   const koAvailable = state.koOpen || state.fase === "ko";
   const [compareMatch, setCompareMatch] = useState(null);
+  const [compareKOMatch, setCompareKOMatch] = useState(null);
   const [comparePlayer, setComparePlayer] = useState(null);
   const { last5, next5 } = buildMatchTimeline(state);
   const nextDeadline = getNextDeadline();
@@ -76,6 +77,8 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
         state={state}
         canCompareMatch={state.groupFrozen}
         onCompareMatch={setCompareMatch}
+        canCompareKO={state.koFrozen}
+        onCompareKO={setCompareKOMatch}
       />
 
       {compareMatch && (
@@ -84,6 +87,14 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
           state={state}
           currentUserId={user.id}
           onClose={() => setCompareMatch(null)}
+        />
+      )}
+      {compareKOMatch && (
+        <SingleKOMatchCompare
+          match={compareKOMatch}
+          state={state}
+          currentUserId={user.id}
+          onClose={() => setCompareKOMatch(null)}
         />
       )}
       {comparePlayer && (
@@ -670,6 +681,8 @@ function MatchTimeline({
   state,
   canCompareMatch,
   onCompareMatch,
+  canCompareKO,
+  onCompareKO,
 }) {
   return (
     <div style={{ marginBottom: 22 }}>
@@ -678,7 +691,14 @@ function MatchTimeline({
           <TimelineHeader>Laatste wedstrijden</TimelineHeader>
           {last5.map((m) =>
             m.isKO ? (
-              <KOMatchRow key={m.id} m={m} pred={pred} state={state} />
+              <KOMatchRow
+                key={m.id}
+                m={m}
+                pred={pred}
+                state={state}
+                canCompare={canCompareKO}
+                onClick={() => onCompareKO(m)}
+              />
             ) : (
               <GroupMatchRow
                 key={m.id}
@@ -697,7 +717,14 @@ function MatchTimeline({
           <TimelineHeader>Volgende wedstrijden</TimelineHeader>
           {next5.map((m) =>
             m.isKO ? (
-              <KOMatchRow key={m.id} m={m} pred={pred} state={state} />
+              <KOMatchRow
+                key={m.id}
+                m={m}
+                pred={pred}
+                state={state}
+                canCompare={canCompareKO}
+                onClick={() => onCompareKO(m)}
+              />
             ) : (
               <GroupMatchRow
                 key={m.id}
@@ -912,7 +939,7 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
   );
 }
 
-function KOMatchRow({ m, pred, state }) {
+function KOMatchRow({ m, pred, state, canCompare, onClick }) {
   const pw = pred.koWinners?.[m.id];
   const ps = pred.koScores?.[m.id];
   const r = state.koResults[m.id];
@@ -930,6 +957,7 @@ function KOMatchRow({ m, pred, state }) {
 
   return (
     <div
+      onClick={canCompare ? onClick : undefined}
       style={{
         marginBottom: 6,
         ...S.card(),
@@ -941,6 +969,7 @@ function KOMatchRow({ m, pred, state }) {
             ? "rgba(248,81,73,.3)"
             : "var(--border)"
         }`,
+        cursor: canCompare ? "pointer" : "default",
       }}
     >
       <div
@@ -954,18 +983,23 @@ function KOMatchRow({ m, pred, state }) {
         <span style={{ fontSize: 10, color: "var(--muted)" }}>
           {m.dt ? fmtDateTime(m.dt) : ""}
         </span>
-        <span
-          style={{
-            fontSize: 10,
-            color: "var(--orange)",
-            fontWeight: 700,
-            background: "rgba(240,136,62,.1)",
-            borderRadius: 4,
-            padding: "1px 6px",
-          }}
-        >
-          {m.label}
-        </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          {canCompare && (
+            <span style={{ fontSize: 10, color: "var(--muted)" }}>info →</span>
+          )}
+          <span
+            style={{
+              fontSize: 10,
+              color: "var(--orange)",
+              fontWeight: 700,
+              background: "rgba(240,136,62,.1)",
+              borderRadius: 4,
+              padding: "1px 6px",
+            }}
+          >
+            {m.label}
+          </span>
+        </div>
       </div>
       <div
         style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}
