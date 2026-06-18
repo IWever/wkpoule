@@ -235,28 +235,19 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet, can
           {m.dt ? fmtDateTime(m.dt) : ""} · Ronde {m.round}
         </span>
         {canInfo && (
-          <button
-            onClick={onInfo}
-            style={{
-              background: "none",
-              border: "none",
-              color: "var(--muted)",
-              fontSize: 10,
-              cursor: "pointer",
-              padding: "2px 4px",
-              fontFamily: "var(--font)",
-            }}
-          >
+          <span style={{ fontSize: 10, color: "var(--muted)", padding: "2px 4px" }}>
             info →
-          </button>
+          </span>
         )}
       </div>
       <div
+        onClick={canInfo ? onInfo : undefined}
         style={{
           ...S.card(),
           padding: "9px 12px",
           border: `1px solid ${borderColor}`,
           background: isGroupF ? "rgba(240,136,62,.04)" : "var(--card)",
+          cursor: canInfo ? "pointer" : "default",
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
