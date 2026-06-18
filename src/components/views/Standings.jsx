@@ -1,9 +1,60 @@
 import React, { useState, useEffect } from "react";
-import { calcPoints } from "../../pouleEngine";
+import { calcPoints, calcGroupMatchPts } from "../../pouleEngine";
+import { GROUP_MATCHES, KO_STRUCTURE, PTS_KO } from "../../data/tournamentData";
 import { S } from "../../styles/ui";
 import { PlayerCompare } from "../compare";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
+
+const KO_DATES = {
+  r32: "2026-07-01",
+  r16: "2026-07-05",
+  qf: "2026-07-10",
+  sf: "2026-07-14",
+  "3rd": "2026-07-18",
+  final: "2026-07-19",
+};
+
+function calcLast5Pts(user, state) {
+  const koMatchesAll = KO_STRUCTURE.map((m) => ({
+    ...m,
+    dt: KO_DATES[m.round] + "T20:00",
+    isKO: true,
+  }));
+  const allMatches = [
+    ...GROUP_MATCHES.map((m) => ({ ...m, isKO: false })),
+    ...koMatchesAll,
+  ].sort((a, b) => (a.dt || "").localeCompare(b.dt || ""));
+
+  const allPlayed = allMatches.filter((m) =>
+    m.isKO ? state.koResults[m.id]?.played : state.results[m.id]?.played
+  );
+  const last5 = allPlayed.slice(-5);
+  if (last5.length === 0) return null;
+
+  const pred = user.predictions || {};
+  let pts = 0;
+  for (const m of last5) {
+    if (m.isKO) {
+      const r = state.koResults[m.id];
+      const schema = PTS_KO[m.round] || PTS_KO.r16;
+      const pw = pred.koWinners?.[m.id];
+      const ps = pred.koScores?.[m.id];
+      if (pw && r.winner === pw) pts += schema.winner;
+      if (
+        ps?.home !== undefined &&
+        parseInt(ps.home) === parseInt(r.home90) &&
+        parseInt(ps.away) === parseInt(r.away90)
+      )
+        pts += schema.exact;
+    } else {
+      const r = state.results[m.id];
+      const res = calcGroupMatchPts(pred.matches?.[m.id], r);
+      if (res) pts += res.pts;
+    }
+  }
+  return { pts, count: last5.length };
+}
 
 export function calcPrimaryComp(user, state) {
   const comps = (state.competitions || []).filter(
@@ -71,6 +122,7 @@ function Standings({ state, currentUserId, onCompare }) {
         const isMe = u.id === currentUserId;
         const clickable = canCompare && !isMe;
         const rank = getRank(u.pts);
+        const form = calcLast5Pts(u, state);
         return (
           <StandingRow
             key={u.id}
@@ -78,6 +130,7 @@ function Standings({ state, currentUserId, onCompare }) {
             rank={rank}
             isMe={isMe}
             clickable={clickable}
+            form={form}
             onCompare={() => onCompare(u)}
           />
         );
@@ -86,8 +139,14 @@ function Standings({ state, currentUserId, onCompare }) {
   );
 }
 
-function StandingRow({ user: u, rank, isMe, clickable, onCompare }) {
-  const i = rank - 1; // voor achterwaartse compatibiliteit (goud/zilver/brons styling)
+function formColor(pts) {
+  if (pts >= 13) return "var(--orange)";
+  if (pts >= 6) return "var(--accent)";
+  if (pts >= 1) return "var(--muted)";
+  return "var(--muted)";
+}
+
+function StandingRow({ user: u, rank, isMe, clickable, form, onCompare }) {
   return (
     <div
       onClick={clickable ? onCompare : undefined}
@@ -114,9 +173,23 @@ function StandingRow({ user: u, rank, isMe, clickable, onCompare }) {
       <div style={{ fontSize: 20, width: 32, textAlign: "center" }}>
         {rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`}
       </div>
-      <div style={{ flex: 1, fontWeight: isMe ? 700 : 600 }}>
-        {u.name}
-        {isMe ? " 👈" : ""}
+      <div style={{ flex: 1 }}>
+        <div style={{ fontWeight: isMe ? 700 : 600 }}>
+          {u.name}
+          {isMe ? " 👈" : ""}
+        </div>
+        {form !== null && (
+          <div
+            style={{
+              fontSize: 10,
+              color: formColor(form.pts),
+              marginTop: 1,
+              opacity: form.pts === 0 ? 0.45 : 0.8,
+            }}
+          >
+            +{form.pts} pt laatste {form.count}
+          </div>
+        )}
       </div>
       {clickable && (
         <div style={{ fontSize: 11, color: "var(--muted)" }}>vergelijk →</div>
