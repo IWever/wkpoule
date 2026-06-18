@@ -85,6 +85,18 @@ export function calcPrimaryComp(user, state) {
 
 // ─── STANDINGS ────────────────────────────────────────────────────────────────
 
+function quartileColor(pts, allSortedPts) {
+  const n = allSortedPts.length;
+  if (n < 2) return "var(--muted)";
+  // Percentage of participants with strictly fewer points → position from bottom
+  const below = allSortedPts.filter((v) => v < pts).length;
+  const pct = below / n;
+  if (pct < 0.25) return "var(--orange)";
+  if (pct < 0.5) return "var(--muted)";
+  if (pct < 0.75) return "var(--accent)";
+  return "var(--green)";
+}
+
 function Standings({ state, currentUserId, onCompare }) {
   const ranked = [...state.users]
     .map((u) => ({ ...u, pts: calcPoints(u, state.results, state.koResults) }))
@@ -95,6 +107,14 @@ function Standings({ state, currentUserId, onCompare }) {
   function getRank(pts) {
     return ranked.filter((u) => u.pts > pts).length + 1;
   }
+
+  // Bereken form voor alle deelnemers voor kwartiel-kleuring
+  const formsMap = new Map(ranked.map((u) => [u.id, calcLast5Pts(u, state)]));
+  const formCount = [...formsMap.values()].find((f) => f !== null)?.count ?? 0;
+  const allSortedFormPts = [...formsMap.values()]
+    .filter((f) => f !== null)
+    .map((f) => f.pts)
+    .sort((a, b) => a - b);
 
   return (
     <div>
@@ -113,16 +133,21 @@ function Standings({ state, currentUserId, onCompare }) {
       {canCompare && (
         <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 12 }}>
           Klik op een naam om te vergelijken.
+          {formCount > 0 && ` Vorm gebaseerd op laatste ${formCount} wedstrijden.`}
         </div>
       )}
       {ranked.length === 0 && (
         <p style={{ color: "var(--muted)" }}>Nog geen deelnemers.</p>
       )}
-      {ranked.map((u, i) => {
+      {ranked.map((u) => {
         const isMe = u.id === currentUserId;
         const clickable = canCompare && !isMe;
         const rank = getRank(u.pts);
-        const form = calcLast5Pts(u, state);
+        const form = formsMap.get(u.id);
+        const fColor =
+          form !== null
+            ? quartileColor(form.pts, allSortedFormPts)
+            : null;
         return (
           <StandingRow
             key={u.id}
@@ -131,6 +156,7 @@ function Standings({ state, currentUserId, onCompare }) {
             isMe={isMe}
             clickable={clickable}
             form={form}
+            formColor={fColor}
             onCompare={() => onCompare(u)}
           />
         );
@@ -139,14 +165,7 @@ function Standings({ state, currentUserId, onCompare }) {
   );
 }
 
-function formColor(pts) {
-  if (pts >= 13) return "var(--orange)";
-  if (pts >= 6) return "var(--accent)";
-  if (pts >= 1) return "var(--muted)";
-  return "var(--muted)";
-}
-
-function StandingRow({ user: u, rank, isMe, clickable, form, onCompare }) {
+function StandingRow({ user: u, rank, isMe, clickable, form, formColor, onCompare }) {
   return (
     <div
       onClick={clickable ? onCompare : undefined}
@@ -173,38 +192,33 @@ function StandingRow({ user: u, rank, isMe, clickable, form, onCompare }) {
       <div style={{ fontSize: 20, width: 32, textAlign: "center" }}>
         {rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`}
       </div>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: isMe ? 700 : 600 }}>
-          {u.name}
-          {isMe ? " 👈" : ""}
-        </div>
-        {form !== null && (
-          <div
-            style={{
-              fontSize: 10,
-              color: formColor(form.pts),
-              marginTop: 1,
-              opacity: form.pts === 0 ? 0.45 : 0.8,
-            }}
-          >
-            +{form.pts} pt laatste {form.count}
-          </div>
-        )}
+      <div style={{ flex: 1, fontWeight: isMe ? 700 : 600 }}>
+        {u.name}
+        {isMe ? " 👈" : ""}
       </div>
       {clickable && (
         <div style={{ fontSize: 11, color: "var(--muted)" }}>vergelijk →</div>
       )}
-      <div
-        style={{
-          fontSize: 26,
-          fontWeight: 900,
-          color: rank === 1 ? "var(--gold)" : "var(--accent)",
-          fontFamily: "var(--font-display)",
-        }}
-      >
-        {u.pts}
+      <div style={{ textAlign: "right" }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 4, justifyContent: "flex-end" }}>
+          <div
+            style={{
+              fontSize: 26,
+              fontWeight: 900,
+              color: rank === 1 ? "var(--gold)" : "var(--accent)",
+              fontFamily: "var(--font-display)",
+            }}
+          >
+            {u.pts}
+          </div>
+          <div style={{ fontSize: 11, color: "var(--muted)" }}>pts</div>
+        </div>
+        {form !== null && (
+          <div style={{ fontSize: 10, color: formColor, opacity: 0.85, marginTop: 1 }}>
+            +{form.pts} pt
+          </div>
+        )}
       </div>
-      <div style={{ fontSize: 11, color: "var(--muted)" }}>pts</div>
     </div>
   );
 }
