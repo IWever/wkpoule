@@ -1352,4 +1352,222 @@ function CompareSection({ section, me, other, state, mySecPts, otherSecPts }) {
   );
 }
 
-export { SingleMatchCompare, MatchCompare, PlayerCompare };
+// ─── SINGLE KO MATCH COMPARE ─────────────────────────────────────────────────
+
+function SingleKOMatchCompare({ match, state, currentUserId, onClose }) {
+  const r = state.koResults[match.id];
+  const schema = PTS_KO[match.round] || PTS_KO.r16;
+
+  const richSlots = buildRichKOSlots({}, state.results, state.koResults);
+  const homeDesc = richSlots[match.id]?.home;
+  const awayDesc = richSlots[match.id]?.away;
+  const homeTeam = homeDesc?.type === "team" ? homeDesc.team : null;
+  const awayTeam = awayDesc?.type === "team" ? awayDesc.team : null;
+
+  const currentUser = state.users.find((u) => u.id === currentUserId);
+  const myWinner = currentUser?.predictions?.koWinners?.[match.id];
+  const myScore = currentUser?.predictions?.koScores?.[match.id];
+
+  const allWinnerPreds = state.users
+    .map((u) => u.predictions?.koWinners?.[match.id])
+    .filter(Boolean);
+  const totalPicked = allWinnerPreds.length;
+
+  const myWinOk = r?.played && myWinner && myWinner === r.winner;
+  const myScoreOk =
+    r?.played &&
+    myScore?.home !== undefined &&
+    parseInt(myScore.home) === parseInt(r.home90) &&
+    parseInt(myScore.away) === parseInt(r.away90);
+
+  let myPts = null;
+  if (r?.played && myWinner) {
+    myPts = 0;
+    if (myWinOk) myPts += schema.winner;
+    if (myScoreOk) myPts += schema.exact;
+  }
+
+  const homePicks = homeTeam
+    ? allWinnerPreds.filter((w) => w === homeTeam).length
+    : 0;
+  const awayPicks = awayTeam
+    ? allWinnerPreds.filter((w) => w === awayTeam).length
+    : 0;
+
+  const titleHome =
+    homeDesc?.type === "team"
+      ? `${FLAG[homeDesc.team] || ""} ${homeDesc.team}`
+      : homeDesc?.label || "?";
+  const titleAway =
+    awayDesc?.type === "team"
+      ? `${FLAG[awayDesc.team] || ""} ${awayDesc.team}`
+      : awayDesc?.label || "?";
+
+  return (
+    <Overlay onClose={onClose}>
+      <OverlayHeader
+        title={`${titleHome} vs ${titleAway}`}
+        subtitle={`${match.label}${match.dt ? " · " + fmtDateTime(match.dt) : ""} · ${totalPicked} ingevuld`}
+        onClose={onClose}
+      />
+
+      {(myWinner || r?.played) && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns:
+              myWinner && r?.played ? "1fr 1fr" : "1fr",
+            gap: 8,
+            marginBottom: 14,
+          }}
+        >
+          {myWinner && (
+            <div
+              style={{
+                textAlign: "center",
+                ...S.card(),
+                padding: "10px",
+                background:
+                  myPts !== null
+                    ? myPts > 0
+                      ? "rgba(63,185,80,.1)"
+                      : "rgba(248,81,73,.08)"
+                    : "rgba(255,255,255,.04)",
+                border: "2px solid rgba(255,255,255,.7)",
+              }}
+            >
+              <div
+                style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}
+              >
+                Jouw voorspelling
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 900 }}>
+                {FLAG[myWinner] || ""} {myWinner}
+              </div>
+              {myScore?.home !== undefined && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--muted)",
+                    marginTop: 2,
+                  }}
+                >
+                  {myScore.home}–{myScore.away} (90')
+                </div>
+              )}
+              {r?.played && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 700,
+                    marginTop: 4,
+                    color: myPts > 0 ? "var(--green)" : "var(--red)",
+                  }}
+                >
+                  {myPts > 0 ? `+${myPts} pt` : "✗ mis"}
+                </div>
+              )}
+            </div>
+          )}
+          {r?.played && (
+            <div
+              style={{
+                textAlign: "center",
+                ...S.card(),
+                padding: "10px",
+                background: "rgba(63,185,80,.08)",
+                border: "1px solid rgba(63,185,80,.3)",
+              }}
+            >
+              <div
+                style={{ fontSize: 11, color: "var(--muted)", marginBottom: 2 }}
+              >
+                Officiële uitslag
+              </div>
+              <div style={{ fontSize: 20, fontWeight: 900 }}>
+                {FLAG[r.winner] || ""} {r.winner}
+              </div>
+              {r.home90 !== undefined && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "var(--muted)",
+                    marginTop: 2,
+                  }}
+                >
+                  {r.home90}–{r.away90} (90')
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {totalPicked > 0 && homeTeam && awayTeam && (
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+            marginBottom: 14,
+            alignItems: "stretch",
+          }}
+        >
+          {[
+            {
+              label: `${FLAG[homeTeam] || ""} ${homeTeam}`,
+              count: homePicks,
+              color: "var(--green)",
+            },
+            {
+              label: `${FLAG[awayTeam] || ""} ${awayTeam}`,
+              count: awayPicks,
+              color: "var(--accent)",
+            },
+          ].map(({ label, count, color }) => (
+            <div
+              key={label}
+              style={{
+                flex: 1,
+                ...S.card(),
+                textAlign: "center",
+                padding: "8px 4px",
+              }}
+            >
+              <div style={{ fontSize: 18, fontWeight: 900, color }}>
+                {Math.round((count / totalPicked) * 100)}%
+              </div>
+              <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 2 }}>
+                {label}
+              </div>
+              <div
+                style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color,
+                  marginTop: 1,
+                }}
+              >
+                {count}×
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {totalPicked === 0 && (
+        <div
+          style={{
+            color: "var(--muted)",
+            fontSize: 13,
+            textAlign: "center",
+            padding: 20,
+          }}
+        >
+          Niemand heeft deze wedstrijd ingevuld.
+        </div>
+      )}
+    </Overlay>
+  );
+}
+
+export { SingleMatchCompare, SingleKOMatchCompare, MatchCompare, PlayerCompare };
