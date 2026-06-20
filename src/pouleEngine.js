@@ -150,7 +150,8 @@ function computeGroupStandings(matchScores) {
     teams.forEach((t) => {
       stat[t] = { pts: 0, gp: 0, gf: 0, ga: 0 };
     });
-    GROUP_MATCHES.filter((m) => m.group === g).forEach((m) => {
+    const groupMatches = GROUP_MATCHES.filter((m) => m.group === g);
+    groupMatches.forEach((m) => {
       const s = matchScores(m.id);
       if (!s || s.home === "" || s.home === undefined) return;
       const h = parseInt(s.home, 10);
@@ -168,14 +169,66 @@ function computeGroupStandings(matchScores) {
         stat[m.away].pts += 1;
       } else stat[m.away].pts += 3;
     });
-    const sorted = teams.slice().sort((a, b) => {
-      const ptsDiff = stat[b].pts - stat[a].pts;
-      if (ptsDiff !== 0) return ptsDiff;
-      const gdA = stat[a].gf - stat[a].ga;
-      const gdB = stat[b].gf - stat[b].ga;
-      if (gdB !== gdA) return gdB - gdA;
-      return stat[b].gf - stat[a].gf;
-    });
+
+    // Bereken onderling resultaat (H2H) voor een subset teams
+    function computeH2H(tiedTeams) {
+      const h2h = {};
+      tiedTeams.forEach((t) => { h2h[t] = { pts: 0, gf: 0, ga: 0 }; });
+      groupMatches.forEach((m) => {
+        if (!tiedTeams.includes(m.home) || !tiedTeams.includes(m.away)) return;
+        const s = matchScores(m.id);
+        if (!s || s.home === "" || s.home === undefined) return;
+        const hg = parseInt(s.home, 10);
+        const ag = parseInt(s.away, 10);
+        if (Number.isNaN(hg) || Number.isNaN(ag)) return;
+        h2h[m.home].gf += hg;
+        h2h[m.home].ga += ag;
+        h2h[m.away].gf += ag;
+        h2h[m.away].ga += hg;
+        if (hg > ag) h2h[m.home].pts += 3;
+        else if (hg === ag) { h2h[m.home].pts += 1; h2h[m.away].pts += 1; }
+        else h2h[m.away].pts += 3;
+      });
+      return h2h;
+    }
+
+    // Rangschikking conform officiële FIFA WK 2026 regels:
+    // 1. Punten
+    // 2. Onderling resultaat: punten
+    // 3. Onderling resultaat: doelsaldo
+    // 4. Onderling resultaat: gescoorde doelpunten
+    // 5. Doelsaldo (alle groepswedstrijden)
+    // 6. Gescoorde doelpunten (alle groepswedstrijden)
+    const sortedByPts = teams.slice().sort((a, b) => stat[b].pts - stat[a].pts);
+
+    const sorted = [];
+    let i = 0;
+    while (i < sortedByPts.length) {
+      let j = i + 1;
+      while (j < sortedByPts.length && stat[sortedByPts[j]].pts === stat[sortedByPts[i]].pts) {
+        j++;
+      }
+      const tiedGroup = sortedByPts.slice(i, j);
+      if (tiedGroup.length === 1) {
+        sorted.push(tiedGroup[0]);
+      } else {
+        const h2h = computeH2H(tiedGroup);
+        tiedGroup.sort((a, b) => {
+          const h2hPts = h2h[b].pts - h2h[a].pts;
+          if (h2hPts !== 0) return h2hPts;
+          const h2hGD = (h2h[b].gf - h2h[b].ga) - (h2h[a].gf - h2h[a].ga);
+          if (h2hGD !== 0) return h2hGD;
+          const h2hGF = h2h[b].gf - h2h[a].gf;
+          if (h2hGF !== 0) return h2hGF;
+          const gd = (stat[b].gf - stat[b].ga) - (stat[a].gf - stat[a].ga);
+          if (gd !== 0) return gd;
+          return stat[b].gf - stat[a].gf;
+        });
+        sorted.push(...tiedGroup);
+      }
+      i = j;
+    }
+
     standings[g] = {
       winner: sorted[0],
       runnerUp: sorted[1],
@@ -215,6 +268,70 @@ function groupsAllFilled(matchScores) {
   return result;
 }
 
+// ─── GROEPSKANDIDATEN ────────────────────────────────────────────────────────
+// Bepaalt per groepspositie welke teams die positie nog wiskundig kunnen bereiken.
+// Enumereert alle mogelijke uitkomsten (W/G/V) van niet-gespeelde wedstrijden.
+function computeGroupCandidates(matchScores) {
+  const result = {};
+  Object.keys(GROUPS).forEach((g) => {
+    const teams = GROUPS[g];
+    const groupMatches = GROUP_MATCHES.filter((m) => m.group === g);
+
+    const cur = {};
+    teams.forEach((t) => { cur[t] = { pts: 0 }; });
+    groupMatches.forEach((m) => {
+      const s = matchScores(m.id);
+      if (!s || s.home === "" || s.home === undefined) return;
+      const h = parseInt(s.home, 10);
+      const a = parseInt(s.away, 10);
+      if (Number.isNaN(h) || Number.isNaN(a)) return;
+      if (h > a) cur[m.home].pts += 3;
+      else if (h === a) { cur[m.home].pts++; cur[m.away].pts++; }
+      else cur[m.away].pts += 3;
+    });
+
+    const remaining = groupMatches.filter((m) => {
+      const s = matchScores(m.id);
+      return !s || s.home === "" || s.home === undefined ||
+        Number.isNaN(parseInt(s.home, 10)) || Number.isNaN(parseInt(s.away, 10));
+    });
+
+    const canReach = {};
+    teams.forEach((t) => { canReach[t] = new Set(); });
+
+    const n = remaining.length;
+    for (let mask = 0; mask < Math.pow(3, n); mask++) {
+      const pts = {};
+      teams.forEach((t) => { pts[t] = cur[t].pts; });
+      let temp = mask;
+      for (let i = 0; i < n; i++) {
+        const outcome = temp % 3; temp = Math.floor(temp / 3);
+        const m = remaining[i];
+        if (outcome === 0) pts[m.home] += 3;
+        else if (outcome === 1) { pts[m.home]++; pts[m.away]++; }
+        else pts[m.away] += 3;
+      }
+      const ranked = teams.slice().sort((a, b) => pts[b] - pts[a]);
+      // Bij gelijkstand alle posities binnen de tie als bereikbaar markeren
+      let i = 0;
+      while (i < ranked.length) {
+        let j = i + 1;
+        while (j < ranked.length && pts[ranked[j]] === pts[ranked[i]]) j++;
+        for (let k = i; k < j; k++)
+          for (let p = i; p < j; p++) canReach[ranked[k]].add(p + 1);
+        i = j;
+      }
+    }
+
+    result[g] = {
+      "1": teams.filter((t) => canReach[t].has(1)),
+      "2": teams.filter((t) => canReach[t].has(2)),
+      "3": teams.filter((t) => canReach[t].has(3)),
+    };
+  });
+  return result;
+}
+
 // ─── KO SLOT HELPERS ──────────────────────────────────────────────────────────
 function slotLabel(slot) {
   if (!slot) return "?";
@@ -242,13 +359,28 @@ function resolveGroupSlot(slot, standings, allGroupsComplete) {
 }
 
 function resolveSlotRich(slot, ctx) {
-  const { adminStandings, adminComplete, userKoWinners, adminKoResults } = ctx;
+  const { adminStandings, adminComplete, userKoWinners, adminKoResults, groupCandidates } = ctx;
   if (!slot) return { type: "label", label: "?" };
   if (/^[12][A-L]$/.test(slot)) {
     const adminTeam = adminStandings
       ? resolveGroupSlot(slot, adminStandings, adminComplete)
       : null;
     if (adminTeam) return { type: "team", team: adminTeam };
+    const rank = slot[0];
+    const g = slot[1];
+    const sublabel = slotLabel(slot);
+    const candidates = groupCandidates?.[g]?.[rank];
+    if (candidates && candidates.length > 0) {
+      // Sorteer op huidige stand: teams die al bovenaan staan eerst
+      const standingsOrder = adminStandings?.[g]?.table?.map((r) => r.team) ?? [];
+      const sorted = [
+        ...standingsOrder.filter((t) => candidates.includes(t)),
+        ...candidates.filter((t) => !standingsOrder.includes(t)),
+      ];
+      if (sorted.length === 1) return { type: "team", team: sorted[0], sublabel };
+      if (sorted.length === 2) return { type: "two", teams: sorted, sublabel };
+      return { type: "few", teams: sorted, sublabel };
+    }
     return { type: "label", label: slotLabel(slot) };
   }
 
@@ -324,6 +456,10 @@ function buildRichKOSlots(pred, results, koResults) {
     const r = results[id];
     return r?.played ? r : null;
   });
+  const groupCandidates = computeGroupCandidates((id) => {
+    const r = results[id];
+    return r?.played ? r : null;
+  });
   const koWinners = {};
   KO_STRUCTURE.forEach((km) => {
     const winner = koResults?.[km.id]?.winner;
@@ -344,6 +480,7 @@ function buildRichKOSlots(pred, results, koResults) {
     adminComplete,
     userKoWinners: koWinners,
     adminKoResults: koResults,
+    groupCandidates,
   };
   const slots = {};
   KO_STRUCTURE.forEach((m) => {
@@ -646,6 +783,7 @@ export {
   loadSession,
   deepSet,
   computeGroupStandings,
+  computeGroupCandidates,
   deriveGroupStandings,
   deriveGroupStandingsFromResults,
   groupsAllFilled,

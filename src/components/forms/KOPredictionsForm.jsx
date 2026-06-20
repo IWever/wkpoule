@@ -6,7 +6,7 @@ import {
   FLAG,
   GROUPS,
 } from "../../data/tournamentData";
-import { deepSet, buildRichKOSlots } from "../../pouleEngine";
+import { deepSet, buildRichKOSlots, fmtDateTime } from "../../pouleEngine";
 import { S } from "../../styles/ui";
 import { Alert, SlotDisplay, FrozenBadge } from "../common";
 import { SingleKOMatchCompare } from "../compare";
@@ -48,13 +48,28 @@ function teamsFromSlot(slot, pred, koResults) {
   return null;
 }
 
+// Geeft de teams terug die een descriptor vertegenwoordigt (null = onbekend/label).
+function descToTeams(desc) {
+  if (desc?.type === "team") return [desc.team];
+  if (desc?.type === "two" || desc?.type === "few") return desc.teams;
+  return null;
+}
+
+// Alle mogelijke deelnemers aan een wedstrijd: per slot de genarrowde kandidaten
+// of (als de slot nog een label is) alle teams in die slotgroep als fallback.
 function getDropdownTeams(homeDesc, awayDesc, match, pred, koResults) {
-  const fromDesc = winnerCandidates(homeDesc, awayDesc);
-  if (fromDesc.length > 0 && fromDesc.length <= 4) return fromDesc;
   const koMatch = KO_STRUCTURE.find((m) => m.id === match.id);
   if (!koMatch) return ALL_TEAMS;
-  const homeTeams = teamsFromSlot(koMatch.homeSlot, pred, koResults);
-  const awayTeams = teamsFromSlot(koMatch.awaySlot, pred, koResults);
+  const homeTeams =
+    descToTeams(homeDesc) ??
+    (teamsFromSlot(koMatch.homeSlot, pred, koResults)
+      ? [...teamsFromSlot(koMatch.homeSlot, pred, koResults)]
+      : null);
+  const awayTeams =
+    descToTeams(awayDesc) ??
+    (teamsFromSlot(koMatch.awaySlot, pred, koResults)
+      ? [...teamsFromSlot(koMatch.awaySlot, pred, koResults)]
+      : null);
   if (!homeTeams || !awayTeams) return ALL_TEAMS;
   return [...new Set([...homeTeams, ...awayTeams])].sort((a, b) =>
     a.localeCompare(b, "nl")
@@ -344,11 +359,9 @@ function KOMatchCard({
     predScore?.home !== undefined &&
     parseInt(predScore.home) === parseInt(r.home90) &&
     parseInt(predScore.away) === parseInt(r.away90);
-  const candidates = winnerCandidates(homeDesc, awayDesc);
-  const useButtons = candidates.length >= 1 && candidates.length <= 4;
-  const dropdownTeams = useButtons
-    ? []
-    : getDropdownTeams(homeDesc, awayDesc, m, pred, koResults);
+  const allCandidates = getDropdownTeams(homeDesc, awayDesc, m, pred, koResults);
+  const useButtons = allCandidates.length >= 1 && allCandidates.length <= 4;
+  const dropdownTeams = useButtons ? [] : allCandidates;
   const cardBorder = r?.played
     ? winOk
       ? "rgba(63,185,80,.4)"
@@ -389,7 +402,12 @@ function KOMatchCard({
           >
             {m.label}
           </div>
-          {frozen && <FrozenBadge />}
+          {m.dt && (
+            <div style={{ fontSize: 11, color: "var(--muted)" }}>
+              {fmtDateTime(m.dt)}
+            </div>
+          )}
+          {frozen && <span style={{ fontSize: 13, color: "var(--orange)" }}>🔒</span>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {canInfo && (
@@ -508,7 +526,7 @@ function KOMatchCard({
         </div>
         {useButtons ? (
           <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {candidates.map((t) => (
+            {allCandidates.map((t) => (
               <button
                 key={t}
                 disabled={frozen}
@@ -590,10 +608,5 @@ function KOMatchCard({
   );
 }
 
-function winnerCandidates(homeDesc, awayDesc) {
-  const from = (d) =>
-    d?.type === "team" ? [d.team] : d?.type === "two" ? d.teams : [];
-  return [...new Set([...from(homeDesc), ...from(awayDesc)])];
-}
 
 export { KOPredictionsForm };

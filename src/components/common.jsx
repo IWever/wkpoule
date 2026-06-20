@@ -88,8 +88,22 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
 
   if (desc.type === "team") {
     return (
-      <span style={{ fontSize: size, fontWeight: 700 }}>
-        {FLAG[desc.team] || "🏳️"} {desc.team}
+      <span
+        style={{
+          display: "inline-flex",
+          flexDirection: "column",
+          alignItems: align === "right" ? "flex-end" : "flex-start",
+          gap: 1,
+        }}
+      >
+        {desc.sublabel && (
+          <span style={{ fontSize: size - 4, color: "var(--muted)", fontStyle: "italic" }}>
+            {desc.sublabel}
+          </span>
+        )}
+        <span style={{ fontSize: size, fontWeight: 700 }}>
+          {FLAG[desc.team] || "🏳️"} {desc.team}
+        </span>
       </span>
     );
   }
@@ -107,12 +121,38 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
           gap: 1,
         }}
       >
+        {desc.sublabel && (
+          <span style={{ fontSize: size - 4, color: "var(--muted)", fontStyle: "italic" }}>
+            {desc.sublabel}
+          </span>
+        )}
         <span>
           {FLAG[desc.teams[0]] || "🏳️"} {desc.teams[0]}
         </span>
-        <span style={{ color: "var(--muted)", fontSize: size - 3 }}>of</span>
-        <span>
+<span>
           {FLAG[desc.teams[1]] || "🏳️"} {desc.teams[1]}
+        </span>
+      </span>
+    );
+  }
+
+  if (desc.type === "few") {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          flexDirection: "column",
+          alignItems: align === "right" ? "flex-end" : "flex-start",
+          gap: 2,
+        }}
+      >
+        {desc.sublabel && (
+          <span style={{ fontSize: size - 4, color: "var(--muted)", fontStyle: "italic" }}>
+            {desc.sublabel}
+          </span>
+        )}
+        <span style={{ fontSize: size + 1, letterSpacing: desc.teams.length >= 4 ? 0 : "0.1em", whiteSpace: "nowrap" }}>
+          {desc.teams.map((t) => FLAG[t] || "🏳️").join(" ")}
         </span>
       </span>
     );
