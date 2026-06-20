@@ -325,6 +325,11 @@ function KOInstructions() {
                 W +{schema.winner}
               </div>
               <div
+                style={{ fontSize: 11, color: "var(--yellow)", fontWeight: 600 }}
+              >
+                V +{schema.diff}
+              </div>
+              <div
                 style={{ fontSize: 11, color: "var(--green)", fontWeight: 600 }}
               >
                 S +{schema.exact}

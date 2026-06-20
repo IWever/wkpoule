@@ -695,14 +695,17 @@ function calcPoints(user, results, koResults) {
     const pw = p.koWinners?.[m.id];
     const ps = p.koScores?.[m.id];
     if (pw && r.winner === pw) pts += schema.winner;
-    if (
-      ps &&
-      ps.home !== undefined &&
-      r.home90 !== undefined &&
-      parseInt(ps.home, 10) === parseInt(r.home90, 10) &&
-      parseInt(ps.away, 10) === parseInt(r.away90, 10)
-    )
-      pts += schema.exact;
+    if (ps && ps.home !== undefined && r.home90 !== undefined) {
+      const pH = parseInt(ps.home, 10);
+      const pA = parseInt(ps.away, 10);
+      const rH = parseInt(r.home90, 10);
+      const rA = parseInt(r.away90, 10);
+      if (pH === rH && pA === rA) {
+        pts += schema.exact;
+      } else if (pw && r.winner === pw && pH - pA === rH - rA) {
+        pts += schema.diff;
+      }
+    }
   });
 
   // Extra: kampioen
