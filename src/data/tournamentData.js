@@ -604,6 +604,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 1",
     homeSlot: "2A",
     awaySlot: "2B",
+    dt: "2026-06-28T21:00",
   },
   {
     id: "R32_2",
@@ -611,6 +612,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 2",
     homeSlot: "1E",
     awaySlot: "N3ABCDF",
+    dt: "2026-06-29T22:30",
   },
   {
     id: "R32_3",
@@ -618,6 +620,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 3",
     homeSlot: "1F",
     awaySlot: "2C",
+    dt: "2026-06-30T03:00",
   },
   {
     id: "R32_4",
@@ -625,6 +628,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 4",
     homeSlot: "1C",
     awaySlot: "2F",
+    dt: "2026-06-29T19:00",
   },
   {
     id: "R32_5",
@@ -632,6 +636,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 5",
     homeSlot: "1I",
     awaySlot: "N3CDFGH",
+    dt: "2026-06-30T23:00",
   },
   {
     id: "R32_6",
@@ -639,6 +644,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 6",
     homeSlot: "2E",
     awaySlot: "2I",
+    dt: "2026-06-30T19:00",
   },
   {
     id: "R32_7",
@@ -646,6 +652,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 7",
     homeSlot: "1A",
     awaySlot: "N3CEFHI",
+    dt: "2026-07-01T03:00",
   },
   {
     id: "R32_8",
@@ -653,6 +660,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 8",
     homeSlot: "1L",
     awaySlot: "N3EHIJK",
+    dt: "2026-07-01T18:00",
   },
   {
     id: "R32_9",
@@ -660,6 +668,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 9",
     homeSlot: "1D",
     awaySlot: "N3BEFIJ",
+    dt: "2026-07-02T02:00",
   },
   {
     id: "R32_10",
@@ -667,6 +676,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 10",
     homeSlot: "1G",
     awaySlot: "N3AEHIJ",
+    dt: "2026-07-01T22:00",
   },
   {
     id: "R32_11",
@@ -674,6 +684,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 11",
     homeSlot: "2K",
     awaySlot: "2L",
+    dt: "2026-07-03T01:00",
   },
   {
     id: "R32_12",
@@ -681,6 +692,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 12",
     homeSlot: "1H",
     awaySlot: "2J",
+    dt: "2026-07-02T21:00",
   },
   {
     id: "R32_13",
@@ -688,6 +700,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 13",
     homeSlot: "1B",
     awaySlot: "N3EFGIJ",
+    dt: "2026-07-03T05:00",
   },
   {
     id: "R32_14",
@@ -695,6 +708,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 14",
     homeSlot: "1J",
     awaySlot: "2H",
+    dt: "2026-07-04T00:00",
   },
   {
     id: "R32_15",
@@ -702,6 +716,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 15",
     homeSlot: "1K",
     awaySlot: "N3DEIJL",
+    dt: "2026-07-04T03:30",
   },
   {
     id: "R32_16",
@@ -709,6 +724,7 @@ const KO_STRUCTURE = [
     label: "Zestiende finale 16",
     homeSlot: "2D",
     awaySlot: "2G",
+    dt: "2026-07-03T20:00",
   },
 
   // ─── ACHTSTE FINALES ─────────────────────────────────────────────────────
@@ -718,6 +734,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 1",
     homeSlot: "WR32_2",
     awaySlot: "WR32_5",
+    dt: "2026-07-04T19:00",
   },
   {
     id: "R16_2",
@@ -725,6 +742,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 2",
     homeSlot: "WR32_1",
     awaySlot: "WR32_3",
+    dt: "2026-07-04T22:30",
   },
   {
     id: "R16_3",
@@ -732,6 +750,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 3",
     homeSlot: "WR32_11",
     awaySlot: "WR32_12",
+    dt: "2026-07-05T19:00",
   },
   {
     id: "R16_4",
@@ -739,6 +758,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 4",
     homeSlot: "WR32_9",
     awaySlot: "WR32_10",
+    dt: "2026-07-05T22:30",
   },
   {
     id: "R16_5",
@@ -746,6 +766,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 5",
     homeSlot: "WR32_4",
     awaySlot: "WR32_6",
+    dt: "2026-07-06T19:00",
   },
   {
     id: "R16_6",
@@ -753,6 +774,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 6",
     homeSlot: "WR32_7",
     awaySlot: "WR32_8",
+    dt: "2026-07-06T21:00",
   },
   {
     id: "R16_7",
@@ -760,6 +782,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 7",
     homeSlot: "WR32_14",
     awaySlot: "WR32_16",
+    dt: "2026-07-07T19:00",
   },
   {
     id: "R16_8",
@@ -767,6 +790,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 8",
     homeSlot: "WR32_13",
     awaySlot: "WR32_15",
+    dt: "2026-07-07T22:30",
   },
 
   // ─── KWARTFINALES ────────────────────────────────────────────────────────
@@ -776,6 +800,7 @@ const KO_STRUCTURE = [
     label: "Kwartfinale 1",
     homeSlot: "WR16_1",
     awaySlot: "WR16_2",
+    dt: "2026-07-09T22:00",
   },
   {
     id: "QF_2",
@@ -783,6 +808,7 @@ const KO_STRUCTURE = [
     label: "Kwartfinale 2",
     homeSlot: "WR16_5",
     awaySlot: "WR16_6",
+    dt: "2026-07-10T00:30",
   },
   {
     id: "QF_3",
@@ -790,6 +816,7 @@ const KO_STRUCTURE = [
     label: "Kwartfinale 3",
     homeSlot: "WR16_3",
     awaySlot: "WR16_4",
+    dt: "2026-07-10T22:00",
   },
   {
     id: "QF_4",
@@ -797,6 +824,7 @@ const KO_STRUCTURE = [
     label: "Kwartfinale 4",
     homeSlot: "WR16_7",
     awaySlot: "WR16_8",
+    dt: "2026-07-11T22:00",
   },
 
   // ─── HALVE FINALES ───────────────────────────────────────────────────────
@@ -806,6 +834,7 @@ const KO_STRUCTURE = [
     label: "Halve finale 1",
     homeSlot: "WQF_1",
     awaySlot: "WQF_2",
+    dt: "2026-07-14T21:00",
   },
   {
     id: "SF_2",
@@ -813,6 +842,7 @@ const KO_STRUCTURE = [
     label: "Halve finale 2",
     homeSlot: "WQF_3",
     awaySlot: "WQF_4",
+    dt: "2026-07-15T21:00",
   },
 
   // ─── 3E PLAATS & FINALE ──────────────────────────────────────────────────
@@ -822,6 +852,7 @@ const KO_STRUCTURE = [
     label: "3e Plaats",
     homeSlot: "LSF_1",
     awaySlot: "LSF_2",
+    dt: "2026-07-18T23:00",
   },
   {
     id: "FINAL",
@@ -829,6 +860,7 @@ const KO_STRUCTURE = [
     label: "🏆 Finale",
     homeSlot: "WSF_1",
     awaySlot: "WSF_2",
+    dt: "2026-07-19T21:00",
   },
 ];
 const NL_STAGES = [

@@ -6,7 +6,7 @@ import {
   FLAG,
   GROUPS,
 } from "../../data/tournamentData";
-import { deepSet, buildRichKOSlots } from "../../pouleEngine";
+import { deepSet, buildRichKOSlots, fmtDateTime } from "../../pouleEngine";
 import { S } from "../../styles/ui";
 import { Alert, SlotDisplay, FrozenBadge } from "../common";
 import { SingleKOMatchCompare } from "../compare";
@@ -402,6 +402,11 @@ function KOMatchCard({
           >
             {m.label}
           </div>
+          {m.dt && (
+            <div style={{ fontSize: 11, color: "var(--muted)" }}>
+              {fmtDateTime(m.dt)}
+            </div>
+          )}
           {frozen && <FrozenBadge />}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
