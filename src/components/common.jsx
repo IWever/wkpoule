@@ -129,8 +129,7 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
         <span>
           {FLAG[desc.teams[0]] || "🏳️"} {desc.teams[0]}
         </span>
-        <span style={{ color: "var(--muted)", fontSize: size - 3 }}>of</span>
-        <span>
+<span>
           {FLAG[desc.teams[1]] || "🏳️"} {desc.teams[1]}
         </span>
       </span>
