@@ -407,7 +407,7 @@ function KOMatchCard({
               {fmtDateTime(m.dt)}
             </div>
           )}
-          {frozen && <FrozenBadge />}
+          {frozen && <span style={{ fontSize: 13, color: "var(--orange)" }}>🔒</span>}
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {canInfo && (
