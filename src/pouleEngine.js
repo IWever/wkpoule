@@ -366,16 +366,20 @@ function resolveSlotRich(slot, ctx) {
       ? resolveGroupSlot(slot, adminStandings, adminComplete)
       : null;
     if (adminTeam) return { type: "team", team: adminTeam };
-    // Toon al vlaggen als er minder dan 4 teams de positie nog kunnen bereiken,
-    // met het slot-label als sublabel zodat de context zichtbaar blijft.
     const rank = slot[0];
     const g = slot[1];
     const sublabel = slotLabel(slot);
     const candidates = groupCandidates?.[g]?.[rank];
-    if (candidates && candidates.length < 4) {
-      if (candidates.length === 1) return { type: "team", team: candidates[0], sublabel };
-      if (candidates.length === 2) return { type: "two", teams: candidates, sublabel };
-      return { type: "few", teams: candidates, sublabel };
+    if (candidates && candidates.length > 0) {
+      // Sorteer op huidige stand: teams die al bovenaan staan eerst
+      const standingsOrder = adminStandings?.[g]?.table?.map((r) => r.team) ?? [];
+      const sorted = [
+        ...standingsOrder.filter((t) => candidates.includes(t)),
+        ...candidates.filter((t) => !standingsOrder.includes(t)),
+      ];
+      if (sorted.length === 1) return { type: "team", team: sorted[0], sublabel };
+      if (sorted.length === 2) return { type: "two", teams: sorted, sublabel };
+      return { type: "few", teams: sorted, sublabel };
     }
     return { type: "label", label: slotLabel(slot) };
   }

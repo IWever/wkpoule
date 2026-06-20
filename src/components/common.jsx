@@ -96,14 +96,14 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
           gap: 1,
         }}
       >
-        <span style={{ fontSize: size, fontWeight: 700 }}>
-          {FLAG[desc.team] || "🏳️"} {desc.team}
-        </span>
         {desc.sublabel && (
           <span style={{ fontSize: size - 4, color: "var(--muted)", fontStyle: "italic" }}>
             {desc.sublabel}
           </span>
         )}
+        <span style={{ fontSize: size, fontWeight: 700 }}>
+          {FLAG[desc.team] || "🏳️"} {desc.team}
+        </span>
       </span>
     );
   }
@@ -121,6 +121,11 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
           gap: 1,
         }}
       >
+        {desc.sublabel && (
+          <span style={{ fontSize: size - 4, color: "var(--muted)", fontStyle: "italic" }}>
+            {desc.sublabel}
+          </span>
+        )}
         <span>
           {FLAG[desc.teams[0]] || "🏳️"} {desc.teams[0]}
         </span>
@@ -128,11 +133,6 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
         <span>
           {FLAG[desc.teams[1]] || "🏳️"} {desc.teams[1]}
         </span>
-        {desc.sublabel && (
-          <span style={{ fontSize: size - 4, color: "var(--muted)", fontStyle: "italic" }}>
-            {desc.sublabel}
-          </span>
-        )}
       </span>
     );
   }
@@ -141,25 +141,20 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
     return (
       <span
         style={{
-          fontSize: size - 2,
-          fontWeight: 600,
-          lineHeight: 1.5,
           display: "inline-flex",
           flexDirection: "column",
           alignItems: align === "right" ? "flex-end" : "flex-start",
-          gap: 0,
+          gap: 2,
         }}
       >
-        {desc.teams.map((t) => (
-          <span key={t}>
-            {FLAG[t] || "🏳️"} {t}
-          </span>
-        ))}
         {desc.sublabel && (
           <span style={{ fontSize: size - 4, color: "var(--muted)", fontStyle: "italic" }}>
             {desc.sublabel}
           </span>
         )}
+        <span style={{ fontSize: size + 1, letterSpacing: "0.1em" }}>
+          {desc.teams.map((t) => FLAG[t] || "🏳️").join(" ")}
+        </span>
       </span>
     );
   }
