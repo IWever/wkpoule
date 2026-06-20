@@ -88,8 +88,22 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
 
   if (desc.type === "team") {
     return (
-      <span style={{ fontSize: size, fontWeight: 700 }}>
-        {FLAG[desc.team] || "🏳️"} {desc.team}
+      <span
+        style={{
+          display: "inline-flex",
+          flexDirection: "column",
+          alignItems: align === "right" ? "flex-end" : "flex-start",
+          gap: 1,
+        }}
+      >
+        <span style={{ fontSize: size, fontWeight: 700 }}>
+          {FLAG[desc.team] || "🏳️"} {desc.team}
+        </span>
+        {desc.sublabel && (
+          <span style={{ fontSize: size - 4, color: "var(--muted)", fontStyle: "italic" }}>
+            {desc.sublabel}
+          </span>
+        )}
       </span>
     );
   }
@@ -114,6 +128,11 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
         <span>
           {FLAG[desc.teams[1]] || "🏳️"} {desc.teams[1]}
         </span>
+        {desc.sublabel && (
+          <span style={{ fontSize: size - 4, color: "var(--muted)", fontStyle: "italic" }}>
+            {desc.sublabel}
+          </span>
+        )}
       </span>
     );
   }
@@ -136,6 +155,11 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
             {FLAG[t] || "🏳️"} {t}
           </span>
         ))}
+        {desc.sublabel && (
+          <span style={{ fontSize: size - 4, color: "var(--muted)", fontStyle: "italic" }}>
+            {desc.sublabel}
+          </span>
+        )}
       </span>
     );
   }
