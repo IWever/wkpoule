@@ -152,7 +152,7 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
             {desc.sublabel}
           </span>
         )}
-        <span style={{ fontSize: size + 1, letterSpacing: "0.1em" }}>
+        <span style={{ fontSize: size + 1, letterSpacing: "0.1em", whiteSpace: "nowrap" }}>
           {desc.teams.map((t) => FLAG[t] || "🏳️").join(" ")}
         </span>
       </span>
