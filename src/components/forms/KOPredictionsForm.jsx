@@ -229,10 +229,16 @@ function KOInstructions() {
             desc: "Welk team gaat door? Bij gelijkspel na 90 min. gaat het door via verlenging of strafschoppen — voorspel de winnaar, niet het eindresultaat.",
           },
           {
+            badge: "V",
+            color: "var(--yellow)",
+            title: "Verschil bonus",
+            desc: "Klopt het doelsaldo na 90 min. maar niet de exacte uitslag? Dan krijg je een kleinere bonus bovenop de winnaarspunten.",
+          },
+          {
             badge: "S",
             color: "var(--green)",
             title: "Stand na 90 min.",
-            desc: "Hoe staat het na negentig minuten reguliere speeltijd? Dit is de bonus — je verdient hier extra punten bovenop de winnaarspunten.",
+            desc: "Klopt de exacte uitslag na 90 min.? Dan krijg je de hogere standbonus bovenop de winnaarspunten (V en S stapelen niet).",
           },
         ].map(({ badge, color, title, desc }) => (
           <div
