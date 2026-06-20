@@ -51,6 +51,8 @@ function teamsFromSlot(slot, pred, koResults) {
 function getDropdownTeams(homeDesc, awayDesc, match, pred, koResults) {
   const fromDesc = winnerCandidates(homeDesc, awayDesc);
   if (fromDesc.length > 0 && fromDesc.length <= 4) return fromDesc;
+  // Gebruik genarrowde kandidatenlijst ook als die >4 is (beter dan alle teams)
+  if (fromDesc.length > 4) return fromDesc.slice().sort((a, b) => a.localeCompare(b, "nl"));
   const koMatch = KO_STRUCTURE.find((m) => m.id === match.id);
   if (!koMatch) return ALL_TEAMS;
   const homeTeams = teamsFromSlot(koMatch.homeSlot, pred, koResults);
@@ -592,7 +594,8 @@ function KOMatchCard({
 
 function winnerCandidates(homeDesc, awayDesc) {
   const from = (d) =>
-    d?.type === "team" ? [d.team] : d?.type === "two" ? d.teams : [];
+    d?.type === "team" ? [d.team] :
+    d?.type === "two" || d?.type === "few" ? d.teams : [];
   return [...new Set([...from(homeDesc), ...from(awayDesc)])];
 }
 

@@ -118,6 +118,28 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
     );
   }
 
+  if (desc.type === "few") {
+    return (
+      <span
+        style={{
+          fontSize: size - 2,
+          fontWeight: 600,
+          lineHeight: 1.5,
+          display: "inline-flex",
+          flexDirection: "column",
+          alignItems: align === "right" ? "flex-end" : "flex-start",
+          gap: 0,
+        }}
+      >
+        {desc.teams.map((t) => (
+          <span key={t}>
+            {FLAG[t] || "🏳️"} {t}
+          </span>
+        ))}
+      </span>
+    );
+  }
+
   return (
     <span
       style={{ fontSize: size - 2, color: "var(--muted)", fontStyle: "italic" }}

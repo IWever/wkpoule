@@ -268,6 +268,70 @@ function groupsAllFilled(matchScores) {
   return result;
 }
 
+// ─── GROEPSKANDIDATEN ────────────────────────────────────────────────────────
+// Bepaalt per groepspositie welke teams die positie nog wiskundig kunnen bereiken.
+// Enumereert alle mogelijke uitkomsten (W/G/V) van niet-gespeelde wedstrijden.
+function computeGroupCandidates(matchScores) {
+  const result = {};
+  Object.keys(GROUPS).forEach((g) => {
+    const teams = GROUPS[g];
+    const groupMatches = GROUP_MATCHES.filter((m) => m.group === g);
+
+    const cur = {};
+    teams.forEach((t) => { cur[t] = { pts: 0 }; });
+    groupMatches.forEach((m) => {
+      const s = matchScores(m.id);
+      if (!s || s.home === "" || s.home === undefined) return;
+      const h = parseInt(s.home, 10);
+      const a = parseInt(s.away, 10);
+      if (Number.isNaN(h) || Number.isNaN(a)) return;
+      if (h > a) cur[m.home].pts += 3;
+      else if (h === a) { cur[m.home].pts++; cur[m.away].pts++; }
+      else cur[m.away].pts += 3;
+    });
+
+    const remaining = groupMatches.filter((m) => {
+      const s = matchScores(m.id);
+      return !s || s.home === "" || s.home === undefined ||
+        Number.isNaN(parseInt(s.home, 10)) || Number.isNaN(parseInt(s.away, 10));
+    });
+
+    const canReach = {};
+    teams.forEach((t) => { canReach[t] = new Set(); });
+
+    const n = remaining.length;
+    for (let mask = 0; mask < Math.pow(3, n); mask++) {
+      const pts = {};
+      teams.forEach((t) => { pts[t] = cur[t].pts; });
+      let temp = mask;
+      for (let i = 0; i < n; i++) {
+        const outcome = temp % 3; temp = Math.floor(temp / 3);
+        const m = remaining[i];
+        if (outcome === 0) pts[m.home] += 3;
+        else if (outcome === 1) { pts[m.home]++; pts[m.away]++; }
+        else pts[m.away] += 3;
+      }
+      const ranked = teams.slice().sort((a, b) => pts[b] - pts[a]);
+      // Bij gelijkstand alle posities binnen de tie als bereikbaar markeren
+      let i = 0;
+      while (i < ranked.length) {
+        let j = i + 1;
+        while (j < ranked.length && pts[ranked[j]] === pts[ranked[i]]) j++;
+        for (let k = i; k < j; k++)
+          for (let p = i; p < j; p++) canReach[ranked[k]].add(p + 1);
+        i = j;
+      }
+    }
+
+    result[g] = {
+      "1": teams.filter((t) => canReach[t].has(1)),
+      "2": teams.filter((t) => canReach[t].has(2)),
+      "3": teams.filter((t) => canReach[t].has(3)),
+    };
+  });
+  return result;
+}
+
 // ─── KO SLOT HELPERS ──────────────────────────────────────────────────────────
 function slotLabel(slot) {
   if (!slot) return "?";
@@ -295,13 +359,22 @@ function resolveGroupSlot(slot, standings, allGroupsComplete) {
 }
 
 function resolveSlotRich(slot, ctx) {
-  const { adminStandings, adminComplete, userKoWinners, adminKoResults } = ctx;
+  const { adminStandings, adminComplete, userKoWinners, adminKoResults, groupCandidates } = ctx;
   if (!slot) return { type: "label", label: "?" };
   if (/^[12][A-L]$/.test(slot)) {
     const adminTeam = adminStandings
       ? resolveGroupSlot(slot, adminStandings, adminComplete)
       : null;
     if (adminTeam) return { type: "team", team: adminTeam };
+    // Toon al vlaggen als er minder dan 4 teams de positie nog kunnen bereiken
+    const rank = slot[0];
+    const g = slot[1];
+    const candidates = groupCandidates?.[g]?.[rank];
+    if (candidates && candidates.length < 4) {
+      if (candidates.length === 1) return { type: "team", team: candidates[0] };
+      if (candidates.length === 2) return { type: "two", teams: candidates };
+      return { type: "few", teams: candidates };
+    }
     return { type: "label", label: slotLabel(slot) };
   }
 
@@ -377,6 +450,10 @@ function buildRichKOSlots(pred, results, koResults) {
     const r = results[id];
     return r?.played ? r : null;
   });
+  const groupCandidates = computeGroupCandidates((id) => {
+    const r = results[id];
+    return r?.played ? r : null;
+  });
   const koWinners = {};
   KO_STRUCTURE.forEach((km) => {
     const winner = koResults?.[km.id]?.winner;
@@ -397,6 +474,7 @@ function buildRichKOSlots(pred, results, koResults) {
     adminComplete,
     userKoWinners: koWinners,
     adminKoResults: koResults,
+    groupCandidates,
   };
   const slots = {};
   KO_STRUCTURE.forEach((m) => {
@@ -699,6 +777,7 @@ export {
   loadSession,
   deepSet,
   computeGroupStandings,
+  computeGroupCandidates,
   deriveGroupStandings,
   deriveGroupStandingsFromResults,
   groupsAllFilled,
