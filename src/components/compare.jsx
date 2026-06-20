@@ -1379,12 +1379,20 @@ function SingleKOMatchCompare({ match, state, currentUserId, onClose }) {
     myScore?.home !== undefined &&
     parseInt(myScore.home) === parseInt(r.home90) &&
     parseInt(myScore.away) === parseInt(r.away90);
+  const myDiffOk =
+    r?.played &&
+    myScore?.home !== undefined &&
+    !myScoreOk &&
+    myWinOk &&
+    parseInt(myScore.home) - parseInt(myScore.away) ===
+      parseInt(r.home90) - parseInt(r.away90);
 
   let myPts = null;
   if (r?.played && myWinner) {
     myPts = 0;
     if (myWinOk) myPts += schema.winner;
     if (myScoreOk) myPts += schema.exact;
+    else if (myDiffOk) myPts += schema.diff;
   }
 
   const homePicks = homeTeam
