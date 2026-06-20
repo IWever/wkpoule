@@ -14,7 +14,7 @@ function AuthScreen({
   preComp = "",
 }) {
   const competitions = allCompetitions.filter((c) => !c.hiddenRegistration);
-  const [mode, setMode] = useState(preRegister ? "register" : "login");
+  const [mode, setMode] = useState("login");
 
   // Pre-selecteer competitie op naam (case-insensitive)
   const preSelectedIds = preComp
@@ -169,38 +169,7 @@ function AuthHeader() {
 }
 
 function ModeSwitcher({ mode, setMode }) {
-  return (
-    <div
-      style={{
-        display: "flex",
-        marginBottom: 20,
-        background: "var(--bg)",
-        borderRadius: 8,
-        padding: 3,
-      }}
-    >
-      {["login", "register"].map((m) => (
-        <button
-          key={m}
-          onClick={() => setMode(m)}
-          style={{
-            flex: 1,
-            padding: "8px",
-            background: mode === m ? "var(--accent)" : "none",
-            color: mode === m ? "#fff" : "var(--muted)",
-            border: "none",
-            borderRadius: 6,
-            cursor: "pointer",
-            fontWeight: 700,
-            fontSize: 13,
-            fontFamily: "var(--font)",
-          }}
-        >
-          {m === "login" ? "Inloggen" : "Registreren"}
-        </button>
-      ))}
-    </div>
-  );
+  return null;
 }
 
 function CompetitionPicker({
