@@ -1099,14 +1099,14 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
               ✗
             </span>
           )}
-          {diffOk && (
+          {winOk && diffOk && (
             <span
               style={{ color: "var(--yellow)", fontWeight: 700, fontSize: 11 }}
             >
               +{schema.diff}
             </span>
           )}
-          {scoreOk && (
+          {winOk && scoreOk && (
             <span
               style={{ color: "var(--green)", fontWeight: 700, fontSize: 11 }}
             >
