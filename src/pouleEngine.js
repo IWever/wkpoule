@@ -150,7 +150,8 @@ function computeGroupStandings(matchScores) {
     teams.forEach((t) => {
       stat[t] = { pts: 0, gp: 0, gf: 0, ga: 0 };
     });
-    GROUP_MATCHES.filter((m) => m.group === g).forEach((m) => {
+    const groupMatches = GROUP_MATCHES.filter((m) => m.group === g);
+    groupMatches.forEach((m) => {
       const s = matchScores(m.id);
       if (!s || s.home === "" || s.home === undefined) return;
       const h = parseInt(s.home, 10);
@@ -168,14 +169,66 @@ function computeGroupStandings(matchScores) {
         stat[m.away].pts += 1;
       } else stat[m.away].pts += 3;
     });
-    const sorted = teams.slice().sort((a, b) => {
-      const ptsDiff = stat[b].pts - stat[a].pts;
-      if (ptsDiff !== 0) return ptsDiff;
-      const gdA = stat[a].gf - stat[a].ga;
-      const gdB = stat[b].gf - stat[b].ga;
-      if (gdB !== gdA) return gdB - gdA;
-      return stat[b].gf - stat[a].gf;
-    });
+
+    // Bereken onderling resultaat (H2H) voor een subset teams
+    function computeH2H(tiedTeams) {
+      const h2h = {};
+      tiedTeams.forEach((t) => { h2h[t] = { pts: 0, gf: 0, ga: 0 }; });
+      groupMatches.forEach((m) => {
+        if (!tiedTeams.includes(m.home) || !tiedTeams.includes(m.away)) return;
+        const s = matchScores(m.id);
+        if (!s || s.home === "" || s.home === undefined) return;
+        const hg = parseInt(s.home, 10);
+        const ag = parseInt(s.away, 10);
+        if (Number.isNaN(hg) || Number.isNaN(ag)) return;
+        h2h[m.home].gf += hg;
+        h2h[m.home].ga += ag;
+        h2h[m.away].gf += ag;
+        h2h[m.away].ga += hg;
+        if (hg > ag) h2h[m.home].pts += 3;
+        else if (hg === ag) { h2h[m.home].pts += 1; h2h[m.away].pts += 1; }
+        else h2h[m.away].pts += 3;
+      });
+      return h2h;
+    }
+
+    // Rangschikking conform officiële FIFA WK 2026 regels:
+    // 1. Punten
+    // 2. Onderling resultaat: punten
+    // 3. Onderling resultaat: doelsaldo
+    // 4. Onderling resultaat: gescoorde doelpunten
+    // 5. Doelsaldo (alle groepswedstrijden)
+    // 6. Gescoorde doelpunten (alle groepswedstrijden)
+    const sortedByPts = teams.slice().sort((a, b) => stat[b].pts - stat[a].pts);
+
+    const sorted = [];
+    let i = 0;
+    while (i < sortedByPts.length) {
+      let j = i + 1;
+      while (j < sortedByPts.length && stat[sortedByPts[j]].pts === stat[sortedByPts[i]].pts) {
+        j++;
+      }
+      const tiedGroup = sortedByPts.slice(i, j);
+      if (tiedGroup.length === 1) {
+        sorted.push(tiedGroup[0]);
+      } else {
+        const h2h = computeH2H(tiedGroup);
+        tiedGroup.sort((a, b) => {
+          const h2hPts = h2h[b].pts - h2h[a].pts;
+          if (h2hPts !== 0) return h2hPts;
+          const h2hGD = (h2h[b].gf - h2h[b].ga) - (h2h[a].gf - h2h[a].ga);
+          if (h2hGD !== 0) return h2hGD;
+          const h2hGF = h2h[b].gf - h2h[a].gf;
+          if (h2hGF !== 0) return h2hGF;
+          const gd = (stat[b].gf - stat[b].ga) - (stat[a].gf - stat[a].ga);
+          if (gd !== 0) return gd;
+          return stat[b].gf - stat[a].gf;
+        });
+        sorted.push(...tiedGroup);
+      }
+      i = j;
+    }
+
     standings[g] = {
       winner: sorted[0],
       runnerUp: sorted[1],
