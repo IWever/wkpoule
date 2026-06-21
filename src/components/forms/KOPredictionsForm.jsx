@@ -232,13 +232,13 @@ function KOInstructions() {
             badge: "V",
             color: "var(--yellow)",
             title: "Verschil bonus",
-            desc: "Klopt het doelsaldo na 90 min. maar niet de exacte uitslag? Dan krijg je een kleinere bonus bovenop de winnaarspunten.",
+            desc: "Klopt het doelsaldo na 90 min. maar niet de exacte uitslag? Dan krijg je de verschilbonus — ongeacht of je winnaar klopt.",
           },
           {
             badge: "S",
             color: "var(--green)",
             title: "Stand na 90 min.",
-            desc: "Klopt de exacte uitslag na 90 min.? Dan krijg je de hogere standbonus bovenop de winnaarspunten (V en S stapelen niet).",
+            desc: "Klopt de exacte uitslag na 90 min.? Dan krijg je de hogere standbonus — ook als je de verkeerde penaltywinnaar had. V en S stapelen niet.",
           },
         ].map(({ badge, color, title, desc }) => (
           <div

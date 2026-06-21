@@ -446,7 +446,8 @@ function KOPhaseRules() {
           <strong style={{ color: "var(--text)" }}>stand na 90 min.</strong>{" "}
           (S). Klopt het doelsaldo maar niet de exacte uitslag, dan krijg je de{" "}
           <strong style={{ color: "var(--text)" }}>verschil-bonus</strong> (V).
-          De exacte stand is een hogere bonus bovenop de winnaar-punten.
+          De stand-bonussen tellen los van de winnaar — ook bij een gelijkspel
+          voorspeld maar de verkeerde penaltywinnaar krijg je de standpunten.
         </div>
 
         {/* Header row */}
