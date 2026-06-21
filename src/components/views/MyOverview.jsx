@@ -955,7 +955,6 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
     r?.played &&
     ps?.home !== undefined &&
     !scoreOk &&
-    winOk &&
     parseInt(ps.home) - parseInt(ps.away) ===
       parseInt(r.home90) - parseInt(r.away90);
   const richSlots = buildRichKOSlots(pred, state.results, state.koResults);
@@ -1099,14 +1098,14 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
               ✗
             </span>
           )}
-          {winOk && diffOk && (
+          {diffOk && (
             <span
               style={{ color: "var(--yellow)", fontWeight: 700, fontSize: 11 }}
             >
               +{schema.diff}
             </span>
           )}
-          {winOk && scoreOk && (
+          {scoreOk && (
             <span
               style={{ color: "var(--green)", fontWeight: 700, fontSize: 11 }}
             >

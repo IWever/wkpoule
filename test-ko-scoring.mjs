@@ -13,18 +13,16 @@ const PTS_KO = {
 // ── Engine logic (pouleEngine.js) ─────────────────────────────────────────
 function enginePts(schema, pw, ps, r) {
   let pts = 0;
-  if (pw && r.winner === pw) {
-    pts += schema.winner;
-    if (ps && ps.home !== undefined && r.home90 !== undefined) {
-      const pH = parseInt(ps.home, 10);
-      const pA = parseInt(ps.away, 10);
-      const rH = parseInt(r.home90, 10);
-      const rA = parseInt(r.away90, 10);
-      if (pH === rH && pA === rA) {
-        pts += schema.exact;
-      } else if (pH - pA === rH - rA) {
-        pts += schema.diff;
-      }
+  if (pw && r.winner === pw) pts += schema.winner;
+  if (ps && ps.home !== undefined && r.home90 !== undefined) {
+    const pH = parseInt(ps.home, 10);
+    const pA = parseInt(ps.away, 10);
+    const rH = parseInt(r.home90, 10);
+    const rA = parseInt(r.away90, 10);
+    if (pH === rH && pA === rA) {
+      pts += schema.exact;
+    } else if (pH - pA === rH - rA) {
+      pts += schema.diff;
     }
   }
   return pts;
@@ -37,7 +35,7 @@ function uiFlags(pw, ps, r) {
     parseInt(ps.home) === parseInt(r.home90) &&
     parseInt(ps.away) === parseInt(r.away90);
   const diffOk  = r?.played && ps?.home !== undefined &&
-    !scoreOk && winOk &&
+    !scoreOk &&
     parseInt(ps.home) - parseInt(ps.away) === parseInt(r.home90) - parseInt(r.away90);
   return { winOk, scoreOk, diffOk };
 }
@@ -46,11 +44,9 @@ function uiFlags(pw, ps, r) {
 function uiTotal(schema, pw, ps, r) {
   const { winOk, scoreOk, diffOk } = uiFlags(pw, ps, r);
   let pts = 0;
-  if (winOk) {
-    pts += schema.winner;
-    if (scoreOk) pts += schema.exact;
-    else if (diffOk) pts += schema.diff;
-  }
+  if (winOk) pts += schema.winner;
+  if (scoreOk) pts += schema.exact;
+  else if (diffOk) pts += schema.diff;
   return pts;
 }
 
@@ -101,8 +97,8 @@ test("Wedstrijd nog niet gespeeld → 0 pt", () => {
   eq(enginePts(s, "NED", score(2, 0), notPlayed()), 0);
 });
 
-test("Stand ingevuld maar geen winnaar → 0 pt", () => {
-  eq(enginePts(s, null, score(2, 0), played("NED", 2, 0)), 0);
+test("Stand ingevuld maar geen winnaar → alleen exact (stand is onafhankelijk)", () => {
+  eq(enginePts(s, null, score(2, 0), played("NED", 2, 0)), s.exact);
 });
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -120,9 +116,9 @@ test("Exacte uitslag correct bij 1-1 → winner + exact", () => {
   eq(enginePts(s, "NED", score(1, 1), played("NED", 1, 1)), s.winner + s.exact);
 });
 
-test("Winnaar fout, stand toevallig gelijk aan actual → 0 pt", () => {
-  // BEL is home, wint 2-0; speler voorspelt NED wint met score 2-0 (contradictoir)
-  eq(enginePts(s, "NED", score(2, 0), played("BEL", 2, 0)), 0);
+test("Winnaar fout maar exacte stand klopt → alleen exact (gelijkspel-scenario)", () => {
+  // 1-1 na 90 min, NED wint via penalties; speler voorspelt BEL wint maar stand 1-1 correct
+  eq(enginePts(s, "BEL", score(1, 1), played("NED", 1, 1)), s.exact);
 });
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -153,8 +149,9 @@ test("Verschil NIET correct: 1-0 vs 0-1 (+1 vs -1) → alleen winner", () => {
   eq(enginePts(s, "NED", score(1, 0), played("NED", 0, 1)), s.winner);
 });
 
-test("Winnaar fout, verschil toevallig correct → 0 pt", () => {
-  eq(enginePts(s, "BEL", score(1, 0), played("NED", 2, 1)), 0);
+test("Winnaar fout maar verschil klopt → alleen diff (gelijkspel-scenario)", () => {
+  // 1-1 na 90 min → diff 0; speler voorspelt 2-2 (diff 0) maar verkeerde penaltywinnaar
+  eq(enginePts(s, "BEL", score(2, 2), played("NED", 1, 1)), s.diff);
 });
 
 // ══════════════════════════════════════════════════════════════════════════
@@ -234,7 +231,7 @@ const uiCases = [
   { label: "Exact",               pw:"NED", ps:score(2,0), r:played("NED",2,0), winOk:true,  scoreOk:true,  diffOk:false },
   { label: "Verschil (1-0/2-1)",  pw:"NED", ps:score(1,0), r:played("NED",2,1), winOk:true,  scoreOk:false, diffOk:true  },
   { label: "Alleen winner",       pw:"NED", ps:score(1,0), r:played("NED",2,0), winOk:true,  scoreOk:false, diffOk:false },
-  { label: "Winnaar fout",        pw:"BEL", ps:score(2,0), r:played("NED",2,0), winOk:false, scoreOk:true,  diffOk:false },
+  { label: "Winnaar fout+exact",  pw:"BEL", ps:score(1,1), r:played("NED",1,1), winOk:false, scoreOk:true,  diffOk:false },
   { label: "Gelijkspel exact",    pw:"NED", ps:score(0,0), r:played("NED",0,0), winOk:true,  scoreOk:true,  diffOk:false },
   { label: "Gelijkspel verschil", pw:"NED", ps:score(1,1), r:played("NED",2,2), winOk:true,  scoreOk:false, diffOk:true  },
   { label: "Geen voorspelling",   pw:null,  ps:null,       r:played("NED",2,0), winOk:null,  scoreOk:false, diffOk:false },
@@ -271,7 +268,7 @@ const consistencyCases = [
   { label:"exact",            pw:"NED", ps:score(2,0), r:played("NED",2,0) },
   { label:"verschil (1/2-1)", pw:"NED", ps:score(1,0), r:played("NED",2,1) },
   { label:"alleen winner",    pw:"NED", ps:score(1,0), r:played("NED",2,0) },
-  { label:"winnaar fout",     pw:"BEL", ps:score(2,0), r:played("NED",2,0) },
+  { label:"winnaar fout+exact", pw:"BEL", ps:score(1,1), r:played("NED",1,1) },
   { label:"geen pw",          pw:null,  ps:score(2,0), r:played("NED",2,0) },
   { label:"geen ps",          pw:"NED", ps:null,       r:played("NED",2,0) },
   { label:"gelijkspel exact", pw:"NED", ps:score(1,1), r:played("NED",1,1) },
