@@ -229,10 +229,16 @@ function KOInstructions() {
             desc: "Welk team gaat door? Bij gelijkspel na 90 min. gaat het door via verlenging of strafschoppen — voorspel de winnaar, niet het eindresultaat.",
           },
           {
+            badge: "V",
+            color: "var(--yellow)",
+            title: "Verschil bonus",
+            desc: "Klopt het doelsaldo na 90 min. maar niet de exacte uitslag? Dan krijg je een kleinere bonus bovenop de winnaarspunten.",
+          },
+          {
             badge: "S",
             color: "var(--green)",
             title: "Stand na 90 min.",
-            desc: "Hoe staat het na negentig minuten reguliere speeltijd? Dit is de bonus — je verdient hier extra punten bovenop de winnaarspunten.",
+            desc: "Klopt de exacte uitslag na 90 min.? Dan krijg je de hogere standbonus bovenop de winnaarspunten (V en S stapelen niet).",
           },
         ].map(({ badge, color, title, desc }) => (
           <div
@@ -325,6 +331,11 @@ function KOInstructions() {
                 W +{schema.winner}
               </div>
               <div
+                style={{ fontSize: 11, color: "var(--yellow)", fontWeight: 600 }}
+              >
+                V +{schema.diff}
+              </div>
+              <div
                 style={{ fontSize: 11, color: "var(--green)", fontWeight: 600 }}
               >
                 S +{schema.exact}
@@ -359,6 +370,13 @@ function KOMatchCard({
     predScore?.home !== undefined &&
     parseInt(predScore.home) === parseInt(r.home90) &&
     parseInt(predScore.away) === parseInt(r.away90);
+  const diffOk =
+    r?.played &&
+    predScore?.home !== undefined &&
+    !scoreOk &&
+    winOk &&
+    parseInt(predScore.home) - parseInt(predScore.away) ===
+      parseInt(r.home90) - parseInt(r.away90);
   const allCandidates = getDropdownTeams(homeDesc, awayDesc, m, pred, koResults);
   const useButtons = allCandidates.length >= 1 && allCandidates.length <= 4;
   const dropdownTeams = useButtons ? [] : allCandidates;
@@ -420,7 +438,12 @@ function KOMatchCard({
                 style={{ fontSize: 12, fontWeight: 700, color: "var(--green)" }}
               >
                 +{schema.winner}
-                {scoreOk ? ` +${schema.exact}` : ""} pt ✓
+                {scoreOk
+                  ? ` +${schema.exact}`
+                  : diffOk
+                  ? ` +${schema.diff}`
+                  : ""}{" "}
+                pt ✓
               </span>
             )}
             {winNope && (

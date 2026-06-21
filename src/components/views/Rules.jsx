@@ -444,14 +444,16 @@ function KOPhaseRules() {
           Per wedstrijd voorspel je de{" "}
           <strong style={{ color: "var(--text)" }}>winnaar</strong> (W) en de{" "}
           <strong style={{ color: "var(--text)" }}>stand na 90 min.</strong>{" "}
-          (S). De exacte stand is een bonus bovenop de winnaar-punten.
+          (S). Klopt het doelsaldo maar niet de exacte uitslag, dan krijg je de{" "}
+          <strong style={{ color: "var(--text)" }}>verschil-bonus</strong> (V).
+          De exacte stand is een hogere bonus bovenop de winnaar-punten.
         </div>
 
         {/* Header row */}
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 80px 80px",
+            gridTemplateColumns: "1fr 70px 70px 70px",
             gap: 4,
             padding: "6px 8px",
             background: "rgba(255,255,255,.03)",
@@ -486,6 +488,18 @@ function KOPhaseRules() {
             style={{
               fontSize: 11,
               fontWeight: 700,
+              color: "var(--yellow)",
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              textAlign: "center",
+            }}
+          >
+            V
+          </div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
               color: "var(--green)",
               textTransform: "uppercase",
               letterSpacing: "0.08em",
@@ -501,7 +515,7 @@ function KOPhaseRules() {
             key={ronde}
             style={{
               display: "grid",
-              gridTemplateColumns: "1fr 80px 80px",
+              gridTemplateColumns: "1fr 70px 70px 70px",
               gap: 4,
               padding: "8px 8px",
               borderBottom:
@@ -527,6 +541,21 @@ function KOPhaseRules() {
                 }}
               >
                 +{schema.winner}
+              </span>
+            </div>
+            <div style={{ textAlign: "center" }}>
+              <span
+                style={{
+                  background: "rgba(210,153,34,.1)",
+                  border: "1px solid rgba(210,153,34,.25)",
+                  borderRadius: 6,
+                  padding: "3px 8px",
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "var(--yellow)",
+                }}
+              >
+                +{schema.diff}
               </span>
             </div>
             <div style={{ textAlign: "center" }}>

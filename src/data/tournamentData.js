@@ -919,12 +919,12 @@ const TOP_TEAMS = [
 const PTS_GROUP = { exact: 5, diff: 3, winner: 2 };
 const PTS_STANDING = { qualified: 4, qualifiedCorrectPos: 10 };
 const PTS_KO = {
-  r32: { winner: 3, exact: 5 },
-  r16: { winner: 4, exact: 8 },
-  qf: { winner: 5, exact: 12 },
-  sf: { winner: 8, exact: 17 },
-  "3rd": { winner: 12, exact: 20 },
-  final: { winner: 15, exact: 25 },
+  r32: { winner: 3, diff: 2, exact: 5 },
+  r16: { winner: 4, diff: 3, exact: 8 },
+  qf: { winner: 5, diff: 4, exact: 12 },
+  sf: { winner: 8, diff: 5, exact: 17 },
+  "3rd": { winner: 12, diff: 8, exact: 20 },
+  final: { winner: 15, diff: 12, exact: 25 },
 };
 const PTS_TOP_OUT = 15;
 const PTS_EXTRA = {
