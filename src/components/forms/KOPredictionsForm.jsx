@@ -374,7 +374,6 @@ function KOMatchCard({
     r?.played &&
     predScore?.home !== undefined &&
     !scoreOk &&
-    winOk &&
     parseInt(predScore.home) - parseInt(predScore.away) ===
       parseInt(r.home90) - parseInt(r.away90);
   const allCandidates = getDropdownTeams(homeDesc, awayDesc, m, pred, koResults);
@@ -444,6 +443,13 @@ function KOMatchCard({
                   ? ` +${schema.diff}`
                   : ""}{" "}
                 pt ✓
+              </span>
+            )}
+            {winNope && (scoreOk || diffOk) && (
+              <span
+                style={{ fontSize: 12, fontWeight: 700, color: "var(--yellow)" }}
+              >
+                {scoreOk ? `+${schema.exact}` : `+${schema.diff}`} pt (stand)
               </span>
             )}
             {winNope && (
