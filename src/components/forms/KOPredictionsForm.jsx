@@ -735,8 +735,11 @@ function KOBracket({ pred, koResults, richSlots }) {
                          : "var(--border)";
             const bg = correct ? "rgba(63,185,80,.1)" : "var(--card)";
 
-            const homeFlags = flagsFromDesc(richSlots?.[matchId]?.home);
-            const awayFlags = flagsFromDesc(richSlots?.[matchId]?.away);
+            const homeDesc  = richSlots?.[matchId]?.home;
+            const awayDesc  = richSlots?.[matchId]?.away;
+            const homeFlags = flagsFromDesc(homeDesc);
+            const awayFlags = flagsFromDesc(awayDesc);
+            const hasN3     = homeDesc?.label === "Beste nr. 3" || awayDesc?.label === "Beste nr. 3";
             const flagsLabel = homeFlags || awayFlags
               ? `${homeFlags} ${awayFlags}`.trim()
               : null;
@@ -753,8 +756,9 @@ function KOBracket({ pred, koResults, richSlots }) {
                       {wrong   && <span style={{ color: "var(--red)",   fontSize: 9, flexShrink: 0 }}>✗</span>}
                     </>
                   ) : (
-                    <span style={{ flex: 1, fontSize: 13, color: "var(--muted)", letterSpacing: "0.05em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {flagsLabel || "—"}
+                    <span style={{ flex: 1, fontSize: 13, color: "var(--muted)", letterSpacing: "0.05em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", display: "flex", alignItems: "center", gap: 2 }}>
+                      <span>{flagsLabel || "—"}</span>
+                      {hasN3 && <span style={{ fontSize: 9, fontWeight: 700, color: "var(--orange)", background: "rgba(240,136,62,.15)", borderRadius: 3, padding: "0 3px", flexShrink: 0 }}>③</span>}
                     </span>
                   )}
                 </div>
