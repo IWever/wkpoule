@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GROUP_MATCHES, FLAG, GROUPS } from "../../data/tournamentData";
+import { GROUP_MATCHES, FLAG, GROUPS, PTS_STANDING } from "../../data/tournamentData";
 import {
   deepSet,
   deriveGroupStandings,
@@ -214,20 +214,32 @@ function GroupPointsSummary({ groupBreakdown }) {
   const anyPlayed = matches.some((d) => d.result?.played);
   if (!anyPlayed) return null;
 
-  return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: standing.allPlayed ? "1fr 1fr 1fr" : "1fr 1fr",
-        gap: 8,
-        marginBottom: 14,
-      }}
-    >
-      {[
+  // Expected standing pts: what you'd score if current admin standings were final
+  const curLeader = standing.actualTable[0]?.team;
+  const curSecond = standing.actualTable[1]?.team;
+  let expectedStandPts = 0;
+  if (curLeader && curSecond) {
+    const top2 = [curLeader, curSecond];
+    if (standing.p1 && top2.includes(standing.p1))
+      expectedStandPts += standing.p1 === curLeader ? PTS_STANDING.qualifiedCorrectPos : PTS_STANDING.qualified;
+    if (standing.p2 && top2.includes(standing.p2))
+      expectedStandPts += standing.p2 === curSecond ? PTS_STANDING.qualifiedCorrectPos : PTS_STANDING.qualified;
+  }
+
+  const cards = standing.allPlayed
+    ? [
         { label: "Wedstrijden", pts: matchPts, color: "var(--accent)" },
-        ...(standing.allPlayed ? [{ label: "Stand", pts: standingPts, color: "var(--accent)" }] : []),
-        { label: "Totaal", pts: standing.allPlayed ? totalPts : matchPts, color: "var(--gold)" },
-      ].map(({ label, pts, color }) => (
+        { label: "Stand", pts: standingPts, color: "var(--accent)" },
+        { label: "Totaal", pts: totalPts, color: "var(--gold)" },
+      ]
+    : [
+        { label: "Wedstrijden", pts: matchPts, color: "var(--accent)" },
+        { label: "Verwacht", pts: matchPts + expectedStandPts, color: "var(--gold)" },
+      ];
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cards.length}, 1fr)`, gap: 8, marginBottom: 14 }}>
+      {cards.map(({ label, pts, color }) => (
         <div key={label} style={{ ...S.card(), textAlign: "center", padding: "10px 12px" }}>
           <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color, display: "flex", alignItems: "baseline", justifyContent: "center", gap: 3 }}>
             {pts}
@@ -396,14 +408,9 @@ function GroupPredictionStats({ group, users, total }) {
         {sorted.map((team) => {
           const pct = Math.round(((counts[team] || 0) / total) * 100);
           return (
-            <div key={team} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-              <div style={{ fontSize: 11, minWidth: 105, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                {FLAG[team] || "🏳️"} {team}
-              </div>
-              <div style={{ flex: 1, height: 5, background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
-                <div style={{ height: "100%", width: `${pct}%`, background: "var(--accent)", borderRadius: 3, transition: "width .3s" }} />
-              </div>
-              <div style={{ fontSize: 10, color: "var(--muted)", minWidth: 30, textAlign: "right" }}>{pct}%</div>
+            <div key={team} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+              <div style={{ fontSize: 11 }}>{FLAG[team] || "🏳️"} {team}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)" }}>{pct}%</div>
             </div>
           );
         })}
@@ -414,7 +421,7 @@ function GroupPredictionStats({ group, users, total }) {
   return (
     <div style={{ ...S.card(), marginTop: 10 }}>
       <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
-        👥 Wat iedereen voorspelde ({total} spelers)
+        👥 Wat iedereen voorspelde
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         {renderPos("#1 Groepswinnaar", winnerCounts)}
