@@ -16,6 +16,7 @@ import {
   Rules,
   StandWithCompare,
   AdminPanel,
+  GroupStagePointsView,
 } from "./components/views";
 import { ChangePasswordScreen } from "./components/ChangePasswordScreen";
 
@@ -114,7 +115,7 @@ const GlobalStyles = () => (
 
 // ─── HEADER ───────────────────────────────────────────────────────────────────
 
-const OVERVIEW_SCREENS = ["overview", "editGroup", "editExtra", "editKO"];
+const OVERVIEW_SCREENS = ["overview", "editGroup", "editExtra", "editKO", "groupPoints"];
 const NAV_TABS = [
   { id: "overview", label: "🎯 Mijn Poule" },
   { id: "stand", label: "🏅 Stand" },
@@ -533,9 +534,14 @@ function UserScreens({ screen, setScreen, user, state, savePred }) {
         onEditGroup={() => setScreen("editGroup")}
         onEditExtra={() => setScreen("editExtra")}
         onEditKO={() => setScreen("editKO")}
+        onGroupPoints={() => setScreen("groupPoints")}
       />
     );
   }
+  if (screen === "groupPoints")
+    return (
+      <GroupStagePointsView user={user} state={state} onBack={goBack} />
+    );
   if (screen === "editGroup")
     return (
       <GroupPredictionsForm

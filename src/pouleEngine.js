@@ -777,6 +777,68 @@ function calcPoints(user, results, koResults) {
   return pts;
 }
 
+function calcGroupPointsBreakdown(user, results) {
+  const p = user.predictions || {};
+  const predStandings = deriveGroupStandings(p);
+  const actualStandings = deriveGroupStandingsFromResults(results);
+
+  let totalMatchPts = 0;
+  let totalStandingPts = 0;
+  const groups = {};
+
+  Object.keys(GROUPS).forEach((g) => {
+    const groupMatches = GROUP_MATCHES.filter((m) => m.group === g);
+    const matchDetails = groupMatches.map((m) => {
+      const pred = p.matches?.[m.id];
+      const result = results[m.id];
+      const res = calcGroupMatchPts(pred, result);
+      return { match: m, pred, result, pts: res?.pts ?? null, label: res?.label ?? null };
+    });
+
+    const matchPts = matchDetails.reduce((sum, d) => sum + (d.pts ?? 0), 0);
+    const allPlayed = groupMatches.every((m) => results[m.id]?.played);
+    const aS = actualStandings[g];
+    const pS = predStandings[g];
+
+    let standingPts = 0;
+    let p1pts = 0;
+    let p2pts = 0;
+    const p1 = pS?.winner;
+    const p2 = pS?.runnerUp;
+    const a1 = aS?.winner;
+    const a2 = aS?.runnerUp;
+
+    if (allPlayed && a1 && a2) {
+      const top2 = [a1, a2];
+      if (p1 && top2.includes(p1)) {
+        p1pts = p1 === a1 ? PTS_STANDING.qualifiedCorrectPos : PTS_STANDING.qualified;
+      }
+      if (p2 && top2.includes(p2)) {
+        p2pts = p2 === a2 ? PTS_STANDING.qualifiedCorrectPos : PTS_STANDING.qualified;
+      }
+      standingPts = p1pts + p2pts;
+    }
+
+    totalMatchPts += matchPts;
+    totalStandingPts += standingPts;
+
+    groups[g] = {
+      matches: matchDetails,
+      matchPts,
+      standing: { p1, p2, a1, a2, p1pts, p2pts, allPlayed },
+      standingPts,
+      totalPts: matchPts + standingPts,
+    };
+  });
+
+  return {
+    matchPts: totalMatchPts,
+    standingPts: totalStandingPts,
+    totalPts: totalMatchPts + totalStandingPts,
+    groups,
+  };
+}
+
 export {
   load,
   persist,
@@ -800,6 +862,7 @@ export {
   deriveSurpriseStage,
   calcTopScorerPts,
   calcGroupMatchPts,
+  calcGroupPointsBreakdown,
   calcPoints,
   fmtDate,
   fmtTime,
