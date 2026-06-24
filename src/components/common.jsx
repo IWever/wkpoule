@@ -169,7 +169,7 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
 
 // ─── GROUP STANDING TABLE ─────────────────────────────────────────────────────
 
-function GroupStandingTable({ rows }) {
+function GroupStandingTable({ rows, highlights = {} }) {
   const HEADER_STYLE = {
     display: "grid",
     gridTemplateColumns: "1fr 28px 32px 32px 32px 32px",
@@ -194,7 +194,13 @@ function GroupStandingTable({ rows }) {
         <span style={{ textAlign: "center" }}>DS</span>
       </div>
 
-      {rows.map((r, i) => (
+      {rows.map((r, i) => {
+        const hl = highlights[r.team];
+        const bg = hl === "green"  ? "rgba(63,185,80,0.13)"
+                 : hl === "yellow" ? "rgba(232,197,71,0.12)"
+                 : i < 2           ? "rgba(88,166,255,0.06)"
+                 :                   "transparent";
+        return (
         <div
           key={r.team}
           style={{
@@ -202,7 +208,7 @@ function GroupStandingTable({ rows }) {
             gridTemplateColumns: "1fr 28px 32px 32px 32px 32px",
             gap: "0 4px",
             padding: "4px 6px",
-            background: i < 2 ? "rgba(88,166,255,0.06)" : "transparent",
+            background: bg,
             borderRadius: 4,
             borderBottom: "1px solid rgba(48,54,61,.4)",
           }}
@@ -265,7 +271,8 @@ function GroupStandingTable({ rows }) {
             {r.gd}
           </span>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

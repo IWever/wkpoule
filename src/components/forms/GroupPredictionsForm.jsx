@@ -378,6 +378,21 @@ function GroupStandingPreviews({ activeGroup, pred, results }) {
   const hasAdminData = adminRows.some((r) => r.gp > 0);
   const isGroupF = activeGroup === "F";
 
+  const groupMatches = GROUP_MATCHES.filter((m) => m.group === activeGroup);
+  const allPlayed = groupMatches.every((m) => results[m.id]?.played);
+  const predWinner = predStanding[activeGroup]?.winner;
+  const predRunnerUp = predStanding[activeGroup]?.runnerUp;
+
+  const highlights = {};
+  if (allPlayed && adminRows.length >= 2) {
+    const actualWinner = adminRows[0]?.team;
+    const actualRunnerUp = adminRows[1]?.team;
+    if (actualWinner === predWinner) highlights[actualWinner] = "green";
+    else if (actualWinner === predRunnerUp) highlights[actualWinner] = "yellow";
+    if (actualRunnerUp === predRunnerUp) highlights[actualRunnerUp] = "green";
+    else if (actualRunnerUp === predWinner) highlights[actualRunnerUp] = "yellow";
+  }
+
   return (
     <div style={{ marginTop: 10 }}>
       {hasAdminData && (
@@ -402,7 +417,7 @@ function GroupStandingPreviews({ activeGroup, pred, results }) {
           >
             📊 Huidige stand (gespeelde wedstrijden)
           </div>
-          <GroupStandingTable rows={adminRows} />
+          <GroupStandingTable rows={adminRows} highlights={highlights} />
         </div>
       )}
       {predRows.some((r) => r.gp > 0) && (
