@@ -825,7 +825,7 @@ function calcGroupPointsBreakdown(user, results) {
     groups[g] = {
       matches: matchDetails,
       matchPts,
-      standing: { p1, p2, a1, a2, p1pts, p2pts, allPlayed },
+      standing: { p1, p2, a1, a2, p1pts, p2pts, allPlayed, actualTable: aS?.table || [] },
       standingPts,
       totalPts: matchPts + standingPts,
     };

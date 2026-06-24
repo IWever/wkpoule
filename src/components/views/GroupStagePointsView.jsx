@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { GROUPS, FLAG, PTS_STANDING } from "../../data/tournamentData";
 import { calcGroupPointsBreakdown } from "../../pouleEngine";
 import { S } from "../../styles/ui";
+import { GroupStandingTable } from "../common";
+import { FormHeader } from "../forms/GroupPredictionsForm";
 
 const LABEL_CFG = {
   exact:  { color: "var(--green)",  badge: "+5 exact"   },
@@ -79,12 +81,9 @@ function MatchRow({ d }) {
         fontSize: 12,
       }}
     >
-      {/* Teams */}
       <div style={{ flex: 1, color: "var(--text)", fontWeight: 500 }}>
         {tf(match.home)} vs {tf(match.away)}
       </div>
-
-      {/* Jouw voorspelling */}
       <div
         style={{
           minWidth: 38,
@@ -95,8 +94,6 @@ function MatchRow({ d }) {
       >
         {hasPred ? `${pred.home}–${pred.away}` : "—"}
       </div>
-
-      {/* Uitslag */}
       <div
         style={{
           minWidth: 38,
@@ -108,8 +105,6 @@ function MatchRow({ d }) {
       >
         {hasResult ? `${result.home}–${result.away}` : "—"}
       </div>
-
-      {/* Badge */}
       <div
         style={{
           minWidth: 68,
@@ -125,11 +120,10 @@ function MatchRow({ d }) {
   );
 }
 
-// ─── STANDING ROW ────────────────────────────────────────────────────────────
+// ─── STAND SECTIE ────────────────────────────────────────────────────────────
 
-function StandingRow({ standing, standingPts }) {
-  const { p1, p2, a1, a2, p1pts, p2pts, allPlayed } = standing;
-  if (!p1 && !p2) return null;
+function StandSection({ standing, standingPts }) {
+  const { p1, p2, a1, a2, p1pts, p2pts, allPlayed, actualTable } = standing;
 
   function posColor(pTeam, aTeam, top2) {
     if (!allPlayed) return "var(--muted)";
@@ -140,84 +134,104 @@ function StandingRow({ standing, standingPts }) {
   }
 
   const top2 = allPlayed && a1 && a2 ? [a1, a2] : null;
+  const hasTable = actualTable && actualTable.length > 0;
 
   return (
-    <div
-      style={{
-        marginTop: 6,
-        padding: "8px 10px",
-        background: "rgba(255,255,255,.03)",
-        borderRadius: 6,
-        fontSize: 11,
-      }}
-    >
-      <div
-        style={{
-          fontWeight: 700,
-          color: "var(--muted)",
-          textTransform: "uppercase",
-          letterSpacing: "0.07em",
-          marginBottom: 6,
-          fontSize: 10,
-        }}
-      >
-        Poulestand voorspelling
-      </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 4 }}>
-        {[
-          { pos: "#1", pred: p1, actual: a1, pts: p1pts },
-          { pos: "#2", pred: p2, actual: a2, pts: p2pts },
-        ].map(({ pos, pred, actual, pts }) => (
+    <div style={{ marginTop: 10 }}>
+      {/* Huidige/definitieve stand */}
+      {hasTable && (
+        <div style={{ marginBottom: 10 }}>
           <div
-            key={pos}
             style={{
-              flex: 1,
-              background: "var(--bg)",
-              borderRadius: 6,
-              padding: "6px 8px",
+              fontSize: 10,
+              fontWeight: 700,
+              color: "var(--muted)",
+              textTransform: "uppercase",
+              letterSpacing: "0.07em",
+              marginBottom: 6,
             }}
           >
-            <div style={{ color: "var(--muted)", fontSize: 10, marginBottom: 2 }}>
-              {pos} voorspeld
-            </div>
-            <div
-              style={{
-                fontWeight: 700,
-                color: posColor(pred, actual, top2),
-              }}
-            >
-              {tf(pred)}
-            </div>
-            {allPlayed && (
-              <div style={{ color: "var(--muted)", fontSize: 10, marginTop: 2 }}>
-                Echt: {tf(actual)}
-              </div>
-            )}
-            {allPlayed && pts > 0 && (
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: pts === PTS_STANDING.qualifiedCorrectPos ? "var(--green)" : "#e8c547",
-                  marginTop: 2,
-                }}
-              >
-                +{pts} pt
-              </div>
-            )}
+            {allPlayed ? "Eindstand" : "Huidige stand"}
           </div>
-        ))}
-      </div>
-      {allPlayed && (
+          <GroupStandingTable rows={actualTable} />
+        </div>
+      )}
+
+      {/* Jouw standvoorspelling */}
+      {(p1 || p2) && (
         <div
           style={{
-            textAlign: "right",
-            fontWeight: 700,
+            padding: "8px 10px",
+            background: "rgba(255,255,255,.03)",
+            borderRadius: 6,
             fontSize: 11,
-            color: standingPts > 0 ? "var(--green)" : "var(--muted)",
           }}
         >
-          Stand: {standingPts} pt
+          <div
+            style={{
+              fontWeight: 700,
+              color: "var(--muted)",
+              textTransform: "uppercase",
+              letterSpacing: "0.07em",
+              marginBottom: 6,
+              fontSize: 10,
+            }}
+          >
+            Jouw standvoorspelling
+          </div>
+          <div style={{ display: "flex", gap: 8, marginBottom: allPlayed ? 4 : 0 }}>
+            {[
+              { pos: "#1", pred: p1, actual: a1, pts: p1pts },
+              { pos: "#2", pred: p2, actual: a2, pts: p2pts },
+            ].map(({ pos, pred, actual, pts }) => (
+              <div
+                key={pos}
+                style={{
+                  flex: 1,
+                  background: "var(--bg)",
+                  borderRadius: 6,
+                  padding: "6px 8px",
+                }}
+              >
+                <div style={{ color: "var(--muted)", fontSize: 10, marginBottom: 2 }}>
+                  {pos} voorspeld
+                </div>
+                <div style={{ fontWeight: 700, color: posColor(pred, actual, top2) }}>
+                  {tf(pred)}
+                </div>
+                {allPlayed && (
+                  <div style={{ color: "var(--muted)", fontSize: 10, marginTop: 2 }}>
+                    Echt: {tf(actual)}
+                  </div>
+                )}
+                {allPlayed && pts > 0 && (
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: pts === PTS_STANDING.qualifiedCorrectPos ? "var(--green)" : "#e8c547",
+                      marginTop: 2,
+                    }}
+                  >
+                    +{pts} pt
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          {allPlayed && (
+            <div
+              style={{
+                textAlign: "right",
+                fontWeight: 700,
+                fontSize: 11,
+                color: standingPts > 0 ? "var(--green)" : "var(--muted)",
+                marginTop: 4,
+              }}
+            >
+              Stand: {standingPts} pt
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -229,7 +243,6 @@ function StandingRow({ standing, standingPts }) {
 function GroupCard({ groupId, data, open, onToggle }) {
   const { matches, matchPts, standing, standingPts, totalPts } = data;
   const playedCount = matches.filter((d) => d.result?.played).length;
-  const scoredCount = matches.filter((d) => d.pts !== null && d.pts > 0).length;
 
   return (
     <div
@@ -240,7 +253,6 @@ function GroupCard({ groupId, data, open, onToggle }) {
         overflow: "hidden",
       }}
     >
-      {/* Header */}
       <div
         onClick={onToggle}
         style={{
@@ -263,7 +275,7 @@ function GroupCard({ groupId, data, open, onToggle }) {
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: "var(--muted)" }}>
-            {playedCount}/6 gespeeld · {scoredCount} raak
+            {playedCount}/6 gespeeld
           </div>
         </div>
         <div style={{ textAlign: "right" }}>
@@ -287,7 +299,6 @@ function GroupCard({ groupId, data, open, onToggle }) {
         </div>
       </div>
 
-      {/* Detail */}
       {open && (
         <div style={{ padding: "0 14px 12px", borderTop: "1px solid var(--border)" }}>
           <div
@@ -310,7 +321,7 @@ function GroupCard({ groupId, data, open, onToggle }) {
           {matches.map((d) => (
             <MatchRow key={d.match.id} d={d} />
           ))}
-          <StandingRow standing={standing} standingPts={standingPts} />
+          <StandSection standing={standing} standingPts={standingPts} />
         </div>
       )}
     </div>
@@ -325,35 +336,12 @@ export function GroupStagePointsView({ user, state, onBack }) {
 
   return (
     <div>
-      <button
-        onClick={onBack}
-        style={{
-          background: "none",
-          border: "none",
-          color: "var(--accent)",
-          cursor: "pointer",
-          fontSize: 13,
-          fontFamily: "var(--font)",
-          fontWeight: 600,
-          padding: "0 0 16px",
-          display: "block",
-        }}
-      >
-        ← Terug
-      </button>
-
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: "var(--accent)",
-          textTransform: "uppercase",
-          letterSpacing: "0.1em",
-          marginBottom: 14,
-        }}
-      >
-        ⚽ Groepsfase punten
-      </div>
+      <FormHeader
+        title="Groepsfase punten"
+        icon="⚽"
+        saved={false}
+        onBack={onBack}
+      />
 
       <SummaryRow
         matchPts={breakdown.matchPts}
@@ -361,13 +349,7 @@ export function GroupStagePointsView({ user, state, onBack }) {
         totalPts={breakdown.totalPts}
       />
 
-      <div
-        style={{
-          fontSize: 11,
-          color: "var(--muted)",
-          marginBottom: 12,
-        }}
-      >
+      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 12 }}>
         Klik op een groep voor details per wedstrijd en poulesstand.
       </div>
 
