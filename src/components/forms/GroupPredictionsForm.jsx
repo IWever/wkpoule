@@ -5,6 +5,7 @@ import {
   deriveGroupStandings,
   deriveGroupStandingsFromResults,
   calcGroupMatchPts,
+  calcGroupPointsBreakdown,
   fmtDateTime,
 } from "../../pouleEngine";
 import { S } from "../../styles/ui";
@@ -31,6 +32,9 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
     setSaved(ok ? "ok" : "error");
   }
 
+  const breakdown = calcGroupPointsBreakdown({ predictions: pred }, state.results);
+  const groupBreakdown = breakdown.groups[activeGroup];
+
   return (
     <div>
       <FormHeader
@@ -55,12 +59,26 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
         active="groups"
         onSelect={() => {}}
       />
-      <GroupSelector active={activeGroup} onSelect={setActiveGroup} />
+      <GroupSelector
+        active={activeGroup}
+        onSelect={setActiveGroup}
+        results={state.results}
+      />
 
-      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
-        Vul de verwachte uitslag in (na 90 min + blessuretijd). De top-2 wordt
-        automatisch afgeleid uit jouw scores.
-      </div>
+      <GroupPointsSummary groupBreakdown={groupBreakdown} />
+
+      <GroupStandingPreviews
+        activeGroup={activeGroup}
+        pred={pred}
+        results={state.results}
+      />
+
+      {!frozen && (
+        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
+          Vul de verwachte uitslag in (na 90 min + blessuretijd). De top-2 wordt
+          automatisch afgeleid uit jouw scores.
+        </div>
+      )}
 
       {GROUP_MATCHES.filter((m) => m.group === activeGroup).map((m) => (
         <GroupMatchRow
@@ -84,12 +102,6 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
           onClose={() => setCompareMatch(null)}
         />
       )}
-
-      <GroupStandingPreviews
-        activeGroup={activeGroup}
-        pred={pred}
-        results={state.results}
-      />
     </div>
   );
 }
@@ -140,7 +152,7 @@ function FormHeader({ title, icon, saved, onBack }) {
   );
 }
 
-function GroupSelector({ active, onSelect }) {
+function GroupSelector({ active, onSelect, results = {} }) {
   return (
     <div
       style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 14 }}
@@ -149,6 +161,8 @@ function GroupSelector({ active, onSelect }) {
         const isActive = active === g;
         const isF = g === "F";
         const teams = GROUPS[g] || [];
+        const groupMatches = GROUP_MATCHES.filter((m) => m.group === g);
+        const playedCount = groupMatches.filter((m) => results[m.id]?.played).length;
         return (
           <button
             key={g}
@@ -175,16 +189,64 @@ function GroupSelector({ active, onSelect }) {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 4,
+              gap: 2,
             }}
           >
             <span>Groep {g}</span>
             <span style={{ fontSize: 13, letterSpacing: 1 }}>
               {teams.map((t) => FLAG[t] || "🏳️").join("")}
             </span>
+            <span style={{ fontSize: 10, opacity: 0.75, fontWeight: 400 }}>
+              {playedCount}/{groupMatches.length}
+            </span>
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function GroupPointsSummary({ groupBreakdown }) {
+  if (!groupBreakdown) return null;
+  const { matchPts, standingPts, totalPts, matches, standing } = groupBreakdown;
+  const anyPlayed = matches.some((d) => d.result?.played);
+  if (!anyPlayed) return null;
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: standing.allPlayed ? "1fr 1fr 1fr" : "1fr 1fr",
+        gap: 8,
+        marginBottom: 14,
+      }}
+    >
+      <div style={{ ...S.card(), textAlign: "center", padding: "10px 12px" }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--accent)" }}>
+          {matchPts}
+        </div>
+        <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginTop: 1 }}>
+          Wedstrijden
+        </div>
+      </div>
+      {standing.allPlayed && (
+        <div style={{ ...S.card(), textAlign: "center", padding: "10px 12px" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--accent)" }}>
+            {standingPts}
+          </div>
+          <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginTop: 1 }}>
+            Stand
+          </div>
+        </div>
+      )}
+      <div style={{ ...S.card(), textAlign: "center", padding: "10px 12px" }}>
+        <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--gold)" }}>
+          {standing.allPlayed ? totalPts : matchPts}
+        </div>
+        <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginTop: 1 }}>
+          Totaal
+        </div>
+      </div>
     </div>
   );
 }

@@ -33,7 +33,7 @@ const KO_DATES = {
   final: "2026-07-19",
 };
 
-function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO, onGroupPoints }) {
+function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO }) {
   const pred = user.predictions || {};
   const pts = calcPoints(user, state.results, state.koResults);
   const primaryComp = calcPrimaryComp(user, state);
@@ -59,7 +59,7 @@ function MyOverview({ user, state, onEditGroup, onEditExtra, onEditKO, onGroupPo
     <div>
       {showDeadline && <DeadlineBanner deadline={nextDeadline} />}
       <WelcomeHeader user={user} />
-      <StatCards pts={pts} compRank={compRank} onGroupPoints={onGroupPoints} state={state} user={user} />
+      <StatCards pts={pts} compRank={compRank} />
       <NavCards
         pred={pred}
         state={state}
@@ -189,15 +189,14 @@ function DeadlineBanner({ deadline }) {
 
 // ─── STAT CARDS ───────────────────────────────────────────────────────────────
 
-function StatCards({ pts, compRank, onGroupPoints, state, user }) {
+function StatCards({ pts, compRank }) {
   return (
-    <div style={{ marginBottom: 16 }}>
     <div
       style={{
         display: "grid",
         gridTemplateColumns: compRank ? "1fr 1fr" : "1fr",
         gap: 10,
-        marginBottom: 8,
+        marginBottom: 16,
       }}
     >
       <StatCard value={`${pts} pts`} label="Jouw score" />
@@ -209,31 +208,6 @@ function StatCards({ pts, compRank, onGroupPoints, state, user }) {
           color="var(--gold)"
         />
       )}
-    </div>
-    {onGroupPoints && state.groupFrozen && (
-      <button
-        onClick={onGroupPoints}
-        style={{
-          width: "100%",
-          background: "rgba(88,166,255,.08)",
-          border: "1px solid rgba(88,166,255,.25)",
-          borderRadius: 8,
-          color: "var(--accent)",
-          cursor: "pointer",
-          fontSize: 12,
-          fontWeight: 600,
-          fontFamily: "var(--font)",
-          padding: "8px 14px",
-          textAlign: "left",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-        }}
-      >
-        <span>⚽ Bekijk groepsfase punten per wedstrijd</span>
-        <span style={{ opacity: 0.6 }}>→</span>
-      </button>
-    )}
     </div>
   );
 }
