@@ -175,7 +175,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
         })}
       </div>
       {activeRound === "bracket" ? (
-        <KOBracket pred={pred} koResults={state.koResults} />
+        <KOBracket pred={pred} koResults={state.koResults} richSlots={richSlots} />
       ) : (
         visibleMatches.map((m) => {
           const matchFrozen = legacyFrozen || !!frozenRounds[m.round];
@@ -653,7 +653,15 @@ function KOMatchCard({
 }
 
 
-function KOBracket({ pred, koResults }) {
+function flagsFromDesc(desc) {
+  if (!desc) return "";
+  if (desc.type === "team") return FLAG[desc.team] || "🏳️";
+  if (desc.type === "two")  return desc.teams.map((t) => FLAG[t] || "🏳️").join("");
+  if (desc.type === "few")  return desc.teams.slice(0, 4).map((t) => FLAG[t] || "🏳️").join("");
+  return "";
+}
+
+function KOBracket({ pred, koResults, richSlots }) {
   const ROW_H = 36;
   const HEADER_H = 22;
   const TOTAL_H = 16 * ROW_H + HEADER_H;
@@ -727,14 +735,28 @@ function KOBracket({ pred, koResults }) {
                          : "var(--border)";
             const bg = correct ? "rgba(63,185,80,.1)" : "var(--card)";
 
+            const homeFlags = flagsFromDesc(richSlots?.[matchId]?.home);
+            const awayFlags = flagsFromDesc(richSlots?.[matchId]?.away);
+            const flagsLabel = homeFlags || awayFlags
+              ? `${homeFlags} ${awayFlags}`.trim()
+              : null;
+
             return (
               <div key={matchId} style={{ position: "absolute", top: topY(col, row), left: colLeft(col), width: COL_W, height: CELL_H }}>
                 <div style={{ border: `1px solid ${border}`, borderRadius: 4, background: bg, height: "100%", display: "flex", alignItems: "center", padding: "0 5px", gap: 3, overflow: "hidden" }}>
-                  <span style={{ flex: 1, fontSize: 10, fontWeight: winner ? 600 : 400, color: winner ? "var(--text)" : "var(--border)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                    {winner ? `${FLAG[winner] || ""} ${winner}` : "—"}
-                  </span>
-                  {correct && <span style={{ color: "var(--green)", fontSize: 9, flexShrink: 0 }}>✓</span>}
-                  {wrong   && <span style={{ color: "var(--red)",   fontSize: 9, flexShrink: 0 }}>✗</span>}
+                  {winner ? (
+                    <>
+                      <span style={{ flex: 1, fontSize: 10, fontWeight: 600, color: "var(--text)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {FLAG[winner] || ""} {winner}
+                      </span>
+                      {correct && <span style={{ color: "var(--green)", fontSize: 9, flexShrink: 0 }}>✓</span>}
+                      {wrong   && <span style={{ color: "var(--red)",   fontSize: 9, flexShrink: 0 }}>✗</span>}
+                    </>
+                  ) : (
+                    <span style={{ flex: 1, fontSize: 13, color: "var(--muted)", letterSpacing: "0.05em", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {flagsLabel || "—"}
+                    </span>
+                  )}
                 </div>
               </div>
             );
