@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { GROUP_MATCHES, FLAG, GROUPS } from "../../data/tournamentData";
+import { GROUP_MATCHES, FLAG, GROUPS, PTS_STANDING } from "../../data/tournamentData";
 import {
   deepSet,
   deriveGroupStandings,
   deriveGroupStandingsFromResults,
   calcGroupMatchPts,
+  calcGroupPointsBreakdown,
   fmtDateTime,
 } from "../../pouleEngine";
 import { S } from "../../styles/ui";
@@ -31,6 +32,9 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
     setSaved(ok ? "ok" : "error");
   }
 
+  const breakdown = calcGroupPointsBreakdown({ predictions: pred }, state.results);
+  const groupBreakdown = breakdown.groups[activeGroup];
+
   return (
     <div>
       <FormHeader
@@ -55,12 +59,28 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
         active="groups"
         onSelect={() => {}}
       />
-      <GroupSelector active={activeGroup} onSelect={setActiveGroup} />
+      <GroupSelector
+        active={activeGroup}
+        onSelect={setActiveGroup}
+        results={state.results}
+      />
 
-      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
-        Vul de verwachte uitslag in (na 90 min + blessuretijd). De top-2 wordt
-        automatisch afgeleid uit jouw scores.
-      </div>
+      <GroupPointsSummary groupBreakdown={groupBreakdown} />
+
+      <GroupStandingPreviews
+        activeGroup={activeGroup}
+        pred={pred}
+        results={state.results}
+        users={state.users}
+        groupFrozen={state.groupFrozen}
+      />
+
+      {!frozen && (
+        <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 10 }}>
+          Vul de verwachte uitslag in (na 90 min + blessuretijd). De top-2 wordt
+          automatisch afgeleid uit jouw scores.
+        </div>
+      )}
 
       {GROUP_MATCHES.filter((m) => m.group === activeGroup).map((m) => (
         <GroupMatchRow
@@ -84,12 +104,6 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
           onClose={() => setCompareMatch(null)}
         />
       )}
-
-      <GroupStandingPreviews
-        activeGroup={activeGroup}
-        pred={pred}
-        results={state.results}
-      />
     </div>
   );
 }
@@ -140,7 +154,7 @@ function FormHeader({ title, icon, saved, onBack }) {
   );
 }
 
-function GroupSelector({ active, onSelect }) {
+function GroupSelector({ active, onSelect, results = {} }) {
   return (
     <div
       style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 14 }}
@@ -149,6 +163,8 @@ function GroupSelector({ active, onSelect }) {
         const isActive = active === g;
         const isF = g === "F";
         const teams = GROUPS[g] || [];
+        const groupMatches = GROUP_MATCHES.filter((m) => m.group === g);
+        const playedCount = groupMatches.filter((m) => results[m.id]?.played).length;
         return (
           <button
             key={g}
@@ -175,16 +191,65 @@ function GroupSelector({ active, onSelect }) {
               display: "flex",
               flexDirection: "column",
               alignItems: "center",
-              gap: 4,
+              gap: 2,
             }}
           >
             <span>Groep {g}</span>
             <span style={{ fontSize: 13, letterSpacing: 1 }}>
               {teams.map((t) => FLAG[t] || "🏳️").join("")}
             </span>
+            <span style={{ fontSize: 10, opacity: 0.75, fontWeight: 400 }}>
+              {playedCount}/{groupMatches.length}
+            </span>
           </button>
         );
       })}
+    </div>
+  );
+}
+
+function GroupPointsSummary({ groupBreakdown }) {
+  if (!groupBreakdown) return null;
+  const { matchPts, standingPts, totalPts, matches, standing } = groupBreakdown;
+  const anyPlayed = matches.some((d) => d.result?.played);
+  if (!anyPlayed) return null;
+
+  // Expected standing pts: what you'd score if current admin standings were final
+  const curLeader = standing.actualTable[0]?.team;
+  const curSecond = standing.actualTable[1]?.team;
+  let expectedStandPts = 0;
+  if (curLeader && curSecond) {
+    const top2 = [curLeader, curSecond];
+    if (standing.p1 && top2.includes(standing.p1))
+      expectedStandPts += standing.p1 === curLeader ? PTS_STANDING.qualifiedCorrectPos : PTS_STANDING.qualified;
+    if (standing.p2 && top2.includes(standing.p2))
+      expectedStandPts += standing.p2 === curSecond ? PTS_STANDING.qualifiedCorrectPos : PTS_STANDING.qualified;
+  }
+
+  const cards = standing.allPlayed
+    ? [
+        { label: "Wedstrijden", pts: matchPts, color: "var(--accent)" },
+        { label: "Stand", pts: standingPts, color: "var(--accent)" },
+        { label: "Totaal", pts: totalPts, color: "var(--gold)" },
+      ]
+    : [
+        { label: "Wedstrijden", pts: matchPts, color: "var(--accent)" },
+        { label: "Verwacht", pts: matchPts + expectedStandPts, color: "var(--gold)" },
+      ];
+
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: `repeat(${cards.length}, 1fr)`, gap: 8, marginBottom: 14 }}>
+      {cards.map(({ label, pts, color }) => (
+        <div key={label} style={{ ...S.card(), textAlign: "center", padding: "10px 12px" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color, display: "flex", alignItems: "baseline", justifyContent: "center", gap: 3 }}>
+            {pts}
+            <span style={{ fontSize: 13, fontFamily: "var(--font)", fontWeight: 400, color: "var(--muted)" }}>pts</span>
+          </div>
+          <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginTop: 1 }}>
+            {label}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -319,13 +384,85 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet, can
   );
 }
 
-function GroupStandingPreviews({ activeGroup, pred, results }) {
+function GroupPredictionStats({ group, users, total }) {
+  if (!users || users.length === 0 || total === 0) return null;
+
+  const winnerCounts = {};
+  const runnerUpCounts = {};
+
+  users.forEach((u) => {
+    const s = deriveGroupStandings(u.predictions || {})[group];
+    if (s?.winner) winnerCounts[s.winner] = (winnerCounts[s.winner] || 0) + 1;
+    if (s?.runnerUp) runnerUpCounts[s.runnerUp] = (runnerUpCounts[s.runnerUp] || 0) + 1;
+  });
+
+  const teams = GROUPS[group] || [];
+
+  function renderPos(label, counts) {
+    const sorted = [...teams].sort((a, b) => (counts[b] || 0) - (counts[a] || 0));
+    return (
+      <div>
+        <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 5 }}>
+          {label}
+        </div>
+        {sorted.map((team) => {
+          const pct = Math.round(((counts[team] || 0) / total) * 100);
+          return (
+            <div key={team} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 3 }}>
+              <div style={{ fontSize: 11 }}>{FLAG[team] || "🏳️"} {team}</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: "var(--accent)" }}>{pct}%</div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...S.card(), marginTop: 10 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+        👥 Wat iedereen voorspelde
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        {renderPos("#1 Groepswinnaar", winnerCounts)}
+        {renderPos("#2 Runner-up", runnerUpCounts)}
+      </div>
+    </div>
+  );
+}
+
+function GroupStandingPreviews({ activeGroup, pred, results, users, groupFrozen }) {
   const predStanding = deriveGroupStandings(pred);
   const adminStanding = deriveGroupStandingsFromResults(results);
   const predRows = predStanding[activeGroup]?.table || [];
   const adminRows = adminStanding[activeGroup]?.table || [];
   const hasAdminData = adminRows.some((r) => r.gp > 0);
   const isGroupF = activeGroup === "F";
+
+  const groupMatches = GROUP_MATCHES.filter((m) => m.group === activeGroup);
+  const allPlayed = groupMatches.every((m) => results[m.id]?.played);
+  const predWinner = predStanding[activeGroup]?.winner;
+  const predRunnerUp = predStanding[activeGroup]?.runnerUp;
+
+  const highlights = {};
+  if (allPlayed && adminRows.length >= 2) {
+    const actualWinner = adminRows[0]?.team;
+    const actualRunnerUp = adminRows[1]?.team;
+    if (actualWinner === predWinner) highlights[actualWinner] = "green";
+    else if (actualWinner === predRunnerUp) highlights[actualWinner] = "yellow";
+    if (actualRunnerUp === predRunnerUp) highlights[actualRunnerUp] = "green";
+    else if (actualRunnerUp === predWinner) highlights[actualRunnerUp] = "yellow";
+  }
+
+  const usersWithGroupPreds = groupFrozen && users
+    ? users.filter((u) =>
+        groupMatches.some(
+          (m) =>
+            u.predictions?.matches?.[m.id]?.home !== undefined &&
+            u.predictions?.matches?.[m.id]?.home !== ""
+        )
+      )
+    : [];
 
   return (
     <div style={{ marginTop: 10 }}>
@@ -351,7 +488,7 @@ function GroupStandingPreviews({ activeGroup, pred, results }) {
           >
             📊 Huidige stand (gespeelde wedstrijden)
           </div>
-          <GroupStandingTable rows={adminRows} />
+          <GroupStandingTable rows={adminRows} highlights={highlights} />
         </div>
       )}
       {predRows.some((r) => r.gp > 0) && (
@@ -377,6 +514,13 @@ function GroupStandingPreviews({ activeGroup, pred, results }) {
           </div>
           <GroupStandingTable rows={predRows} />
         </div>
+      )}
+      {groupFrozen && usersWithGroupPreds.length > 0 && (
+        <GroupPredictionStats
+          group={activeGroup}
+          users={usersWithGroupPreds}
+          total={usersWithGroupPreds.length}
+        />
       )}
     </div>
   );
