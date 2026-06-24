@@ -221,32 +221,21 @@ function GroupPointsSummary({ groupBreakdown }) {
         marginBottom: 14,
       }}
     >
-      <div style={{ ...S.card(), textAlign: "center", padding: "10px 12px" }}>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--accent)" }}>
-          {matchPts}
-        </div>
-        <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginTop: 1 }}>
-          Wedstrijden
-        </div>
-      </div>
-      {standing.allPlayed && (
-        <div style={{ ...S.card(), textAlign: "center", padding: "10px 12px" }}>
-          <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--accent)" }}>
-            {standingPts}
+      {[
+        { label: "Wedstrijden", pts: matchPts, color: "var(--accent)" },
+        ...(standing.allPlayed ? [{ label: "Stand", pts: standingPts, color: "var(--accent)" }] : []),
+        { label: "Totaal", pts: standing.allPlayed ? totalPts : matchPts, color: "var(--gold)" },
+      ].map(({ label, pts, color }) => (
+        <div key={label} style={{ ...S.card(), textAlign: "center", padding: "10px 12px" }}>
+          <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color, display: "flex", alignItems: "baseline", justifyContent: "center", gap: 3 }}>
+            {pts}
+            <span style={{ fontSize: 13, fontFamily: "var(--font)", fontWeight: 400, color: "var(--muted)" }}>pts</span>
           </div>
           <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginTop: 1 }}>
-            Stand
+            {label}
           </div>
         </div>
-      )}
-      <div style={{ ...S.card(), textAlign: "center", padding: "10px 12px" }}>
-        <div style={{ fontFamily: "var(--font-display)", fontSize: 22, color: "var(--gold)" }}>
-          {standing.allPlayed ? totalPts : matchPts}
-        </div>
-        <div style={{ fontSize: 10, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginTop: 1 }}>
-          Totaal
-        </div>
-      </div>
+      ))}
     </div>
   );
 }
