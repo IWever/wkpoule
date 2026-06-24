@@ -172,7 +172,7 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
 function GroupStandingTable({ rows, highlights = {} }) {
   const HEADER_STYLE = {
     display: "grid",
-    gridTemplateColumns: "1fr 28px 32px 32px 32px 32px",
+    gridTemplateColumns: "1fr 28px 46px 32px 32px 32px",
     gap: "0 4px",
     color: "var(--muted)",
     fontWeight: 700,
@@ -205,7 +205,7 @@ function GroupStandingTable({ rows, highlights = {} }) {
           key={r.team}
           style={{
             display: "grid",
-            gridTemplateColumns: "1fr 28px 32px 32px 32px 32px",
+            gridTemplateColumns: "1fr 28px 46px 32px 32px 32px",
             gap: "0 4px",
             padding: "4px 6px",
             background: bg,
@@ -245,9 +245,14 @@ function GroupStandingTable({ rows, highlights = {} }) {
               textAlign: "center",
               fontWeight: 700,
               color: "var(--accent)",
+              display: "flex",
+              alignItems: "baseline",
+              justifyContent: "center",
+              gap: 1,
             }}
           >
             {r.pts}
+            <span style={{ fontSize: 9, fontWeight: 400, color: "var(--muted)" }}>pts</span>
           </span>
           <span style={{ textAlign: "center", color: "var(--muted)" }}>
             {r.gf}
