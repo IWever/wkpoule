@@ -13,12 +13,23 @@ import { SingleKOMatchCompare } from "../compare";
 import { FormHeader } from "./GroupPredictionsForm";
 
 const ROUNDS = [
+  { key: "bracket", label: "🏆 Bracket" },
   { key: "r32", label: "Zestiende finales" },
   { key: "r16", label: "Achtste finales" },
   { key: "qf", label: "Kwartfinales" },
   { key: "sf", label: "Halve finales" },
   { key: "final", label: "Finale & 3e Plaats" },
 ];
+
+// Bracket volgorde: bepaalt de verticale volgorde van matches in de bracket visualisatie
+const BRACKET_ROWS = {
+  r32:   ["R32_2","R32_5","R32_1","R32_3","R32_4","R32_6","R32_7","R32_8",
+           "R32_11","R32_12","R32_9","R32_10","R32_14","R32_16","R32_13","R32_15"],
+  r16:   ["R16_1","R16_2","R16_5","R16_6","R16_3","R16_4","R16_7","R16_8"],
+  qf:    ["QF_1","QF_2","QF_3","QF_4"],
+  sf:    ["SF_1","SF_2"],
+  final: ["FINAL"],
+};
 
 function teamsFromSlot(slot, pred, koResults) {
   if (!slot) return null;
@@ -109,7 +120,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
     (m) =>
       m.round === activeRound ||
       (activeRound === "final" && (m.round === "final" || m.round === "3rd"))
-  );
+  ).sort((a, b) => activeRound === "r32" ? new Date(a.dt) - new Date(b.dt) : 0);
 
   return (
     <div>
@@ -119,13 +130,13 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
         saved={saved}
         onBack={onBack}
       />
-      {(activeRoundFrozen || legacyFrozen) && (
+      {activeRound !== "bracket" && (activeRoundFrozen || legacyFrozen) && (
         <Alert
           msg="Deze ronde is bevroren. Je kunt je voorspellingen nog bekijken maar niet meer wijzigen."
           type="warn"
         />
       )}
-      <KOInstructions />
+      {activeRound !== "bracket" && <KOInstructions />}
       <div
         style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 18 }}
       >
@@ -163,24 +174,28 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
           );
         })}
       </div>
-      {visibleMatches.map((m) => {
-        const matchFrozen = legacyFrozen || !!frozenRounds[m.round];
-        return (
-          <KOMatchCard
-            key={m.id}
-            match={m}
-            pred={pred}
-            koResult={state.koResults[m.id]}
-            homeDesc={richSlots[m.id]?.home}
-            awayDesc={richSlots[m.id]?.away}
-            frozen={matchFrozen}
-            onSet={set}
-            koResults={state.koResults}
-            canInfo={matchFrozen}
-            onInfo={() => setCompareMatch(m)}
-          />
-        );
-      })}
+      {activeRound === "bracket" ? (
+        <KOBracket pred={pred} koResults={state.koResults} />
+      ) : (
+        visibleMatches.map((m) => {
+          const matchFrozen = legacyFrozen || !!frozenRounds[m.round];
+          return (
+            <KOMatchCard
+              key={m.id}
+              match={m}
+              pred={pred}
+              koResult={state.koResults[m.id]}
+              homeDesc={richSlots[m.id]?.home}
+              awayDesc={richSlots[m.id]?.away}
+              frozen={matchFrozen}
+              onSet={set}
+              koResults={state.koResults}
+              canInfo={matchFrozen}
+              onInfo={() => setCompareMatch(m)}
+            />
+          );
+        })
+      )}
       {compareMatch && (
         <SingleKOMatchCompare
           match={compareMatch}
@@ -637,5 +652,97 @@ function KOMatchCard({
   );
 }
 
+
+function KOBracket({ pred, koResults }) {
+  const ROW_H = 36;
+  const HEADER_H = 22;
+  const TOTAL_H = 16 * ROW_H + HEADER_H;
+  const COL_W = 112;
+  const COL_GAP = 12;
+  const CELL_H = 26;
+  const NUM_COLS = 5;
+  const TOTAL_W = NUM_COLS * COL_W + (NUM_COLS - 1) * COL_GAP;
+
+  const ROUND_COLS = [
+    { ids: BRACKET_ROWS.r32,   label: "1/16" },
+    { ids: BRACKET_ROWS.r16,   label: "1/8" },
+    { ids: BRACKET_ROWS.qf,    label: "Kwart" },
+    { ids: BRACKET_ROWS.sf,    label: "Half" },
+    { ids: BRACKET_ROWS.final, label: "Finale" },
+  ];
+
+  const colLeft = (col) => col * (COL_W + COL_GAP);
+  const span = (col) => Math.pow(2, col);
+  const centerY = (col, row) => HEADER_H + row * span(col) * ROW_H + span(col) * ROW_H / 2;
+  const topY = (col, row) => centerY(col, row) - CELL_H / 2;
+
+  // SVG connector paths: bracket lines between rounds
+  const svgPaths = [];
+  for (let col = 0; col < 4; col++) {
+    const count = ROUND_COLS[col].ids.length;
+    for (let row = 0; row < count; row += 2) {
+      const y1 = centerY(col, row);
+      const y2 = centerY(col, row + 1);
+      const midY = (y1 + y2) / 2;
+      const xRight = colLeft(col) + COL_W;
+      const xMid   = xRight + COL_GAP / 2;
+      const xNext  = colLeft(col + 1);
+      svgPaths.push(`M${xRight} ${y1} H${xMid} V${midY}`);
+      svgPaths.push(`M${xRight} ${y2} H${xMid} V${midY}`);
+      svgPaths.push(`M${xMid} ${midY} H${xNext}`);
+    }
+  }
+
+  return (
+    <div style={{ overflowX: "auto", marginBottom: 12 }}>
+      <div style={{ position: "relative", height: TOTAL_H, width: TOTAL_W, minWidth: TOTAL_W }}>
+        {/* Connecting lines */}
+        <svg style={{ position: "absolute", top: 0, left: 0, width: TOTAL_W, height: TOTAL_H, pointerEvents: "none", overflow: "visible" }}>
+          {svgPaths.map((d, i) => (
+            <path key={i} d={d} fill="none" stroke="var(--border)" strokeWidth="1" />
+          ))}
+        </svg>
+
+        {/* Column headers */}
+        {ROUND_COLS.map((rc, col) => (
+          <div key={rc.label} style={{ position: "absolute", top: 0, left: colLeft(col), width: COL_W, textAlign: "center", fontSize: 9, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.07em", lineHeight: `${HEADER_H}px` }}>
+            {rc.label}
+          </div>
+        ))}
+
+        {/* Match cells */}
+        {ROUND_COLS.map((rc, col) =>
+          rc.ids.map((matchId, row) => {
+            const predicted = pred.koWinners?.[matchId];
+            const result    = koResults?.[matchId];
+            const isPlayed  = result?.played;
+            const actual    = result?.winner;
+            const winner    = isPlayed ? actual : predicted;
+            const correct   = isPlayed && predicted && predicted === actual;
+            const wrong     = isPlayed && predicted && predicted !== actual;
+
+            const border = correct ? "rgba(63,185,80,.6)"
+                         : wrong   ? "rgba(248,81,73,.5)"
+                         : predicted ? "rgba(88,166,255,.4)"
+                         : "var(--border)";
+            const bg = correct ? "rgba(63,185,80,.1)" : "var(--card)";
+
+            return (
+              <div key={matchId} style={{ position: "absolute", top: topY(col, row), left: colLeft(col), width: COL_W, height: CELL_H }}>
+                <div style={{ border: `1px solid ${border}`, borderRadius: 4, background: bg, height: "100%", display: "flex", alignItems: "center", padding: "0 5px", gap: 3, overflow: "hidden" }}>
+                  <span style={{ flex: 1, fontSize: 10, fontWeight: winner ? 600 : 400, color: winner ? "var(--text)" : "var(--border)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {winner ? `${FLAG[winner] || ""} ${winner}` : "—"}
+                  </span>
+                  {correct && <span style={{ color: "var(--green)", fontSize: 9, flexShrink: 0 }}>✓</span>}
+                  {wrong   && <span style={{ color: "var(--red)",   fontSize: 9, flexShrink: 0 }}>✗</span>}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
 
 export { KOPredictionsForm };
