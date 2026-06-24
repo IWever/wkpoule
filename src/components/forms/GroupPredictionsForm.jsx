@@ -71,6 +71,8 @@ function GroupPredictionsForm({ user, state, onSave, onBack }) {
         activeGroup={activeGroup}
         pred={pred}
         results={state.results}
+        users={state.users}
+        groupFrozen={state.groupFrozen}
       />
 
       {!frozen && (
@@ -370,7 +372,59 @@ function GroupMatchRow({ match: m, pred, result: r, frozen, isGroupF, onSet, can
   );
 }
 
-function GroupStandingPreviews({ activeGroup, pred, results }) {
+function GroupPredictionStats({ group, users, total }) {
+  if (!users || users.length === 0 || total === 0) return null;
+
+  const winnerCounts = {};
+  const runnerUpCounts = {};
+
+  users.forEach((u) => {
+    const s = deriveGroupStandings(u.predictions || {})[group];
+    if (s?.winner) winnerCounts[s.winner] = (winnerCounts[s.winner] || 0) + 1;
+    if (s?.runnerUp) runnerUpCounts[s.runnerUp] = (runnerUpCounts[s.runnerUp] || 0) + 1;
+  });
+
+  const teams = GROUPS[group] || [];
+
+  function renderPos(label, counts) {
+    const sorted = [...teams].sort((a, b) => (counts[b] || 0) - (counts[a] || 0));
+    return (
+      <div>
+        <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 5 }}>
+          {label}
+        </div>
+        {sorted.map((team) => {
+          const pct = Math.round(((counts[team] || 0) / total) * 100);
+          return (
+            <div key={team} style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+              <div style={{ fontSize: 11, minWidth: 105, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {FLAG[team] || "🏳️"} {team}
+              </div>
+              <div style={{ flex: 1, height: 5, background: "var(--border)", borderRadius: 3, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${pct}%`, background: "var(--accent)", borderRadius: 3, transition: "width .3s" }} />
+              </div>
+              <div style={{ fontSize: 10, color: "var(--muted)", minWidth: 30, textAlign: "right" }}>{pct}%</div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ ...S.card(), marginTop: 10 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 10 }}>
+        👥 Wat iedereen voorspelde ({total} spelers)
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+        {renderPos("#1 Groepswinnaar", winnerCounts)}
+        {renderPos("#2 Runner-up", runnerUpCounts)}
+      </div>
+    </div>
+  );
+}
+
+function GroupStandingPreviews({ activeGroup, pred, results, users, groupFrozen }) {
   const predStanding = deriveGroupStandings(pred);
   const adminStanding = deriveGroupStandingsFromResults(results);
   const predRows = predStanding[activeGroup]?.table || [];
@@ -392,6 +446,16 @@ function GroupStandingPreviews({ activeGroup, pred, results }) {
     if (actualRunnerUp === predRunnerUp) highlights[actualRunnerUp] = "green";
     else if (actualRunnerUp === predWinner) highlights[actualRunnerUp] = "yellow";
   }
+
+  const usersWithGroupPreds = groupFrozen && users
+    ? users.filter((u) =>
+        groupMatches.some(
+          (m) =>
+            u.predictions?.matches?.[m.id]?.home !== undefined &&
+            u.predictions?.matches?.[m.id]?.home !== ""
+        )
+      )
+    : [];
 
   return (
     <div style={{ marginTop: 10 }}>
@@ -443,6 +507,13 @@ function GroupStandingPreviews({ activeGroup, pred, results }) {
           </div>
           <GroupStandingTable rows={predRows} />
         </div>
+      )}
+      {groupFrozen && usersWithGroupPreds.length > 0 && (
+        <GroupPredictionStats
+          group={activeGroup}
+          users={usersWithGroupPreds}
+          total={usersWithGroupPreds.length}
+        />
       )}
     </div>
   );
