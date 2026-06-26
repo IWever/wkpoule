@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { GROUPS, GROUP_MATCHES, PTS_KO, FLAG } from "../data/tournamentData";
+import { GROUPS, GROUP_MATCHES, PTS_KO, FLAG, PTS_STANDING } from "../data/tournamentData";
 import { MATCH_FACTS } from "../data/matchFacts";
 import {
   calcGroupMatchPts,
+  calcGroupPointsBreakdown,
   calcPoints,
   buildRichKOSlots,
   fmtDateTime,
@@ -984,6 +985,8 @@ function PlayerCompare({ me, other, state, onClose }) {
   const otherPred = other.predictions || {};
   const myPts = calcPoints(me, state.results, state.koResults);
   const otherPts = calcPoints(other, state.results, state.koResults);
+  const myBreakdown = calcGroupPointsBreakdown(me, state.results);
+  const otherBreakdown = calcGroupPointsBreakdown(other, state.results);
 
   const sections =
     groupBy === "poule"
@@ -1129,6 +1132,26 @@ function PlayerCompare({ me, other, state, onClose }) {
         <ExtraRow key={label} label={label} myVal={myVal} otherVal={otherVal} />
       ))}
 
+      {/* Groepsfase standen */}
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--accent)",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          marginTop: 14,
+          marginBottom: 8,
+        }}
+      >
+        Stand groepsfase
+      </div>
+      <ExtraRow
+        label="Punten"
+        myVal={`${myBreakdown.standingPts} pt`}
+        otherVal={`${otherBreakdown.standingPts} pt`}
+      />
+
       {/* Group-by toggle */}
       <div style={{ marginTop: 18, marginBottom: 10 }}>
         <div
@@ -1166,17 +1189,23 @@ function PlayerCompare({ me, other, state, onClose }) {
       </div>
 
       {/* Match sections */}
-      {sections.map((sec) => (
-        <CompareSection
-          key={sec.key}
-          section={sec}
-          me={me}
-          other={other}
-          state={state}
-          mySecPts={sectionPts(me, sec.matches)}
-          otherSecPts={sectionPts(other, sec.matches)}
-        />
-      ))}
+      {sections.map((sec) => {
+        const myGroupData = groupBy === "poule" ? myBreakdown.groups[sec.key] : null;
+        const otherGroupData = groupBy === "poule" ? otherBreakdown.groups[sec.key] : null;
+        return (
+          <CompareSection
+            key={sec.key}
+            section={sec}
+            me={me}
+            other={other}
+            state={state}
+            mySecPts={sectionPts(me, sec.matches) + (myGroupData?.standingPts ?? 0)}
+            otherSecPts={sectionPts(other, sec.matches) + (otherGroupData?.standingPts ?? 0)}
+            myGroupData={myGroupData}
+            otherGroupData={otherGroupData}
+          />
+        );
+      })}
     </Overlay>
   );
 }
@@ -1217,7 +1246,95 @@ function ExtraRow({ label, myVal, otherVal }) {
   );
 }
 
-function CompareSection({ section, me, other, state, mySecPts, otherSecPts }) {
+function StandingCompareRow({ myGroupData, otherGroupData }) {
+  const myS = myGroupData?.standing;
+  const otS = otherGroupData?.standing;
+  if (!myS && !otS) return null;
+
+  const allPlayed = myS?.allPlayed || otS?.allPlayed;
+  const a1 = myS?.a1 || otS?.a1;
+  const a2 = myS?.a2 || otS?.a2;
+  const top2 = allPlayed && a1 && a2 ? [a1, a2] : null;
+
+  function posColor(pred, actual) {
+    if (!allPlayed || !pred) return "var(--muted)";
+    if (pred === actual) return "var(--green)";
+    if (top2?.includes(pred)) return "#e8c547";
+    return "var(--red)";
+  }
+
+  function StandCell({ s, data }) {
+    return (
+      <div
+        style={{
+          ...S.card(),
+          padding: "6px 8px",
+          fontSize: 11,
+          fontWeight: 600,
+        }}
+      >
+        <div style={{ color: posColor(s?.p1, a1), marginBottom: 2 }}>
+          #1{" "}
+          {s?.p1 ? (
+            `${FLAG[s.p1] || ""} ${s.p1}`
+          ) : (
+            <span style={{ color: "var(--muted)", fontWeight: 400 }}>–</span>
+          )}
+        </div>
+        <div style={{ color: posColor(s?.p2, a2), marginBottom: 2 }}>
+          #2{" "}
+          {s?.p2 ? (
+            `${FLAG[s.p2] || ""} ${s.p2}`
+          ) : (
+            <span style={{ color: "var(--muted)", fontWeight: 400 }}>–</span>
+          )}
+        </div>
+        {allPlayed && (
+          <div
+            style={{
+              fontWeight: 700,
+              fontSize: 10,
+              marginTop: 4,
+              color:
+                (data?.standingPts || 0) > 0 ? "var(--green)" : "var(--muted)",
+            }}
+          >
+            {data?.standingPts || 0} pt stand
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "90px 1fr 1fr",
+        gap: 4,
+        marginTop: 8,
+        alignItems: "start",
+      }}
+    >
+      <div
+        style={{
+          fontSize: 10,
+          color: "var(--muted)",
+          fontWeight: 700,
+          textTransform: "uppercase",
+          letterSpacing: "0.06em",
+          paddingTop: 4,
+        }}
+      >
+        Eindstand
+      </div>
+      <StandCell s={myS} data={myGroupData} />
+      <StandCell s={otS} data={otherGroupData} />
+    </div>
+  );
+}
+
+function CompareSection({ section, me, other, state, mySecPts, otherSecPts, myGroupData, otherGroupData }) {
   const myPred = me.predictions || {};
   const otherPred = other.predictions || {};
 
@@ -1348,6 +1465,7 @@ function CompareSection({ section, me, other, state, mySecPts, otherSecPts }) {
           </div>
         );
       })}
+      <StandingCompareRow myGroupData={myGroupData} otherGroupData={otherGroupData} />
     </div>
   );
 }
