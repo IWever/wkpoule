@@ -1043,29 +1043,34 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
         </>
       ) : (
         /* Nog te spelen */
-        <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
-          <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>
-            <SlotDisplay desc={homeDesc} align="right" size={12} />
-          </span>
-          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, minWidth: 90 }}>
+        <>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7 }}>
+            <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>
+              <SlotDisplay desc={homeDesc} align="right" size={13} />
+            </span>
+            <span style={{ fontWeight: 700, fontSize: 14, background: "rgba(255,255,255,.06)", borderRadius: 4, padding: "2px 9px", flexShrink: 0, color: "var(--muted)" }}>
+              –
+            </span>
+            <span style={{ flex: 1, fontWeight: 600 }}>
+              <SlotDisplay desc={awayDesc} align="left" size={13} />
+            </span>
+          </div>
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 6, display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+            <span style={{ color: "var(--muted)", flexShrink: 0 }}>Jij:</span>
             {pw ? (
-              <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
-                <span style={{ fontSize: 10, color: "var(--muted)" }}>Jij:</span>
-                <span style={{ fontWeight: 700, color: "var(--orange)", background: "rgba(240,136,62,.1)", borderRadius: 4, padding: "1px 7px", fontSize: 13 }}>
+              <>
+                <span style={{ fontWeight: 600, color: "var(--orange)" }}>
                   {FLAG[pw] || ""} {pw}
                 </span>
-              </div>
+                {ps?.home !== undefined && (
+                  <span style={{ color: "var(--muted)" }}>{ps.home}–{ps.away}</span>
+                )}
+              </>
             ) : (
-              <span style={{ fontSize: 10, color: "var(--muted)", fontStyle: "italic" }}>niet ingevuld</span>
-            )}
-            {ps?.home !== undefined && (
-              <span style={{ fontSize: 10, color: "var(--muted)" }}>{ps.home}–{ps.away}</span>
+              <span style={{ color: "var(--muted)", fontStyle: "italic" }}>niet ingevuld</span>
             )}
           </div>
-          <span style={{ flex: 1, fontWeight: 600 }}>
-            <SlotDisplay desc={awayDesc} align="left" size={12} />
-          </span>
-        </div>
+        </>
       )}
     </div>
   );
