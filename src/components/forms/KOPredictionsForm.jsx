@@ -82,9 +82,7 @@ function getDropdownTeams(homeDesc, awayDesc, match, pred, koResults) {
       ? [...teamsFromSlot(koMatch.awaySlot, pred, koResults)]
       : null);
   if (!homeTeams || !awayTeams) return ALL_TEAMS;
-  return [...new Set([...homeTeams, ...awayTeams])].sort((a, b) =>
-    a.localeCompare(b, "nl")
-  );
+  return [...new Set([...homeTeams, ...awayTeams])];
 }
 
 function KOPredictionsForm({ user, state, onSave, onBack }) {
@@ -93,6 +91,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
   );
   const [saved, setSaved] = useState(false);
   const [activeRound, setActiveRound] = useState("r32");
+  const [bracketMode, setBracketMode] = useState("prediction");
   const [compareMatch, setCompareMatch] = useState(null);
 
   const frozenRounds = state.koFrozenRounds || {};
@@ -116,6 +115,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
   }
 
   const richSlots = buildRichKOSlots(pred, state.results, state.koResults);
+  const richSlotsActual = buildRichKOSlots({}, state.results, state.koResults);
   const visibleMatches = KO_STRUCTURE.filter(
     (m) =>
       m.round === activeRound ||
@@ -146,6 +146,21 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
               ? isRoundFrozen("final") && isRoundFrozen("3rd")
               : isRoundFrozen(r.key);
           const isActive = activeRound === r.key;
+
+          let progress = null;
+          if (r.key !== "bracket") {
+            const roundMatches = KO_STRUCTURE.filter((m) =>
+              r.key === "final"
+                ? m.round === "final" || m.round === "3rd"
+                : m.round === r.key
+            );
+            const total  = roundMatches.length;
+            const filled = roundMatches.filter((m) => pred.koWinners?.[m.id]).length;
+            if (filled > 0) {
+              progress = { filled, total, complete: filled === total };
+            }
+          }
+
           return (
             <button
               key={r.key}
@@ -167,6 +182,17 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
               }}
             >
               {r.label}
+              {progress && (
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: progress.complete
+                    ? (isActive ? "rgba(255,255,255,.85)" : "var(--green)")
+                    : (isActive ? "rgba(255,255,255,.7)" : "var(--muted)"),
+                }}>
+                  {progress.complete ? "✓" : `${progress.filled}/${progress.total}`}
+                </span>
+              )}
               {(tabFrozen || legacyFrozen) && (
                 <span style={{ fontSize: 10 }}>🔒</span>
               )}
@@ -174,8 +200,39 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
           );
         })}
       </div>
+      {activeRound === "bracket" && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+          {[
+            { key: "prediction", label: "Mijn voorspelling" },
+            { key: "actual",     label: "Werkelijkheid" },
+          ].map(({ key, label }) => (
+            <button
+              key={key}
+              onClick={() => setBracketMode(key)}
+              style={{
+                padding: "5px 14px",
+                borderRadius: 20,
+                border: `1px solid ${bracketMode === key ? "var(--accent)" : "var(--border)"}`,
+                background: bracketMode === key ? "var(--accent)" : "var(--bg)",
+                color: bracketMode === key ? "#fff" : "var(--text)",
+                cursor: "pointer",
+                fontSize: 12,
+                fontWeight: 600,
+                fontFamily: "var(--font)",
+              }}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       {activeRound === "bracket" ? (
-        <KOBracket pred={pred} koResults={state.koResults} richSlots={richSlots} />
+        <KOBracket
+          pred={pred}
+          koResults={state.koResults}
+          richSlots={bracketMode === "prediction" ? richSlots : richSlotsActual}
+          mode={bracketMode}
+        />
       ) : (
         visibleMatches.map((m) => {
           const matchFrozen = legacyFrozen || !!frozenRounds[m.round];
@@ -569,7 +626,9 @@ function KOMatchCard({
           🏆 Winnaar
         </div>
         {useButtons ? (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div style={allCandidates.length === 4
+            ? { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }
+            : { display: "flex", gap: 6, flexWrap: "wrap" }}>
             {allCandidates.map((t) => (
               <button
                 key={t}
@@ -579,8 +638,8 @@ function KOMatchCard({
                   onSet(["koWinners", m.id], predWinner === t ? "" : t)
                 }
                 style={{
-                  flex: 1,
-                  minWidth: 90,
+                  flex: allCandidates.length === 4 ? undefined : 1,
+                  minWidth: allCandidates.length === 4 ? undefined : 90,
                   padding: "8px 8px",
                   borderRadius: 8,
                   border: `2px solid ${
@@ -661,7 +720,7 @@ function flagsFromDesc(desc) {
   return "";
 }
 
-function KOBracket({ pred, koResults, richSlots }) {
+function KOBracket({ pred, koResults, richSlots, mode = "prediction" }) {
   const ROW_H = 36;
   const HEADER_H = 22;
   const TOTAL_H = 16 * ROW_H + HEADER_H;
@@ -725,15 +784,19 @@ function KOBracket({ pred, koResults, richSlots }) {
             const result    = koResults?.[matchId];
             const isPlayed  = result?.played;
             const actual    = result?.winner;
-            const winner    = isPlayed ? actual : predicted;
-            const correct   = isPlayed && predicted && predicted === actual;
-            const wrong     = isPlayed && predicted && predicted !== actual;
 
-            const border = correct ? "rgba(63,185,80,.6)"
-                         : wrong   ? "rgba(248,81,73,.5)"
-                         : predicted ? "rgba(88,166,255,.4)"
-                         : "var(--border)";
-            const bg = correct ? "rgba(63,185,80,.1)" : "var(--card)";
+            const isActualMode = mode === "actual";
+            const winner  = isPlayed ? actual : (isActualMode ? null : predicted);
+            const correct = !isActualMode && isPlayed && predicted && predicted === actual;
+            const wrong   = !isActualMode && isPlayed && predicted && predicted !== actual;
+
+            const border = isActualMode
+              ? isPlayed ? "rgba(63,185,80,.5)" : "var(--border)"
+              : correct ? "rgba(63,185,80,.6)"
+              : wrong   ? "rgba(248,81,73,.5)"
+              : predicted ? "rgba(88,166,255,.4)"
+              : "var(--border)";
+            const bg = (correct || (isActualMode && isPlayed)) ? "rgba(63,185,80,.1)" : "var(--card)";
 
             const homeDesc  = richSlots?.[matchId]?.home;
             const awayDesc  = richSlots?.[matchId]?.away;

@@ -404,14 +404,16 @@ function resolveSlotRich(slot, ctx) {
     if (adminKoResults?.[matchId]?.played)
       return { type: "team", team: adminKoResults[matchId].winner };
     const userPick = userKoWinners?.[matchId];
-    if (userPick) return { type: "team", team: userPick };
     const koMatch = KO_STRUCTURE.find((m) => m.id === matchId);
     if (koMatch) {
       const hd = resolveSlotRich(koMatch.homeSlot, ctx);
       const ad = resolveSlotRich(koMatch.awaySlot, ctx);
-      if (hd.type === "team" && ad.type === "team")
+      if (hd.type === "team" && ad.type === "team") {
+        if (userPick) return { type: "team", team: userPick, candidates: [hd.team, ad.team] };
         return { type: "two", teams: [hd.team, ad.team] };
+      }
     }
+    if (userPick) return { type: "team", team: userPick };
     return { type: "label", label: slotLabel(slot) };
   }
   if (slot.charAt(0) === "L") {

@@ -270,10 +270,20 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
         ))}
       </div>
 
+      <AdminMatchList
+        title="Volgende wedstrijden"
+        matches={next5}
+        state={state}
+        onUpdResult={onUpdResult}
+        onUpdKO={onUpdKO}
+        emptyMsg="Geen komende wedstrijden meer."
+      />
+
       <div
         style={{
           ...S.card(),
           marginBottom: 18,
+          marginTop: 22,
           background: "rgba(88,166,255,.04)",
         }}
       >
@@ -337,14 +347,6 @@ function AdminHome({ state, onUpdResult, onUpdKO }) {
         onUpdResult={onUpdResult}
         onUpdKO={onUpdKO}
         emptyMsg="Nog geen wedstrijden gespeeld."
-      />
-      <AdminMatchList
-        title="Volgende wedstrijden"
-        matches={next5}
-        state={state}
-        onUpdResult={onUpdResult}
-        onUpdKO={onUpdKO}
-        emptyMsg="Geen komende wedstrijden meer."
         topMargin
       />
     </div>
@@ -442,6 +444,17 @@ function AdminMatchRow({ m, state, onUpdResult, onUpdKO }) {
   const played = !!r.played;
   const accent = m.isKO || isGroupF ? "var(--orange)" : "var(--accent)";
 
+  // KO winnaar kandidaten van de twee slots
+  const homeCands = m.isKO
+    ? m.homeDesc?.type === "team" ? [m.homeDesc.team]
+      : m.homeDesc?.type === "two" ? m.homeDesc.teams : []
+    : [];
+  const awayCands = m.isKO
+    ? m.awayDesc?.type === "team" ? [m.awayDesc.team]
+      : m.awayDesc?.type === "two" ? m.awayDesc.teams : []
+    : [];
+  const koCandidates = [...new Set([...homeCands, ...awayCands])];
+
   return (
     <div
       style={{
@@ -509,6 +522,51 @@ function AdminMatchRow({ m, state, onUpdResult, onUpdKO }) {
             : `${FLAG[m.away] || ""} ${m.away}`}
         </span>
       </div>
+      {m.isKO && (
+        <div style={{ marginTop: 8, borderTop: "1px solid var(--border)", paddingTop: 8, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+          <span style={{ fontSize: 12, color: "var(--muted)", flexShrink: 0 }}>Winnaar:</span>
+          {koCandidates.length > 0 ? (
+            <div style={{ display: "flex", gap: 6, flex: 1, flexWrap: "wrap" }}>
+              {koCandidates.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => onUpdKO(m.id, "winner", r.winner === t ? "" : t)}
+                  style={{
+                    flex: 1,
+                    minWidth: 80,
+                    padding: "5px 8px",
+                    borderRadius: 8,
+                    border: `2px solid ${r.winner === t ? "var(--accent)" : "var(--border)"}`,
+                    background: r.winner === t ? "rgba(88,166,255,.15)" : "var(--bg)",
+                    color: "var(--text)",
+                    cursor: "pointer",
+                    fontSize: 12,
+                    fontWeight: r.winner === t ? 700 : 400,
+                    fontFamily: "var(--font)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 4,
+                  }}
+                >
+                  {FLAG[t] || "🏳️"} {t}
+                </button>
+              ))}
+            </div>
+          ) : (
+            <select
+              value={r.winner || ""}
+              onChange={(e) => onUpdKO(m.id, "winner", e.target.value)}
+              style={{ flex: 1, background: "var(--bg)", color: "var(--text)", border: "1px solid var(--border)", borderRadius: 6, padding: "5px 8px", fontSize: 12, fontFamily: "var(--font)" }}
+            >
+              <option value="">— selecteer winnaar —</option>
+              {ALL_TEAMS.map((t) => (
+                <option key={t} value={t}>{FLAG[t]} {t}</option>
+              ))}
+            </select>
+          )}
+        </div>
+      )}
       <div
         style={{ marginTop: 8, display: "flex", justifyContent: "flex-end" }}
       >

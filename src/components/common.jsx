@@ -87,6 +87,7 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
     return <span style={{ color: "var(--muted)", fontSize: size }}>?</span>;
 
   if (desc.type === "team") {
+    const others = desc.candidates?.filter(t => t !== desc.team);
     return (
       <span
         style={{
@@ -104,6 +105,11 @@ function SlotDisplay({ desc, align = "left", size = 14 }) {
         <span style={{ fontSize: size, fontWeight: 700 }}>
           {FLAG[desc.team] || "🏳️"} {desc.team}
         </span>
+        {others?.length > 0 && (
+          <span style={{ fontSize: size - 3, color: "var(--muted)", fontStyle: "italic" }}>
+            of {others.map(t => `${FLAG[t] || "🏳️"} ${t}`).join(", ")}
+          </span>
+        )}
       </span>
     );
   }
