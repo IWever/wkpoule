@@ -960,15 +960,15 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
     : (winOk ? schema.winner : 0) + (scoreOk ? schema.exact : diffOk ? schema.diff : 0);
 
   function renderTeam(team, desc, align) {
-    // Bold: echte winnaar (gespeeld) of voorspelde winnaar (ongespeeld)
-    // ⭐ altijd achter het geselecteerde land (pw), ✓/✗ als extra feedback wanneer gespeeld
     let emoji = "";
     let bold = false;
     if (!r?.played) {
       if (team && team === pw) { bold = true; emoji = "⭐"; }
     } else {
-      if (team && team === r.winner) bold = true;
-      if (team && team === pw) emoji = "⭐" + (winOk ? " ✓" : winNope ? " ✗" : "");
+      if (team && team === r.winner) {
+        bold = true;
+        if (pw) emoji = winOk ? "✓" : "✗";
+      }
     }
 
     if (team) {
@@ -1034,10 +1034,17 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
 
         {renderTeam(awayTeam, awayDesc, "left")}
 
-        {r?.played && (
-          <span style={{ minWidth: 40, textAlign: "right", fontWeight: 700, fontSize: 11, color: koPts > 0 ? "var(--green)" : "var(--red)" }}>
-            {koPts > 0 ? `+${koPts}` : "✗"}
-          </span>
+        {r?.played && pw && (
+          <div style={{ minWidth: 44, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: winOk ? "var(--green)" : "var(--red)" }}>
+              {winOk ? `+${schema.winner}` : "✗"}
+            </span>
+            {ps?.home !== undefined && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: scoreOk || diffOk ? "var(--green)" : "var(--red)" }}>
+                {scoreOk ? `+${schema.exact}` : diffOk ? `+${schema.diff}` : "✗"}
+              </span>
+            )}
+          </div>
         )}
       </div>
     </div>
