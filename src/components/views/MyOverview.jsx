@@ -960,16 +960,15 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
     : (winOk ? schema.winner : 0) + (scoreOk ? schema.exact : diffOk ? schema.diff : 0);
 
   function renderTeam(team, desc, align) {
-    // Emoji: ⭐ achter voorspelde winnaar (ongespeeld), ✓/✗ achter echte winnaar (gespeeld)
-    let emoji = null;
+    // Bold: echte winnaar (gespeeld) of voorspelde winnaar (ongespeeld)
+    // ⭐ altijd achter het geselecteerde land (pw), ✓/✗ als extra feedback wanneer gespeeld
+    let emoji = "";
     let bold = false;
     if (!r?.played) {
       if (team && team === pw) { bold = true; emoji = "⭐"; }
     } else {
-      if (team && team === r.winner) {
-        bold = true;
-        if (pw) emoji = winOk ? "✓" : "✗";
-      }
+      if (team && team === r.winner) bold = true;
+      if (team && team === pw) emoji = "⭐" + (winOk ? " ✓" : winNope ? " ✗" : "");
     }
 
     if (team) {
