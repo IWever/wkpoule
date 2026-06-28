@@ -382,6 +382,39 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry, state,
             : null;
           const playerPts = matchedResult ? PTS_TOPSCORER_RANK[matchedResult.rank] || 0 : null;
 
+          if (frozen) {
+            return (
+              <div
+                key={i}
+                style={{
+                  background: "var(--bg)",
+                  border: `1px solid ${player ? "rgba(88,166,255,.3)" : "var(--border)"}`,
+                  borderRadius: 8,
+                  padding: "10px 12px",
+                }}
+              >
+                {player && country ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 20 }}>{FLAG[country] || "🏳️"}</span>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13 }}>{player}</div>
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>{country}</div>
+                    </div>
+                    {topScorersKnown && (
+                      playerPts > 0 ? (
+                        <span style={{ color: "var(--green)", fontWeight: 700, fontSize: 13 }}>+{playerPts} ✓</span>
+                      ) : (
+                        <span style={{ color: "var(--red)", fontWeight: 700, fontSize: 13 }}>✗</span>
+                      )
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>Niet ingevuld</div>
+                )}
+              </div>
+            );
+          }
+
           return (
             <div
               key={i}

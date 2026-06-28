@@ -1888,6 +1888,34 @@ function TopScorersCompare({ state, currentUserId, onClose }) {
     return Array.isArray(s) && s.some(Boolean);
   }).length;
 
+  // Build player matrix: { [name]: { 1: count, 2: count, 3: count } }
+  const matrix = {};
+  users.forEach((u) => {
+    const scorers = Array.isArray(u.predictions?.topScorers)
+      ? u.predictions.topScorers
+      : u.predictions?.topScorer
+      ? [u.predictions.topScorer]
+      : [];
+    scorers.forEach((name, pos) => {
+      if (!name || pos > 2) return;
+      if (!matrix[name]) matrix[name] = { 1: 0, 2: 0, 3: 0 };
+      matrix[name][pos + 1] = (matrix[name][pos + 1] || 0) + 1;
+    });
+  });
+
+  const players = Object.keys(matrix).sort((a, b) => {
+    const totA = matrix[a][1] + matrix[a][2] + matrix[a][3];
+    const totB = matrix[b][1] + matrix[b][2] + matrix[b][3];
+    return totB - totA;
+  });
+
+  const correctByRank = {};
+  resultTopScorers.forEach((r) => {
+    if (r.rank >= 1 && r.rank <= 3) correctByRank[r.rank] = r.name;
+  });
+
+  const RANK_LABELS = ["①", "②", "③"];
+
   return (
     <Overlay onClose={onClose}>
       <OverlayHeader
@@ -1895,85 +1923,183 @@ function TopScorersCompare({ state, currentUserId, onClose }) {
         subtitle={`${totalFilled} van ${users.length} ingevuld`}
         onClose={onClose}
       />
-      {RANKS.map(({ pos, label, pts, rank }) => {
-        const correctPlayer = resultTopScorers.find((r) => r.rank === rank);
-        const picks = users
-          .map((u) => {
-            const s = Array.isArray(u.predictions?.topScorers)
-              ? u.predictions.topScorers
-              : u.predictions?.topScorer
-              ? [u.predictions.topScorer]
-              : [];
-            return { userId: u.id, name: u.name, value: s[pos] || null };
-          })
-          .filter((p) => p.value);
 
-        const sorted = groupAndSort(picks);
-        const total = picks.length;
-        const myPick = myScorers[pos] || null;
+      {/* Column header row */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 40px 40px 40px",
+          gap: 4,
+          marginBottom: 6,
+          paddingBottom: 6,
+          borderBottom: "1px solid var(--border)",
+        }}
+      >
+        <div style={{ fontSize: 11, color: "var(--muted)" }}>Speler</div>
+        {RANKS.map(({ rank, pts }) => (
+          <div
+            key={rank}
+            style={{
+              textAlign: "center",
+              fontSize: 12,
+              fontWeight: 700,
+              color: correctByRank[rank] ? "var(--green)" : "var(--accent)",
+            }}
+          >
+            {RANK_LABELS[rank - 1]}
+            <div style={{ fontSize: 10, fontWeight: 400, color: "var(--muted)" }}>
+              +{pts}
+            </div>
+          </div>
+        ))}
+      </div>
 
-        return (
-          <div key={pos} style={{ marginBottom: 22 }}>
+      {/* Correct answers row when known */}
+      {Object.keys(correctByRank).length > 0 && (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 40px 40px 40px",
+            gap: 4,
+            marginBottom: 10,
+            padding: "5px 8px",
+            background: "rgba(63,185,80,.08)",
+            border: "1px solid rgba(63,185,80,.25)",
+            borderRadius: 7,
+          }}
+        >
+          <div style={{ fontSize: 11, color: "var(--green)", fontWeight: 700 }}>
+            Uitslag
+          </div>
+          {RANKS.map(({ rank }) => (
             <div
+              key={rank}
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                marginBottom: 8,
-                paddingBottom: 6,
-                borderBottom: "1px solid var(--border)",
+                textAlign: "center",
+                fontSize: 11,
+                fontWeight: 700,
+                color: "var(--green)",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
               }}
             >
-              <span
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  color: "var(--accent)",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.08em",
-                }}
-              >
-                {label}
-              </span>
-              <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                +{pts} pt
-              </span>
+              {correctByRank[rank] || "–"}
             </div>
-            {correctPlayer && (
+          ))}
+        </div>
+      )}
+
+      {/* Player matrix */}
+      {players.length === 0 ? (
+        <div style={{ color: "var(--muted)", fontSize: 12 }}>Niemand ingevuld.</div>
+      ) : (
+        players.map((player) => {
+          const isMyPickAny = myScorers.some((s) => s === player);
+          const isCorrectAny = Object.values(correctByRank).includes(player);
+          return (
+            <div
+              key={player}
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 40px 40px 40px",
+                gap: 4,
+                marginBottom: 4,
+                padding: "5px 8px",
+                borderRadius: 6,
+                background: isCorrectAny
+                  ? "rgba(63,185,80,.06)"
+                  : isMyPickAny
+                  ? "rgba(88,166,255,.05)"
+                  : "transparent",
+                border: `1px solid ${
+                  isCorrectAny
+                    ? "rgba(63,185,80,.2)"
+                    : isMyPickAny
+                    ? "rgba(88,166,255,.15)"
+                    : "transparent"
+                }`,
+              }}
+            >
               <div
                 style={{
-                  marginBottom: 10,
-                  padding: "6px 10px",
-                  background: "rgba(63,185,80,.08)",
-                  border: "1px solid rgba(63,185,80,.3)",
-                  borderRadius: 7,
-                  fontSize: 12,
-                  color: "var(--green)",
-                  fontWeight: 700,
+                  fontSize: 13,
+                  fontWeight: isCorrectAny || isMyPickAny ? 700 : 400,
+                  color: isCorrectAny ? "var(--green)" : "var(--text)",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 5,
+                  minWidth: 0,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
-                Uitslag: {correctPlayer.name}
+                {isMyPickAny && (
+                  <span style={{ fontSize: 10, color: "var(--accent)", flexShrink: 0 }}>&#9733;</span>
+                )}
+                {player}
               </div>
-            )}
-            {total === 0 ? (
-              <div style={{ color: "var(--muted)", fontSize: 12 }}>
-                Niemand ingevuld.
-              </div>
-            ) : (
-              sorted.map(([value, pickers]) => (
-                <PickRow
-                  key={value}
-                  label={value}
-                  pickers={pickers}
-                  total={total}
-                  correct={correctPlayer?.name === value}
-                  isMyPick={value === myPick}
-                />
-              ))
-            )}
-          </div>
-        );
-      })}
+              {RANKS.map(({ rank }) => {
+                const count = matrix[player][rank] || 0;
+                const isCorrectCell = correctByRank[rank] === player;
+                const isMyCell = myScorers[rank - 1] === player;
+                return (
+                  <div
+                    key={rank}
+                    style={{
+                      textAlign: "center",
+                      fontSize: 13,
+                      fontWeight: isCorrectCell || isMyCell ? 700 : 400,
+                      color: isCorrectCell
+                        ? "var(--green)"
+                        : isMyCell
+                        ? "var(--accent)"
+                        : count > 0
+                        ? "var(--text)"
+                        : "var(--muted)",
+                    }}
+                  >
+                    {count > 0 ? count : "–"}
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })
+      )}
+
+      {/* Legend */}
+      <div
+        style={{
+          marginTop: 14,
+          paddingTop: 10,
+          borderTop: "1px solid var(--border)",
+          display: "flex",
+          gap: 16,
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--muted)" }}>
+          <span
+            style={{
+              display: "inline-block",
+              width: 10,
+              height: 10,
+              background: "rgba(63,185,80,.25)",
+              borderRadius: 2,
+            }}
+          />
+          Correct
+        </div>
+        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--muted)" }}>
+          <span style={{ color: "var(--accent)", fontSize: 10 }}>&#9733;</span>
+          Mijn keuze
+        </div>
+        <div style={{ fontSize: 11, color: "var(--muted)" }}>
+          Cijfers = aantal deelnemers
+        </div>
+      </div>
     </Overlay>
   );
 }
