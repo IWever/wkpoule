@@ -311,12 +311,7 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry, state,
               +{totalPts} ✓
             </span>
           ) : (
-            <span style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
-              <span style={{ color: "var(--red)", fontWeight: 700, fontSize: 13 }}>✗</span>
-              <span style={{ color: "var(--muted)", fontSize: 11 }}>
-                +{PTS_TOPSCORER_RANK[1] + PTS_TOPSCORER_RANK[2] + PTS_TOPSCORER_RANK[3]}
-              </span>
-            </span>
+            <span style={{ color: "var(--red)", fontWeight: 700, fontSize: 13 }}>✗</span>
           )
         ) : null}
       </div>
