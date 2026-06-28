@@ -1877,229 +1877,79 @@ function TopScorersCompare({ state, currentUserId, onClose }) {
     ? currentUser.predictions.topScorers
     : [];
 
-  const RANKS = [
-    { pos: 0, label: "1e — Gouden Schoen", pts: PTS_TOPSCORER_RANK[1], rank: 1 },
-    { pos: 1, label: "2e — Zilveren Schoen", pts: PTS_TOPSCORER_RANK[2], rank: 2 },
-    { pos: 2, label: "3e — Bronzen Schoen", pts: PTS_TOPSCORER_RANK[3], rank: 3 },
-  ];
-
   const totalFilled = users.filter((u) => {
     const s = u.predictions?.topScorers;
     return Array.isArray(s) && s.some(Boolean);
   }).length;
 
-  // Build player matrix: { [name]: { 1: count, 2: count, 3: count } }
-  const matrix = {};
+  // Correct players = anyone who appears in the result top 3 (order doesn't matter for scoring)
+  const correctNames = new Set(resultTopScorers.map((r) => r.name));
+
+  // Count per player: how many users included them in any slot
+  const countByPlayer = {};
   users.forEach((u) => {
     const scorers = Array.isArray(u.predictions?.topScorers)
       ? u.predictions.topScorers
-      : u.predictions?.topScorer
-      ? [u.predictions.topScorer]
       : [];
-    scorers.forEach((name, pos) => {
-      if (!name || pos > 2) return;
-      if (!matrix[name]) matrix[name] = { 1: 0, 2: 0, 3: 0 };
-      matrix[name][pos + 1] = (matrix[name][pos + 1] || 0) + 1;
+    const pickedByUser = new Set(scorers.filter(Boolean));
+    pickedByUser.forEach((name) => {
+      countByPlayer[name] = (countByPlayer[name] || 0) + 1;
     });
   });
 
-  const players = Object.keys(matrix).sort((a, b) => {
-    const totA = matrix[a][1] + matrix[a][2] + matrix[a][3];
-    const totB = matrix[b][1] + matrix[b][2] + matrix[b][3];
-    return totB - totA;
+  // Sort: correct picks first, then by count desc
+  const players = Object.keys(countByPlayer).sort((a, b) => {
+    const aC = correctNames.has(a) ? 1 : 0;
+    const bC = correctNames.has(b) ? 1 : 0;
+    if (bC !== aC) return bC - aC;
+    return countByPlayer[b] - countByPlayer[a];
   });
 
-  const correctByRank = {};
-  resultTopScorers.forEach((r) => {
-    if (r.rank >= 1 && r.rank <= 3) correctByRank[r.rank] = r.name;
-  });
-
-  const RANK_LABELS = ["①", "②", "③"];
+  const myPickSet = new Set(myScorers.filter(Boolean));
 
   return (
     <Overlay onClose={onClose}>
       <OverlayHeader
         title="⚽ Topscoorders"
-        subtitle={`${totalFilled} van ${users.length} ingevuld`}
+        subtitle={`${totalFilled} van ${users.length} ingevuld · 3 kansen per deelnemer`}
         onClose={onClose}
       />
 
-      {/* Column header row */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 40px 40px 40px",
-          gap: 4,
-          marginBottom: 6,
-          paddingBottom: 6,
-          borderBottom: "1px solid var(--border)",
-        }}
-      >
-        <div style={{ fontSize: 11, color: "var(--muted)" }}>Speler</div>
-        {RANKS.map(({ rank, pts }) => (
-          <div
-            key={rank}
-            style={{
-              textAlign: "center",
-              fontSize: 12,
-              fontWeight: 700,
-              color: correctByRank[rank] ? "var(--green)" : "var(--accent)",
-            }}
-          >
-            {RANK_LABELS[rank - 1]}
-            <div style={{ fontSize: 10, fontWeight: 400, color: "var(--muted)" }}>
-              +{pts}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Correct answers row when known */}
-      {Object.keys(correctByRank).length > 0 && (
+      {resultTopScorers.length > 0 && (
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 40px 40px 40px",
-            gap: 4,
-            marginBottom: 10,
-            padding: "5px 8px",
+            marginBottom: 14,
+            padding: "7px 10px",
             background: "rgba(63,185,80,.08)",
             border: "1px solid rgba(63,185,80,.25)",
             borderRadius: 7,
+            fontSize: 12,
+            color: "var(--green)",
+            fontWeight: 700,
           }}
         >
-          <div style={{ fontSize: 11, color: "var(--green)", fontWeight: 700 }}>
-            Uitslag
-          </div>
-          {RANKS.map(({ rank }) => (
-            <div
-              key={rank}
-              style={{
-                textAlign: "center",
-                fontSize: 11,
-                fontWeight: 700,
-                color: "var(--green)",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-                whiteSpace: "nowrap",
-              }}
-            >
-              {correctByRank[rank] || "–"}
-            </div>
-          ))}
+          Uitslag:{" "}
+          {[...resultTopScorers]
+            .sort((a, b) => a.rank - b.rank)
+            .map((r) => r.name)
+            .join(", ")}
         </div>
       )}
 
-      {/* Player matrix */}
       {players.length === 0 ? (
         <div style={{ color: "var(--muted)", fontSize: 12 }}>Niemand ingevuld.</div>
       ) : (
-        players.map((player) => {
-          const isMyPickAny = myScorers.some((s) => s === player);
-          const isCorrectAny = Object.values(correctByRank).includes(player);
-          return (
-            <div
-              key={player}
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 40px 40px 40px",
-                gap: 4,
-                marginBottom: 4,
-                padding: "5px 8px",
-                borderRadius: 6,
-                background: isCorrectAny
-                  ? "rgba(63,185,80,.06)"
-                  : isMyPickAny
-                  ? "rgba(88,166,255,.05)"
-                  : "transparent",
-                border: `1px solid ${
-                  isCorrectAny
-                    ? "rgba(63,185,80,.2)"
-                    : isMyPickAny
-                    ? "rgba(88,166,255,.15)"
-                    : "transparent"
-                }`,
-              }}
-            >
-              <div
-                style={{
-                  fontSize: 13,
-                  fontWeight: isCorrectAny || isMyPickAny ? 700 : 400,
-                  color: isCorrectAny ? "var(--green)" : "var(--text)",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  minWidth: 0,
-                  overflow: "hidden",
-                  textOverflow: "ellipsis",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {isMyPickAny && (
-                  <span style={{ fontSize: 10, color: "var(--accent)", flexShrink: 0 }}>&#9733;</span>
-                )}
-                {player}
-              </div>
-              {RANKS.map(({ rank }) => {
-                const count = matrix[player][rank] || 0;
-                const isCorrectCell = correctByRank[rank] === player;
-                const isMyCell = myScorers[rank - 1] === player;
-                return (
-                  <div
-                    key={rank}
-                    style={{
-                      textAlign: "center",
-                      fontSize: 13,
-                      fontWeight: isCorrectCell || isMyCell ? 700 : 400,
-                      color: isCorrectCell
-                        ? "var(--green)"
-                        : isMyCell
-                        ? "var(--accent)"
-                        : count > 0
-                        ? "var(--text)"
-                        : "var(--muted)",
-                    }}
-                  >
-                    {count > 0 ? count : "–"}
-                  </div>
-                );
-              })}
-            </div>
-          );
-        })
-      )}
-
-      {/* Legend */}
-      <div
-        style={{
-          marginTop: 14,
-          paddingTop: 10,
-          borderTop: "1px solid var(--border)",
-          display: "flex",
-          gap: 16,
-          flexWrap: "wrap",
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--muted)" }}>
-          <span
-            style={{
-              display: "inline-block",
-              width: 10,
-              height: 10,
-              background: "rgba(63,185,80,.25)",
-              borderRadius: 2,
-            }}
+        players.map((player) => (
+          <PickRow
+            key={player}
+            label={player}
+            pickers={Array(countByPlayer[player]).fill(0)}
+            total={totalFilled}
+            correct={correctNames.has(player)}
+            isMyPick={myPickSet.has(player)}
           />
-          Correct
-        </div>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "var(--muted)" }}>
-          <span style={{ color: "var(--accent)", fontSize: 10 }}>&#9733;</span>
-          Mijn keuze
-        </div>
-        <div style={{ fontSize: 11, color: "var(--muted)" }}>
-          Cijfers = aantal deelnemers
-        </div>
-      </div>
+        ))
+      )}
     </Overlay>
   );
 }
