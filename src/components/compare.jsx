@@ -1691,6 +1691,325 @@ function CompareSection({ section, me, other, state, mySecPts, otherSecPts, myGr
   );
 }
 
+// ─── KO SCORE HEATMAP ────────────────────────────────────────────────────────
+
+function KOScoreHeatmap({ match, state, currentUserId, homeTeam, awayTeam }) {
+  const [hovered, setHovered] = useState(null);
+  const r = state.koResults[match.id];
+
+  const preds = state.users
+    .map((u) => u.predictions?.koScores?.[match.id])
+    .filter((p) => p?.home !== undefined && p.home !== "")
+    .map((p) => ({ home: parseInt(p.home, 10), away: parseInt(p.away, 10) }));
+
+  const grid = buildGrid(preds);
+  const total = preds.length;
+  const maxCount = total > 0 ? Math.max(...Object.values(grid)) : 1;
+
+  const actual =
+    r?.played && r.home90 !== undefined
+      ? { home: parseInt(r.home90, 10), away: parseInt(r.away90, 10) }
+      : null;
+
+  const currentUser = state.users.find((u) => u.id === currentUserId);
+  const myPredRaw = currentUser?.predictions?.koScores?.[match.id];
+  const myScore =
+    myPredRaw?.home !== undefined && myPredRaw.home !== ""
+      ? { home: parseInt(myPredRaw.home, 10), away: parseInt(myPredRaw.away, 10) }
+      : null;
+
+  const cols = Array.from({ length: MAX_GOALS + 1 }, (_, i) => i);
+  const rows = Array.from({ length: MAX_GOALS + 1 }, (_, i) => MAX_GOALS - i);
+
+  function countFor(h, a) {
+    return grid[`${h}-${a}`] || 0;
+  }
+
+  function cellBg(h, a, count) {
+    const isActual = actual && h === actual.home && a === actual.away;
+    if (isActual)
+      return `rgba(63,185,80,${Math.max(0.12 + (count / maxCount) * 0.88, 0.18)})`;
+    if (count === 0) return "rgba(255,255,255,0.03)";
+    return `rgba(88,166,255,${0.12 + (count / maxCount) * 0.88})`;
+  }
+
+  function cellBorder(h, a) {
+    const isActual = actual && h === actual.home && a === actual.away;
+    const isMy = myScore && h === myScore.home && a === myScore.away;
+    if (isActual) return "1.5px solid rgba(63,185,80,.7)";
+    if (isMy) return "2px solid rgba(255,255,255,.85)";
+    return "1px solid rgba(48,54,61,.5)";
+  }
+
+  function cellBoxShadow(h, a) {
+    const isActual = actual && h === actual.home && a === actual.away;
+    const isMy = myScore && h === myScore.home && a === myScore.away;
+    if (isMy && isActual) return "0 0 0 2.5px rgba(255,255,255,.7)";
+    return undefined;
+  }
+
+  if (total === 0) return null;
+
+  const hovCount = hovered ? countFor(hovered.home, hovered.away) : 0;
+  const homeLabel = homeTeam ? `${FLAG[homeTeam] || ""} ${homeTeam}` : "Thuis";
+  const awayLabel = awayTeam ? `${FLAG[awayTeam] || ""} ${awayTeam}` : "Uit";
+
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--accent)",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          marginBottom: 10,
+        }}
+      >
+        Score na 90' verdeling
+      </div>
+
+      {/* Tooltip */}
+      <div
+        style={{
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 10,
+        }}
+      >
+        {hovered ? (
+          <div
+            style={{
+              background: hovCount > 0 ? "rgba(88,166,255,.1)" : "rgba(255,255,255,.04)",
+              border: `1px solid ${hovCount > 0 ? "rgba(88,166,255,.3)" : "var(--border)"}`,
+              borderRadius: 8,
+              padding: "5px 14px",
+              fontSize: 13,
+              color: "var(--text)",
+              display: "flex",
+              gap: 10,
+              alignItems: "center",
+            }}
+          >
+            <span style={{ fontWeight: 700 }}>
+              {homeLabel} {hovered.home} – {hovered.away} {awayLabel}
+            </span>
+            <span style={{ color: "var(--muted)" }}>·</span>
+            <span
+              style={{
+                color: hovCount > 0 ? "var(--accent)" : "var(--muted)",
+                fontWeight: 700,
+              }}
+            >
+              {hovCount > 0
+                ? `${hovCount}× (${Math.round((hovCount / total) * 100)}%)`
+                : "niemand"}
+            </span>
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>
+            Hover over een cel voor details
+          </div>
+        )}
+      </div>
+
+      {/* Grid */}
+      <div style={{ display: "flex", gap: 0 }}>
+        {/* Y-axis label */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 24,
+            paddingBottom: 28,
+          }}
+        >
+          <div
+            style={{
+              writingMode: "vertical-rl",
+              transform: "rotate(180deg)",
+              fontSize: 10,
+              color: "var(--muted)",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              userSelect: "none",
+            }}
+          >
+            {homeLabel} doelpunten
+          </div>
+        </div>
+
+        <div style={{ flex: 1 }}>
+          {rows.map((homeGoals) => (
+            <div
+              key={homeGoals}
+              style={{ display: "flex", alignItems: "center", marginBottom: 3 }}
+            >
+              <div
+                style={{
+                  width: 18,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color:
+                    actual && homeGoals === actual.home
+                      ? "var(--green)"
+                      : "var(--muted)",
+                  textAlign: "center",
+                  flexShrink: 0,
+                  marginRight: 4,
+                }}
+              >
+                {homeGoals}
+              </div>
+              {cols.map((awayGoals) => {
+                const count = countFor(homeGoals, awayGoals);
+                const isHovered =
+                  hovered?.home === homeGoals && hovered?.away === awayGoals;
+                return (
+                  <div
+                    key={awayGoals}
+                    onMouseEnter={() => setHovered({ home: homeGoals, away: awayGoals })}
+                    onMouseLeave={() => setHovered(null)}
+                    style={{
+                      flex: 1,
+                      aspectRatio: "1",
+                      marginRight: awayGoals < MAX_GOALS ? 3 : 0,
+                      background: cellBg(homeGoals, awayGoals, count),
+                      border: cellBorder(homeGoals, awayGoals),
+                      boxShadow: cellBoxShadow(homeGoals, awayGoals),
+                      borderRadius: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: count > 0 ? "pointer" : "default",
+                      transition: "transform 0.1s",
+                      transform: isHovered ? "scale(1.15)" : "scale(1)",
+                      position: "relative",
+                      zIndex: isHovered ? 2 : 1,
+                    }}
+                  >
+                    {count > 0 && (
+                      <span
+                        style={{
+                          fontSize: count >= 3 ? 12 : 10,
+                          fontWeight: 900,
+                          color:
+                            actual &&
+                            homeGoals === actual.home &&
+                            awayGoals === actual.away
+                              ? "rgba(63,185,80,.95)"
+                              : `rgba(255,255,255,${0.5 + (count / maxCount) * 0.5})`,
+                          lineHeight: 1,
+                        }}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+
+          {/* X-axis numbers */}
+          <div style={{ display: "flex", marginTop: 5 }}>
+            <div style={{ width: 22, marginRight: 4 }} />
+            {cols.map((a) => (
+              <div
+                key={a}
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: actual && a === actual.away ? "var(--green)" : "var(--muted)",
+                  marginRight: a < MAX_GOALS ? 3 : 0,
+                }}
+              >
+                {a}
+              </div>
+            ))}
+          </div>
+
+          {/* X-axis label */}
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: 5,
+              fontSize: 10,
+              color: "var(--muted)",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}
+          >
+            {awayLabel} doelpunten
+          </div>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div
+        style={{
+          display: "flex",
+          gap: 14,
+          marginTop: 14,
+          paddingTop: 12,
+          borderTop: "1px solid var(--border)",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <div
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 2,
+              background: "rgba(88,166,255,.7)",
+              border: "1px solid rgba(88,166,255,.4)",
+            }}
+          />
+          <span style={{ fontSize: 11, color: "var(--muted)" }}>Voorspelling</span>
+        </div>
+        {myScore && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 2,
+                background: "rgba(255,255,255,.08)",
+                border: "2px solid rgba(255,255,255,.85)",
+              }}
+            />
+            <span style={{ fontSize: 11, color: "var(--muted)" }}>Jouw score</span>
+          </div>
+        )}
+        {actual && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 2,
+                background: "rgba(63,185,80,.5)",
+                border: "1.5px solid rgba(63,185,80,.7)",
+              }}
+            />
+            <span style={{ fontSize: 11, color: "var(--muted)" }}>Uitslag</span>
+          </div>
+        )}
+        <div style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted)" }}>
+          {total} score{total !== 1 ? "s" : ""} ingevuld
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── SINGLE KO MATCH COMPARE ─────────────────────────────────────────────────
 
 function SingleKOMatchCompare({ match, state, currentUserId, onClose }) {
@@ -1912,6 +2231,14 @@ function SingleKOMatchCompare({ match, state, currentUserId, onClose }) {
           Niemand heeft deze wedstrijd ingevuld.
         </div>
       )}
+
+      <KOScoreHeatmap
+        match={match}
+        state={state}
+        currentUserId={currentUserId}
+        homeTeam={homeTeam}
+        awayTeam={awayTeam}
+      />
     </Overlay>
   );
 }
