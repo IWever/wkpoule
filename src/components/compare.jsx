@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GROUPS, GROUP_MATCHES, PTS_KO, PTS_TOPSCORER_RANK, PTS_SURPRISE, FLAG, PTS_STANDING, PLAYERS_BY_COUNTRY } from "../data/tournamentData";
+import { GROUPS, GROUP_MATCHES, KO_STRUCTURE, PTS_KO, PTS_TOPSCORER_RANK, PTS_SURPRISE, FLAG, PTS_STANDING, PLAYERS_BY_COUNTRY } from "../data/tournamentData";
 import { MATCH_FACTS } from "../data/matchFacts";
 import {
   calcGroupMatchPts,
@@ -979,6 +979,183 @@ function MatchGrid({ matches, users, state, currentUserId, userPts }) {
   );
 }
 
+// ─── KO COMPARE HELPERS ───────────────────────────────────────────────────────
+
+const KO_ROUND_LABELS = {
+  r32: "Zestiende finales",
+  r16: "Achtste finales",
+  qf: "Kwartfinales",
+  sf: "Halve finales",
+  "3rd": "3de/4de plaats",
+  final: "Finale",
+};
+
+function calcKOMatchPts(m, userPred, koResults) {
+  const r = koResults?.[m.id];
+  if (!r?.played) return null;
+  const schema = PTS_KO[m.round] || PTS_KO.r16;
+  const pw = userPred?.koWinners?.[m.id];
+  const ps = userPred?.koScores?.[m.id];
+  if (!pw) return null;
+  const winOk = r.winner === pw;
+  let pts = winOk ? schema.winner : 0;
+  let scoreOk = false;
+  let diffOk = false;
+  if (ps?.home !== undefined && r.home90 !== undefined) {
+    const pH = parseInt(ps.home, 10);
+    const pA = parseInt(ps.away, 10);
+    const rH = parseInt(r.home90, 10);
+    const rA = parseInt(r.away90, 10);
+    if (pH === rH && pA === rA) {
+      pts += schema.exact;
+      scoreOk = true;
+    } else if (pH - pA === rH - rA) {
+      pts += schema.diff;
+      diffOk = true;
+    }
+  }
+  return { pts, winOk, scoreOk, diffOk };
+}
+
+function koResultBg(res, played) {
+  if (!res || !played) return "var(--bg)";
+  if (res.scoreOk) return "rgba(63,185,80,.15)";
+  if (res.diffOk) return "rgba(255,193,7,.1)";
+  if (res.winOk) return "rgba(88,166,255,.1)";
+  return "rgba(248,81,73,.1)";
+}
+
+function KOCompareSection({ section, me, other, state, richSlots }) {
+  const myPred = me.predictions || {};
+  const otherPred = other.predictions || {};
+
+  function koSectionPts(u) {
+    return section.matches.reduce((sum, m) => {
+      const res = calcKOMatchPts(m, u.predictions, state.koResults);
+      return sum + (res?.pts ?? 0);
+    }, 0);
+  }
+
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "90px 1fr 1fr",
+          gap: 6,
+          marginBottom: 6,
+          alignItems: "center",
+        }}
+      >
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--muted)",
+            textTransform: "uppercase",
+          }}
+        >
+          {section.label}
+        </div>
+        <div style={{ textAlign: "center", fontSize: 11, color: "var(--accent)", fontWeight: 700 }}>
+          {koSectionPts(me)} pt
+        </div>
+        <div style={{ textAlign: "center", fontSize: 11, color: "var(--orange)", fontWeight: 700 }}>
+          {koSectionPts(other)} pt
+        </div>
+      </div>
+
+      {section.matches.map((m) => {
+        const r = state.koResults[m.id];
+        const myRes = calcKOMatchPts(m, me.predictions, state.koResults);
+        const otRes = calcKOMatchPts(m, other.predictions, state.koResults);
+        const homeInfo = richSlots?.[m.id]?.home;
+        const awayInfo = richSlots?.[m.id]?.away;
+        const homeLabel =
+          homeInfo?.type === "team"
+            ? `${FLAG[homeInfo.team] || ""} ${homeInfo.team}`
+            : homeInfo?.label || m.homeSlot;
+        const awayLabel =
+          awayInfo?.type === "team"
+            ? `${FLAG[awayInfo.team] || ""} ${awayInfo.team}`
+            : awayInfo?.label || m.awaySlot;
+        const myWinner = myPred.koWinners?.[m.id];
+        const myScore = myPred.koScores?.[m.id];
+        const otWinner = otherPred.koWinners?.[m.id];
+        const otScore = otherPred.koScores?.[m.id];
+
+        return (
+          <div
+            key={m.id}
+            style={{
+              display: "grid",
+              gridTemplateColumns: "90px 1fr 1fr",
+              gap: 4,
+              marginBottom: 4,
+              alignItems: "start",
+            }}
+          >
+            <div style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.4 }}>
+              <div style={{ color: "var(--text)" }}>{homeLabel}</div>
+              <div style={{ color: "var(--text)" }}>{awayLabel}</div>
+              {r?.played && (
+                <div style={{ color: "var(--green)", fontWeight: 700, marginTop: 2 }}>
+                  {FLAG[r.winner] || ""} {r.winner}
+                  {r.home90 !== undefined && (
+                    <span style={{ color: "var(--muted)", fontWeight: 400 }}>
+                      {" "}({r.home90}–{r.away90})
+                    </span>
+                  )}
+                </div>
+              )}
+            </div>
+            {[
+              { winner: myWinner, score: myScore, res: myRes, accent: "var(--accent)" },
+              { winner: otWinner, score: otScore, res: otRes, accent: "var(--orange)" },
+            ].map(({ winner, score, res, accent }, idx) => (
+              <div
+                key={idx}
+                style={{
+                  textAlign: "center",
+                  borderRadius: 6,
+                  padding: "4px 2px",
+                  background: koResultBg(res, r?.played),
+                }}
+              >
+                {winner ? (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: accent }}>
+                      {FLAG[winner] || ""} {winner}
+                    </div>
+                    {score?.home !== undefined && (
+                      <div style={{ fontSize: 10, color: "var(--muted)" }}>
+                        {score.home}–{score.away}
+                      </div>
+                    )}
+                    {res !== null && r?.played && (
+                      <div
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 700,
+                          color: res.pts > 0 ? "var(--green)" : "var(--red)",
+                        }}
+                      >
+                        {res.pts > 0 ? `+${res.pts}` : "✗"}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <span style={{ color: "var(--muted)", fontSize: 11 }}>–</span>
+                )}
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // ─── PLAYER COMPARE ───────────────────────────────────────────────────────────
 
 function PlayerCompare({ me, other, state, onClose }) {
@@ -990,18 +1167,31 @@ function PlayerCompare({ me, other, state, onClose }) {
   const myBreakdown = calcGroupPointsBreakdown(me, state.results);
   const otherBreakdown = calcGroupPointsBreakdown(other, state.results);
 
-  const sections =
-    groupBy === "poule"
-      ? Object.keys(GROUPS).map((g) => ({
-          key: g,
-          label: `Poule ${g}`,
-          matches: GROUP_MATCHES.filter((m) => m.group === g),
-        }))
-      : [1, 2, 3].map((r) => ({
-          key: `r${r}`,
-          label: `Speelronde ${r}`,
-          matches: GROUP_MATCHES.filter((m) => m.round === r),
-        }));
+  const frozenKORounds = state.koFrozenRounds || {};
+  const isKOPhase = !!frozenKORounds.r32;
+  const richSlots = buildRichKOSlots({}, state.results, state.koResults);
+
+  const koSections = Object.keys(KO_ROUND_LABELS)
+    .filter((round) => frozenKORounds[round])
+    .map((round) => ({
+      key: round,
+      label: KO_ROUND_LABELS[round],
+      matches: KO_STRUCTURE.filter((m) => m.round === round),
+    }));
+
+  const sections = isKOPhase
+    ? []
+    : groupBy === "poule"
+    ? Object.keys(GROUPS).map((g) => ({
+        key: g,
+        label: `Poule ${g}`,
+        matches: GROUP_MATCHES.filter((m) => m.group === g),
+      }))
+    : [1, 2, 3].map((r) => ({
+        key: `r${r}`,
+        label: `Speelronde ${r}`,
+        matches: GROUP_MATCHES.filter((m) => m.round === r),
+      }));
 
   function sectionPts(u, matches) {
     return matches.reduce((sum, m) => {
@@ -1013,6 +1203,25 @@ function PlayerCompare({ me, other, state, onClose }) {
     }, 0);
   }
 
+  function calcKOTotalPts(u) {
+    return KO_STRUCTURE.reduce((sum, m) => {
+      const res = calcKOMatchPts(m, u.predictions, state.koResults);
+      return sum + (res?.pts ?? 0);
+    }, 0);
+  }
+
+  const myKOPts = calcKOTotalPts(me);
+  const otKOPts = calcKOTotalPts(other);
+  const myExtraPts = myPts - myBreakdown.matchPts - myBreakdown.standingPts - myKOPts;
+  const otExtraPts = otherPts - otherBreakdown.matchPts - otherBreakdown.standingPts - otKOPts;
+
+  const breakdown = [
+    ["Extra vragen", myExtraPts, otExtraPts],
+    ["Groepswedstrijden", myBreakdown.matchPts, otherBreakdown.matchPts],
+    ["Stand groepsfase", myBreakdown.standingPts, otherBreakdown.standingPts],
+    ["KO-fase", myKOPts, otKOPts],
+  ];
+
   return (
     <Overlay onClose={onClose}>
       <OverlayHeader title="Vergelijking" onClose={onClose} />
@@ -1023,34 +1232,60 @@ function PlayerCompare({ me, other, state, onClose }) {
           display: "grid",
           gridTemplateColumns: "90px 1fr 1fr",
           gap: 6,
-          marginBottom: 14,
+          marginBottom: 6,
           alignItems: "center",
         }}
       >
         <div />
-        <div
-          style={{
-            textAlign: "center",
-            fontWeight: 700,
-            fontSize: 14,
-            color: "var(--accent)",
-          }}
-        >
+        <div style={{ textAlign: "center", fontWeight: 700, fontSize: 14, color: "var(--accent)" }}>
           {me.name}
-          <br />
-          <span style={{ fontWeight: 400, fontSize: 12 }}>{myPts} pt</span>
         </div>
+        <div style={{ textAlign: "center", fontWeight: 700, fontSize: 14, color: "var(--orange)" }}>
+          {other.name}
+        </div>
+      </div>
+
+      {/* Points breakdown */}
+      {breakdown.map(([label, myV, otV]) => (
         <div
+          key={label}
           style={{
-            textAlign: "center",
-            fontWeight: 700,
-            fontSize: 14,
-            color: "var(--orange)",
+            display: "grid",
+            gridTemplateColumns: "90px 1fr 1fr",
+            gap: 6,
+            marginBottom: 3,
+            alignItems: "center",
           }}
         >
-          {other.name}
-          <br />
-          <span style={{ fontWeight: 400, fontSize: 12 }}>{otherPts} pt</span>
+          <div style={{ fontSize: 10, color: "var(--muted)" }}>{label}</div>
+          <div style={{ textAlign: "center", fontSize: 11, color: "var(--accent)", fontWeight: 600 }}>
+            {myV} pt
+          </div>
+          <div style={{ textAlign: "center", fontSize: 11, color: "var(--orange)", fontWeight: 600 }}>
+            {otV} pt
+          </div>
+        </div>
+      ))}
+
+      {/* Totaal */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "90px 1fr 1fr",
+          gap: 6,
+          marginTop: 4,
+          marginBottom: 14,
+          paddingTop: 6,
+          borderTop: "1px solid var(--border)",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700 }}>Totaal</div>
+        <div style={{ textAlign: "center", fontSize: 18, color: "var(--accent)", fontWeight: 900 }}>
+          {myPts} pt
+        </div>
+        <div style={{ textAlign: "center", fontSize: 18, color: "var(--orange)", fontWeight: 900 }}>
+          {otherPts} pt
         </div>
       </div>
 
@@ -1154,44 +1389,46 @@ function PlayerCompare({ me, other, state, onClose }) {
         otherVal={`${otherBreakdown.standingPts} pt`}
       />
 
-      {/* Group-by toggle */}
-      <div style={{ marginTop: 18, marginBottom: 10 }}>
-        <div
-          style={{
-            display: "flex",
-            background: "var(--bg)",
-            borderRadius: 8,
-            padding: 3,
-          }}
-        >
-          {[
-            ["ronde", "Per speelronde"],
-            ["poule", "Per poule"],
-          ].map(([v, l]) => (
-            <button
-              key={v}
-              onClick={() => setGroupBy(v)}
-              style={{
-                flex: 1,
-                padding: "6px",
-                background: groupBy === v ? "var(--accent)" : "none",
-                color: groupBy === v ? "#fff" : "var(--muted)",
-                border: "none",
-                borderRadius: 6,
-                cursor: "pointer",
-                fontWeight: 600,
-                fontSize: 12,
-                fontFamily: "var(--font)",
-              }}
-            >
-              {l}
-            </button>
-          ))}
+      {/* Group-by toggle: alleen in groepsfase */}
+      {!isKOPhase && (
+        <div style={{ marginTop: 18, marginBottom: 10 }}>
+          <div
+            style={{
+              display: "flex",
+              background: "var(--bg)",
+              borderRadius: 8,
+              padding: 3,
+            }}
+          >
+            {[
+              ["ronde", "Per speelronde"],
+              ["poule", "Per poule"],
+            ].map(([v, l]) => (
+              <button
+                key={v}
+                onClick={() => setGroupBy(v)}
+                style={{
+                  flex: 1,
+                  padding: "6px",
+                  background: groupBy === v ? "var(--accent)" : "none",
+                  color: groupBy === v ? "#fff" : "var(--muted)",
+                  border: "none",
+                  borderRadius: 6,
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  fontSize: 12,
+                  fontFamily: "var(--font)",
+                }}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Match sections */}
-      {sections.map((sec) => {
+      {/* Groepswedstrijden: verbergen in KO-fase */}
+      {!isKOPhase && sections.map((sec) => {
         const myGroupData = groupBy === "poule" ? myBreakdown.groups[sec.key] : null;
         const otherGroupData = groupBy === "poule" ? otherBreakdown.groups[sec.key] : null;
         return (
@@ -1208,6 +1445,33 @@ function PlayerCompare({ me, other, state, onClose }) {
           />
         );
       })}
+
+      {/* KO-wedstrijden: gebevroren rondes */}
+      {koSections.length > 0 && (
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: "var(--accent)",
+            textTransform: "uppercase",
+            letterSpacing: "0.08em",
+            marginTop: 14,
+            marginBottom: 8,
+          }}
+        >
+          KO-fase
+        </div>
+      )}
+      {koSections.map((sec) => (
+        <KOCompareSection
+          key={sec.key}
+          section={sec}
+          me={me}
+          other={other}
+          state={state}
+          richSlots={richSlots}
+        />
+      ))}
     </Overlay>
   );
 }
@@ -1413,12 +1677,12 @@ function CompareSection({ section, me, other, state, mySecPts, otherSecPts, myGr
             <div
               style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.3 }}
             >
-              <span style={{ fontWeight: 600, color: "var(--text)" }}>
+              <span style={{ color: "var(--text)" }}>
                 {FLAG[m.home]} {m.home}
               </span>
               <br />
-              <span>
-                vs {FLAG[m.away]} {m.away}
+              <span style={{ color: "var(--text)" }}>
+                {FLAG[m.away]} {m.away}
               </span>
               {r?.played && (
                 <div style={{ color: "var(--green)", fontWeight: 700 }}>
@@ -1468,6 +1732,325 @@ function CompareSection({ section, me, other, state, mySecPts, otherSecPts, myGr
         );
       })}
       <StandingCompareRow myGroupData={myGroupData} otherGroupData={otherGroupData} />
+    </div>
+  );
+}
+
+// ─── KO SCORE HEATMAP ────────────────────────────────────────────────────────
+
+function KOScoreHeatmap({ match, state, currentUserId, homeTeam, awayTeam }) {
+  const [hovered, setHovered] = useState(null);
+  const r = state.koResults[match.id];
+
+  const preds = state.users
+    .map((u) => u.predictions?.koScores?.[match.id])
+    .filter((p) => p?.home !== undefined && p.home !== "")
+    .map((p) => ({ home: parseInt(p.home, 10), away: parseInt(p.away, 10) }));
+
+  const grid = buildGrid(preds);
+  const total = preds.length;
+  const maxCount = total > 0 ? Math.max(...Object.values(grid)) : 1;
+
+  const actual =
+    r?.played && r.home90 !== undefined
+      ? { home: parseInt(r.home90, 10), away: parseInt(r.away90, 10) }
+      : null;
+
+  const currentUser = state.users.find((u) => u.id === currentUserId);
+  const myPredRaw = currentUser?.predictions?.koScores?.[match.id];
+  const myScore =
+    myPredRaw?.home !== undefined && myPredRaw.home !== ""
+      ? { home: parseInt(myPredRaw.home, 10), away: parseInt(myPredRaw.away, 10) }
+      : null;
+
+  const cols = Array.from({ length: MAX_GOALS + 1 }, (_, i) => i);
+  const rows = Array.from({ length: MAX_GOALS + 1 }, (_, i) => MAX_GOALS - i);
+
+  function countFor(h, a) {
+    return grid[`${h}-${a}`] || 0;
+  }
+
+  function cellBg(h, a, count) {
+    const isActual = actual && h === actual.home && a === actual.away;
+    if (isActual)
+      return `rgba(63,185,80,${Math.max(0.12 + (count / maxCount) * 0.88, 0.18)})`;
+    if (count === 0) return "rgba(255,255,255,0.03)";
+    return `rgba(88,166,255,${0.12 + (count / maxCount) * 0.88})`;
+  }
+
+  function cellBorder(h, a) {
+    const isActual = actual && h === actual.home && a === actual.away;
+    const isMy = myScore && h === myScore.home && a === myScore.away;
+    if (isActual) return "1.5px solid rgba(63,185,80,.7)";
+    if (isMy) return "2px solid rgba(255,255,255,.85)";
+    return "1px solid rgba(48,54,61,.5)";
+  }
+
+  function cellBoxShadow(h, a) {
+    const isActual = actual && h === actual.home && a === actual.away;
+    const isMy = myScore && h === myScore.home && a === myScore.away;
+    if (isMy && isActual) return "0 0 0 2.5px rgba(255,255,255,.7)";
+    return undefined;
+  }
+
+  if (total === 0) return null;
+
+  const hovCount = hovered ? countFor(hovered.home, hovered.away) : 0;
+  const homeLabel = homeTeam ? `${FLAG[homeTeam] || ""} ${homeTeam}` : "Thuis";
+  const awayLabel = awayTeam ? `${FLAG[awayTeam] || ""} ${awayTeam}` : "Uit";
+
+  return (
+    <div style={{ marginTop: 14 }}>
+      <div
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          color: "var(--accent)",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          marginBottom: 10,
+        }}
+      >
+        Score na 90' verdeling
+      </div>
+
+      {/* Tooltip */}
+      <div
+        style={{
+          height: 32,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          marginBottom: 10,
+        }}
+      >
+        {hovered ? (
+          <div
+            style={{
+              background: hovCount > 0 ? "rgba(88,166,255,.1)" : "rgba(255,255,255,.04)",
+              border: `1px solid ${hovCount > 0 ? "rgba(88,166,255,.3)" : "var(--border)"}`,
+              borderRadius: 8,
+              padding: "5px 14px",
+              fontSize: 13,
+              color: "var(--text)",
+              display: "flex",
+              gap: 10,
+              alignItems: "center",
+            }}
+          >
+            <span style={{ fontWeight: 700 }}>
+              {homeLabel} {hovered.home} – {hovered.away} {awayLabel}
+            </span>
+            <span style={{ color: "var(--muted)" }}>·</span>
+            <span
+              style={{
+                color: hovCount > 0 ? "var(--accent)" : "var(--muted)",
+                fontWeight: 700,
+              }}
+            >
+              {hovCount > 0
+                ? `${hovCount}× (${Math.round((hovCount / total) * 100)}%)`
+                : "niemand"}
+            </span>
+          </div>
+        ) : (
+          <div style={{ fontSize: 12, color: "var(--muted)", fontStyle: "italic" }}>
+            Hover over een cel voor details
+          </div>
+        )}
+      </div>
+
+      {/* Grid */}
+      <div style={{ display: "flex", gap: 0 }}>
+        {/* Y-axis label */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 24,
+            paddingBottom: 28,
+          }}
+        >
+          <div
+            style={{
+              writingMode: "vertical-rl",
+              transform: "rotate(180deg)",
+              fontSize: 10,
+              color: "var(--muted)",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              userSelect: "none",
+            }}
+          >
+            {homeLabel} doelpunten
+          </div>
+        </div>
+
+        <div style={{ flex: 1 }}>
+          {rows.map((homeGoals) => (
+            <div
+              key={homeGoals}
+              style={{ display: "flex", alignItems: "center", marginBottom: 3 }}
+            >
+              <div
+                style={{
+                  width: 18,
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color:
+                    actual && homeGoals === actual.home
+                      ? "var(--green)"
+                      : "var(--muted)",
+                  textAlign: "center",
+                  flexShrink: 0,
+                  marginRight: 4,
+                }}
+              >
+                {homeGoals}
+              </div>
+              {cols.map((awayGoals) => {
+                const count = countFor(homeGoals, awayGoals);
+                const isHovered =
+                  hovered?.home === homeGoals && hovered?.away === awayGoals;
+                return (
+                  <div
+                    key={awayGoals}
+                    onMouseEnter={() => setHovered({ home: homeGoals, away: awayGoals })}
+                    onMouseLeave={() => setHovered(null)}
+                    style={{
+                      flex: 1,
+                      aspectRatio: "1",
+                      marginRight: awayGoals < MAX_GOALS ? 3 : 0,
+                      background: cellBg(homeGoals, awayGoals, count),
+                      border: cellBorder(homeGoals, awayGoals),
+                      boxShadow: cellBoxShadow(homeGoals, awayGoals),
+                      borderRadius: 4,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: count > 0 ? "pointer" : "default",
+                      transition: "transform 0.1s",
+                      transform: isHovered ? "scale(1.15)" : "scale(1)",
+                      position: "relative",
+                      zIndex: isHovered ? 2 : 1,
+                    }}
+                  >
+                    {count > 0 && (
+                      <span
+                        style={{
+                          fontSize: count >= 3 ? 12 : 10,
+                          fontWeight: 900,
+                          color:
+                            actual &&
+                            homeGoals === actual.home &&
+                            awayGoals === actual.away
+                              ? "rgba(63,185,80,.95)"
+                              : `rgba(255,255,255,${0.5 + (count / maxCount) * 0.5})`,
+                          lineHeight: 1,
+                        }}
+                      >
+                        {count}
+                      </span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+
+          {/* X-axis numbers */}
+          <div style={{ display: "flex", marginTop: 5 }}>
+            <div style={{ width: 22, marginRight: 4 }} />
+            {cols.map((a) => (
+              <div
+                key={a}
+                style={{
+                  flex: 1,
+                  textAlign: "center",
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: actual && a === actual.away ? "var(--green)" : "var(--muted)",
+                  marginRight: a < MAX_GOALS ? 3 : 0,
+                }}
+              >
+                {a}
+              </div>
+            ))}
+          </div>
+
+          {/* X-axis label */}
+          <div
+            style={{
+              textAlign: "center",
+              marginTop: 5,
+              fontSize: 10,
+              color: "var(--muted)",
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+            }}
+          >
+            {awayLabel} doelpunten
+          </div>
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div
+        style={{
+          display: "flex",
+          gap: 14,
+          marginTop: 14,
+          paddingTop: 12,
+          borderTop: "1px solid var(--border)",
+          flexWrap: "wrap",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+          <div
+            style={{
+              width: 12,
+              height: 12,
+              borderRadius: 2,
+              background: "rgba(88,166,255,.7)",
+              border: "1px solid rgba(88,166,255,.4)",
+            }}
+          />
+          <span style={{ fontSize: 11, color: "var(--muted)" }}>Voorspelling</span>
+        </div>
+        {myScore && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 2,
+                background: "rgba(255,255,255,.08)",
+                border: "2px solid rgba(255,255,255,.85)",
+              }}
+            />
+            <span style={{ fontSize: 11, color: "var(--muted)" }}>Jouw score</span>
+          </div>
+        )}
+        {actual && (
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <div
+              style={{
+                width: 12,
+                height: 12,
+                borderRadius: 2,
+                background: "rgba(63,185,80,.5)",
+                border: "1.5px solid rgba(63,185,80,.7)",
+              }}
+            />
+            <span style={{ fontSize: 11, color: "var(--muted)" }}>Uitslag</span>
+          </div>
+        )}
+        <div style={{ marginLeft: "auto", fontSize: 11, color: "var(--muted)" }}>
+          {total} score{total !== 1 ? "s" : ""} ingevuld
+        </div>
+      </div>
     </div>
   );
 }
@@ -1693,6 +2276,14 @@ function SingleKOMatchCompare({ match, state, currentUserId, onClose }) {
           Niemand heeft deze wedstrijd ingevuld.
         </div>
       )}
+
+      <KOScoreHeatmap
+        match={match}
+        state={state}
+        currentUserId={currentUserId}
+        homeTeam={homeTeam}
+        awayTeam={awayTeam}
+      />
     </Overlay>
   );
 }
