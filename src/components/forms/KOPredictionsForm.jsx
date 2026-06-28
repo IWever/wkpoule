@@ -82,9 +82,7 @@ function getDropdownTeams(homeDesc, awayDesc, match, pred, koResults) {
       ? [...teamsFromSlot(koMatch.awaySlot, pred, koResults)]
       : null);
   if (!homeTeams || !awayTeams) return ALL_TEAMS;
-  return [...new Set([...homeTeams, ...awayTeams])].sort((a, b) =>
-    a.localeCompare(b, "nl")
-  );
+  return [...new Set([...homeTeams, ...awayTeams])];
 }
 
 function KOPredictionsForm({ user, state, onSave, onBack }) {
