@@ -235,7 +235,7 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
         />
       ) : (
         visibleMatches.map((m) => {
-          const matchFrozen = legacyFrozen || !!frozenRounds[m.round];
+          const matchFrozen = legacyFrozen || !!frozenRounds[m.round] || !!state.koResults[m.id]?.played;
           return (
             <KOMatchCard
               key={m.id}
