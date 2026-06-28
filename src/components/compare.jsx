@@ -1699,7 +1699,7 @@ function SingleKOMatchCompare({ match, state, currentUserId, onClose }) {
 
 // ─── EXTRA QUESTION COMPARE ───────────────────────────────────────────────────
 
-function PickRow({ label, pickers, total, correct, isMyPick, currentUserId, extra }) {
+function PickRow({ label, pickers, total, correct, isMyPick, extra }) {
   const pct = total > 0 ? Math.round((pickers.length / total) * 100) : 0;
   return (
     <div style={{ marginBottom: 14 }}>
@@ -1758,24 +1758,6 @@ function PickRow({ label, pickers, total, correct, isMyPick, currentUserId, extr
             borderRadius: 3,
           }}
         />
-      </div>
-      <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.7 }}>
-        {pickers.map((p, i) => (
-          <span key={p.userId}>
-            {i > 0 && (
-              <span style={{ color: "var(--border)", margin: "0 3px" }}>·</span>
-            )}
-            <span
-              style={{
-                color:
-                  p.userId === currentUserId ? "var(--accent)" : "inherit",
-                fontWeight: p.userId === currentUserId ? 700 : 400,
-              }}
-            >
-              {p.name}
-            </span>
-          </span>
-        ))}
       </div>
     </div>
   );
@@ -1877,7 +1859,6 @@ function SimplePickCompare({ questionKey, state, currentUserId, onClose }) {
             total={total}
             correct={cfg.correct ? cfg.correct.includes(value) : false}
             isMyPick={value === myPick}
-            currentUserId={currentUserId}
           />
         ))
       )}
@@ -1987,7 +1968,6 @@ function TopScorersCompare({ state, currentUserId, onClose }) {
                   total={total}
                   correct={correctPlayer?.name === value}
                   isMyPick={value === myPick}
-                  currentUserId={currentUserId}
                 />
               ))
             )}
@@ -2059,7 +2039,6 @@ function SurpriseTeamCompare({ state, currentUserId, onClose }) {
               total={total}
               correct={stagePts > 0}
               isMyPick={isMyPick}
-              currentUserId={currentUserId}
               extra={stageExtra}
             />
           );
@@ -2163,7 +2142,6 @@ function TopOutCompare({ state, currentUserId, onClose }) {
               total={total}
               correct={isOut}
               isMyPick={team === myPick}
-              currentUserId={currentUserId}
               extra={statusExtra}
             />
           );
