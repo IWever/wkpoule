@@ -18,7 +18,6 @@ const KO_DATES = {
 function calcLast5Pts(user, state) {
   const koMatchesAll = KO_STRUCTURE.map((m) => ({
     ...m,
-    dt: KO_DATES[m.round] + "T20:00",
     isKO: true,
   }));
   const allMatches = [

@@ -20,6 +20,7 @@ import {
   deriveGroupStandingsFromResults,
   groupsAllFilled,
   resolveSlotRich,
+  buildRichKOSlots,
   deriveSurpriseStage,
   deriveTopOuts,
   fmtDateTime,
@@ -192,10 +193,12 @@ function AdminPanel({ state, setState }) {
 
 function AdminHome({ state, onUpdResult, onUpdKO }) {
   const groupMatches = GROUP_MATCHES.map((m) => ({ ...m, isKO: false }));
+  const richSlots = buildRichKOSlots(null, state.results, state.koResults);
   const koMatches = KO_STRUCTURE.map((m) => ({
     ...m,
-    dt: KO_DATES[m.round] + "T20:00",
     isKO: true,
+    homeDesc: richSlots[m.id]?.home,
+    awayDesc: richSlots[m.id]?.away,
   }));
   const allMatches = [...groupMatches, ...koMatches].sort((a, b) =>
     (a.dt || "").localeCompare(b.dt || "")
@@ -486,7 +489,9 @@ function AdminMatchRow({ m, state, onUpdResult, onUpdKO }) {
         style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13 }}
       >
         <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>
-          {m.isKO ? m.homeSlot || "?" : `${FLAG[m.home] || ""} ${m.home}`}
+          {m.isKO
+            ? <SlotDisplay desc={m.homeDesc} align="right" size={13} />
+            : `${FLAG[m.home] || ""} ${m.home}`}
         </span>
         <ScoreInputs
           homeVal={m.isKO ? r.home90 : r.home}
@@ -499,7 +504,9 @@ function AdminMatchRow({ m, state, onUpdResult, onUpdKO }) {
           }
         />
         <span style={{ flex: 1, fontWeight: 600 }}>
-          {m.isKO ? m.awaySlot || "?" : `${FLAG[m.away] || ""} ${m.away}`}
+          {m.isKO
+            ? <SlotDisplay desc={m.awayDesc} align="left" size={13} />
+            : `${FLAG[m.away] || ""} ${m.away}`}
         </span>
       </div>
       <div
