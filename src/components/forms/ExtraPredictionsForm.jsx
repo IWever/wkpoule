@@ -122,7 +122,24 @@ function ResultBadge({ correct, pts }) {
   return null;
 }
 
-function QuestionCard({ label, pts, description, children, resultBadge }) {
+function CorrectAnswerRow({ children }) {
+  return (
+    <div
+      style={{
+        marginTop: 8,
+        paddingTop: 8,
+        borderTop: "1px solid var(--border)",
+        fontSize: 12,
+        color: "var(--muted)",
+      }}
+    >
+      Uitslag:{" "}
+      <span style={{ color: "var(--text)", fontWeight: 600 }}>{children}</span>
+    </div>
+  );
+}
+
+function QuestionCard({ label, pts, description, children, resultBadge, correctNode }) {
   return (
     <div style={S.card()}>
       <div
@@ -149,6 +166,7 @@ function QuestionCard({ label, pts, description, children, resultBadge }) {
         </div>
       )}
       {children}
+      {correctNode}
     </div>
   );
 }
@@ -185,12 +203,22 @@ function TeamSelect({ value, onChange, disabled, placeholder, teams }) {
 function ChampionCard({ pred, frozen, set, state }) {
   const finalResult = state?.koResults?.["FINAL"];
   let resultBadge = null;
-  if (finalResult?.played && pred.champion) {
-    const correct = pred.champion === finalResult.winner;
-    resultBadge = <ResultBadge correct={correct} pts={PTS_EXTRA.champion} />;
+  let correctNode = null;
+  if (finalResult?.played) {
+    if (pred.champion) {
+      const correct = pred.champion === finalResult.winner;
+      resultBadge = <ResultBadge correct={correct} pts={PTS_EXTRA.champion} />;
+    }
+    if (finalResult.winner) {
+      correctNode = (
+        <CorrectAnswerRow>
+          {FLAG[finalResult.winner] || "🏳️"} {finalResult.winner}
+        </CorrectAnswerRow>
+      );
+    }
   }
   return (
-    <QuestionCard label="🏆 Wereldkampioen" pts={PTS_EXTRA.champion} resultBadge={resultBadge}>
+    <QuestionCard label="🏆 Wereldkampioen" pts={PTS_EXTRA.champion} resultBadge={resultBadge} correctNode={correctNode}>
       <TeamSelect
         value={pred.champion}
         onChange={(e) => set(["champion"], e.target.value)}
@@ -260,6 +288,41 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry, state 
         </strong>{" "}
         pt
       </div>
+      {topScorersKnown && (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: "8px 10px",
+            background: "var(--bg)",
+            borderRadius: 7,
+            border: "1px solid var(--border)",
+          }}
+        >
+          <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>
+            Uitslag topscoorders:
+          </div>
+          {[...resultTopScorers]
+            .sort((a, b) => a.rank - b.rank)
+            .map((r) => (
+              <div
+                key={r.name}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                  fontSize: 12,
+                  marginBottom: 3,
+                }}
+              >
+                <span style={{ color: "var(--muted)", minWidth: 14 }}>{r.rank}.</span>
+                <span style={{ fontWeight: 600, color: "var(--text)" }}>{r.name}</span>
+                <span style={{ color: "var(--accent)", marginLeft: "auto", fontWeight: 700 }}>
+                  +{PTS_TOPSCORER_RANK[r.rank] || 0} pt
+                </span>
+              </div>
+            ))}
+        </div>
+      )}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {[0, 1, 2].map((i) => {
           const country = topScorerCountries[i] || "";
@@ -397,15 +460,20 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry, state 
 function NlStageCard({ pred, frozen, set, state }) {
   const nlStageResult = state?.results?.["NL_STAGE"];
   let resultBadge = null;
-  if (nlStageResult && pred.nlStage) {
-    const correct = pred.nlStage === nlStageResult;
-    resultBadge = <ResultBadge correct={correct} pts={PTS_EXTRA.nlStage} />;
+  let correctNode = null;
+  if (nlStageResult) {
+    if (pred.nlStage) {
+      const correct = pred.nlStage === nlStageResult;
+      resultBadge = <ResultBadge correct={correct} pts={PTS_EXTRA.nlStage} />;
+    }
+    correctNode = <CorrectAnswerRow>{nlStageResult}</CorrectAnswerRow>;
   }
   return (
     <QuestionCard
       label="🇳🇱 Hoe ver komt Nederland?"
       pts={PTS_EXTRA.nlStage}
       resultBadge={resultBadge}
+      correctNode={correctNode}
     >
       <select
         disabled={frozen}
@@ -538,8 +606,9 @@ function SurpriseTeamCard({ pred, frozen, set, state }) {
 
 function TopOutCard({ pred, frozen, set, state }) {
   let resultBadge = null;
+  let correctNode = null;
+  const outs = state ? deriveTopOuts(state.results || {}, state.koResults || {}) : [];
   if (pred.topOut && state) {
-    const outs = deriveTopOuts(state.results || {}, state.koResults || {});
     if (outs.includes(pred.topOut)) {
       resultBadge = <ResultBadge correct={true} pts={PTS_EXTRA.topOut} />;
     } else {
@@ -551,12 +620,20 @@ function TopOutCard({ pred, frozen, set, state }) {
       }
     }
   }
+  if (outs.length > 0) {
+    correctNode = (
+      <CorrectAnswerRow>
+        {outs.map((t) => `${FLAG[t] || "🏳️"} ${t}`).join(", ")}
+      </CorrectAnswerRow>
+    );
+  }
   return (
     <QuestionCard
       label="💥 Welk topland haalt de achtste finales niet?"
       pts={PTS_EXTRA.topOut}
       description="Kies een van de 12 hoogst geklasseerde landen die de achtste finales niet bereiken — uitgeschakeld in de groepsfase of in de zestiende finales."
       resultBadge={resultBadge}
+      correctNode={correctNode}
     >
       <TeamSelect
         value={pred.topOut}
@@ -571,11 +648,19 @@ function TopOutCard({ pred, frozen, set, state }) {
 
 function MostCleanSheetsCard({ pred, frozen, set, state }) {
   let resultBadge = null;
+  let correctNode = null;
   const csResult = state?.results?.["MOST_CLEAN_SHEETS"];
-  if (csResult && pred.mostCleanSheets) {
+  if (csResult) {
     const adminCS = Array.isArray(csResult) ? csResult : [csResult];
-    const correct = adminCS.includes(pred.mostCleanSheets);
-    resultBadge = <ResultBadge correct={correct} pts={PTS_EXTRA.mostCleanSheets} />;
+    if (pred.mostCleanSheets) {
+      const correct = adminCS.includes(pred.mostCleanSheets);
+      resultBadge = <ResultBadge correct={correct} pts={PTS_EXTRA.mostCleanSheets} />;
+    }
+    correctNode = (
+      <CorrectAnswerRow>
+        {adminCS.map((t) => `${FLAG[t] || "🏳️"} ${t}`).join(", ")}
+      </CorrectAnswerRow>
+    );
   }
   return (
     <QuestionCard
@@ -583,6 +668,7 @@ function MostCleanSheetsCard({ pred, frozen, set, state }) {
       pts={PTS_EXTRA.mostCleanSheets}
       description="Welk land houdt op het hele toernooi de meeste clean sheets (nul gehouden)?"
       resultBadge={resultBadge}
+      correctNode={correctNode}
     >
       <TeamSelect
         value={pred.mostCleanSheets}
@@ -597,10 +683,18 @@ function MostCleanSheetsCard({ pred, frozen, set, state }) {
 
 function YellowCardsCard({ pred, frozen, set, state }) {
   let resultBadge = null;
+  let correctNode = null;
   const yellowResult = state?.results?.["YELLOW_CARDS"];
-  if (yellowResult && pred.yellowCards) {
-    const correct = pred.yellowCards === yellowResult;
-    resultBadge = <ResultBadge correct={correct} pts={PTS_EXTRA.yellowCards} />;
+  if (yellowResult) {
+    if (pred.yellowCards) {
+      const correct = pred.yellowCards === yellowResult;
+      resultBadge = <ResultBadge correct={correct} pts={PTS_EXTRA.yellowCards} />;
+    }
+    correctNode = (
+      <CorrectAnswerRow>
+        {FLAG[yellowResult] || "🏳️"} {yellowResult}
+      </CorrectAnswerRow>
+    );
   }
   return (
     <QuestionCard
@@ -608,6 +702,7 @@ function YellowCardsCard({ pred, frozen, set, state }) {
       pts={PTS_EXTRA.yellowCards}
       description="Welk land heeft aan het einde van het toernooi de meeste gele kaarten ontvangen?"
       resultBadge={resultBadge}
+      correctNode={correctNode}
     >
       <TeamSelect
         value={pred.yellowCards}
@@ -622,11 +717,19 @@ function YellowCardsCard({ pred, frozen, set, state }) {
 
 function MostGroupGoalsCard({ pred, frozen, set, state }) {
   let resultBadge = null;
+  let correctNode = null;
   const mggResult = state?.results?.["MOST_GROUP_GOALS"];
-  if (mggResult && pred.mostGroupGoals) {
+  if (mggResult) {
     const adminMGG = Array.isArray(mggResult) ? mggResult : [mggResult];
-    const correct = adminMGG.includes(pred.mostGroupGoals);
-    resultBadge = <ResultBadge correct={correct} pts={PTS_EXTRA.mostGroupGoals} />;
+    if (pred.mostGroupGoals) {
+      const correct = adminMGG.includes(pred.mostGroupGoals);
+      resultBadge = <ResultBadge correct={correct} pts={PTS_EXTRA.mostGroupGoals} />;
+    }
+    correctNode = (
+      <CorrectAnswerRow>
+        {adminMGG.map((t) => `${FLAG[t] || "🏳️"} ${t}`).join(", ")}
+      </CorrectAnswerRow>
+    );
   }
   return (
     <QuestionCard
@@ -634,6 +737,7 @@ function MostGroupGoalsCard({ pred, frozen, set, state }) {
       pts={PTS_EXTRA.mostGroupGoals}
       description="Welk land scoort de meeste doelpunten tijdens de groepsfase?"
       resultBadge={resultBadge}
+      correctNode={correctNode}
     >
       <TeamSelect
         value={pred.mostGroupGoals}
