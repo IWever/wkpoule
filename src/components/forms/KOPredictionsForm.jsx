@@ -567,7 +567,9 @@ function KOMatchCard({
           🏆 Winnaar
         </div>
         {useButtons ? (
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+          <div style={allCandidates.length === 4
+            ? { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }
+            : { display: "flex", gap: 6, flexWrap: "wrap" }}>
             {allCandidates.map((t) => (
               <button
                 key={t}
@@ -577,8 +579,8 @@ function KOMatchCard({
                   onSet(["koWinners", m.id], predWinner === t ? "" : t)
                 }
                 style={{
-                  flex: 1,
-                  minWidth: 90,
+                  flex: allCandidates.length === 4 ? undefined : 1,
+                  minWidth: allCandidates.length === 4 ? undefined : 90,
                   padding: "8px 8px",
                   borderRadius: 8,
                   border: `2px solid ${
