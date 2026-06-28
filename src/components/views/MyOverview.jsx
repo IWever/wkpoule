@@ -1042,11 +1042,11 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
         {r?.played && pw && (
           <div style={{ minWidth: 60, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: winOk ? "var(--green)" : "var(--red)" }}>
-              {winOk ? `+${schema.winner} winnaar` : "✗"}
+              {winOk ? `+${schema.winner} winnaar` : "✗ winnaar"}
             </span>
             {ps?.home !== undefined && (
               <span style={{ fontSize: 11, fontWeight: 700, color: scoreOk || diffOk ? "var(--green)" : "var(--red)" }}>
-                {scoreOk ? `+${schema.exact} uitslag` : diffOk ? `+${schema.diff} verschil` : "✗"}
+                {scoreOk ? `+${schema.exact} uitslag` : diffOk ? `+${schema.diff} verschil` : "✗ uitslag"}
               </span>
             )}
           </div>
