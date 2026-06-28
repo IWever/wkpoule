@@ -961,21 +961,26 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
 
   function renderTeam(team, desc, align) {
     let emoji = "";
-    let bold = false;
+    let emojiColor = null;
     if (!r?.played) {
-      if (team && team === pw) { bold = true; emoji = "⭐"; }
+      if (team && team === pw) emoji = "⭐";
     } else {
-      if (team && team === r.winner) {
-        bold = true;
-        if (pw) emoji = winOk ? "✓" : "✗";
+      if (team && team === r.winner && pw) {
+        emoji = winOk ? "✓" : "✗";
+        emojiColor = winOk ? "var(--green)" : "var(--red)";
       }
     }
 
     if (team) {
       const isNL = team === "Nederland";
       return (
-        <span style={{ flex: 1, fontSize: 12, textAlign: align, fontWeight: bold ? 700 : 600, color: bold && isNL ? "var(--orange)" : "var(--text)" }}>
-          {FLAG[team] || "🏳️"} {team}{emoji ? ` ${emoji}` : ""}
+        <span style={{ flex: 1, fontSize: 12, textAlign: align }}>
+          <span style={{ fontWeight: 700, color: isNL ? "var(--orange)" : "var(--text)" }}>
+            {FLAG[team] || "🏳️"} {team}
+          </span>
+          {emoji && (
+            <span style={{ marginLeft: 3, color: emojiColor ?? undefined }}>{emoji}</span>
+          )}
         </span>
       );
     }
@@ -1035,13 +1040,13 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
         {renderTeam(awayTeam, awayDesc, "left")}
 
         {r?.played && pw && (
-          <div style={{ minWidth: 44, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+          <div style={{ minWidth: 60, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: winOk ? "var(--green)" : "var(--red)" }}>
-              {winOk ? `+${schema.winner}` : "✗"}
+              {winOk ? `+${schema.winner} winnaar` : "✗"}
             </span>
             {ps?.home !== undefined && (
               <span style={{ fontSize: 11, fontWeight: 700, color: scoreOk || diffOk ? "var(--green)" : "var(--red)" }}>
-                {scoreOk ? `+${schema.exact}` : diffOk ? `+${schema.diff}` : "✗"}
+                {scoreOk ? `+${schema.exact} uitslag` : diffOk ? `+${schema.diff} verschil` : "✗"}
               </span>
             )}
           </div>
