@@ -1167,7 +1167,7 @@ function PlayerCompare({ me, other, state, onClose }) {
   const myBreakdown = calcGroupPointsBreakdown(me, state.results);
   const otherBreakdown = calcGroupPointsBreakdown(other, state.results);
 
-  const isKOPhase = state.fase === "ko";
+  const isKOPhase = !!state.groupFrozen;
   const frozenKORounds = state.koFrozenRounds || {};
   const richSlots = buildRichKOSlots({}, state.results, state.koResults);
 
