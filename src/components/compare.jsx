@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GROUPS, GROUP_MATCHES, PTS_KO, PTS_TOPSCORER_RANK, PTS_SURPRISE, FLAG, PTS_STANDING } from "../data/tournamentData";
+import { GROUPS, GROUP_MATCHES, PTS_KO, PTS_TOPSCORER_RANK, PTS_SURPRISE, FLAG, PTS_STANDING, PLAYERS_BY_COUNTRY } from "../data/tournamentData";
 import { MATCH_FACTS } from "../data/matchFacts";
 import {
   calcGroupMatchPts,
@@ -1866,6 +1866,12 @@ function SimplePickCompare({ questionKey, state, currentUserId, onClose }) {
   );
 }
 
+// reverse lookup: player name → country
+const PLAYER_COUNTRY = {};
+Object.entries(PLAYERS_BY_COUNTRY).forEach(([country, players]) => {
+  players.forEach((p) => { PLAYER_COUNTRY[p.name] = country; });
+});
+
 function TopScorersCompare({ state, currentUserId, onClose }) {
   const { users = [], results = {} } = state;
   const resultTopScorers = Array.isArray(results["TOP_SCORERS"])
@@ -1931,7 +1937,7 @@ function TopScorersCompare({ state, currentUserId, onClose }) {
           Uitslag:{" "}
           {[...resultTopScorers]
             .sort((a, b) => a.rank - b.rank)
-            .map((r) => r.name)
+            .map((r) => `${FLAG[r.country] || FLAG[PLAYER_COUNTRY[r.name]] || "🏳️"} ${r.name}`)
             .join(", ")}
         </div>
       )}
@@ -1939,16 +1945,19 @@ function TopScorersCompare({ state, currentUserId, onClose }) {
       {players.length === 0 ? (
         <div style={{ color: "var(--muted)", fontSize: 12 }}>Niemand ingevuld.</div>
       ) : (
-        players.map((player) => (
-          <PickRow
-            key={player}
-            label={player}
-            pickers={Array(countByPlayer[player]).fill(0)}
-            total={totalFilled}
-            correct={correctNames.has(player)}
-            isMyPick={myPickSet.has(player)}
-          />
-        ))
+        players.map((player) => {
+          const flag = FLAG[PLAYER_COUNTRY[player]] || "🏳️";
+          return (
+            <PickRow
+              key={player}
+              label={`${flag} ${player}`}
+              pickers={Array(countByPlayer[player]).fill(0)}
+              total={totalFilled}
+              correct={correctNames.has(player)}
+              isMyPick={myPickSet.has(player)}
+            />
+          );
+        })
       )}
     </Overlay>
   );
