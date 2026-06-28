@@ -960,6 +960,14 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
   const richSlots = buildRichKOSlots(pred, state.results, state.koResults);
   const homeDesc = richSlots[m.id]?.home;
   const awayDesc = richSlots[m.id]?.away;
+  const homeTeam = homeDesc?.type === "team" ? homeDesc.team : null;
+  const awayTeam = awayDesc?.type === "team" ? awayDesc.team : null;
+
+  const labelBadge = (
+    <span style={{ fontSize: 10, color: "var(--orange)", fontWeight: 700, background: "rgba(240,136,62,.1)", borderRadius: 4, padding: "1px 6px" }}>
+      {m.label}
+    </span>
+  );
 
   return (
     <div
@@ -969,139 +977,96 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
         ...S.card(),
         padding: "8px 10px",
         border: `1px solid ${
-          winOk
-            ? "rgba(63,185,80,.4)"
-            : winNope
-            ? "rgba(248,81,73,.3)"
-            : "var(--border)"
+          winOk ? "rgba(63,185,80,.4)" : winNope ? "rgba(248,81,73,.3)" : "var(--border)"
         }`,
         cursor: canCompare ? "pointer" : "default",
       }}
     >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 5,
-        }}
-      >
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: r?.played ? 8 : 5 }}>
         <span style={{ fontSize: 10, color: "var(--muted)" }}>
           {m.dt ? fmtDateTime(m.dt) : ""}
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {canCompare && (
-            <span style={{ fontSize: 10, color: "var(--muted)" }}>info →</span>
+          {canCompare && <span style={{ fontSize: 10, color: "var(--muted)" }}>info →</span>}
+          {labelBadge}
+          {r?.played && (
+            <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+              {winOk && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green)" }}>
+                  +{schema.winner}{scoreOk ? ` +${schema.exact}` : diffOk ? ` +${schema.diff}` : ""} pt
+                </span>
+              )}
+              {winNope && (scoreOk || diffOk) && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--yellow)" }}>
+                  +{scoreOk ? schema.exact : schema.diff} pt
+                </span>
+              )}
+              {winNope && !scoreOk && !diffOk && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--red)" }}>✗</span>
+              )}
+            </div>
           )}
-          <span
-            style={{
-              fontSize: 10,
-              color: "var(--orange)",
-              fontWeight: 700,
-              background: "rgba(240,136,62,.1)",
-              borderRadius: 4,
-              padding: "1px 6px",
-            }}
-          >
-            {m.label}
+        </div>
+      </div>
+
+      {r?.played ? (
+        <>
+          {/* Uitslag */}
+          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 7 }}>
+            <span style={{ flex: 1, textAlign: "right", fontSize: 13, fontWeight: r.winner === homeTeam ? 700 : 400 }}>
+              {homeTeam ? <>{FLAG[homeTeam] || ""} {homeTeam}</> : "?"}
+            </span>
+            <span style={{ fontWeight: 700, fontSize: 14, background: "rgba(255,255,255,.06)", borderRadius: 4, padding: "2px 9px", flexShrink: 0 }}>
+              {r.home90}–{r.away90}
+            </span>
+            <span style={{ flex: 1, fontSize: 13, fontWeight: r.winner === awayTeam ? 700 : awayTeam ? 400 : 400 }}>
+              {awayTeam ? <>{FLAG[awayTeam] || ""} {awayTeam}</> : "?"}
+            </span>
+          </div>
+          {/* Jouw voorspelling */}
+          <div style={{ borderTop: "1px solid var(--border)", paddingTop: 6, display: "flex", alignItems: "center", gap: 8, fontSize: 11 }}>
+            <span style={{ color: "var(--muted)", flexShrink: 0 }}>Jij:</span>
+            {pw ? (
+              <>
+                <span style={{ fontWeight: 600, color: winOk ? "var(--green)" : winNope ? "var(--red)" : "var(--text)" }}>
+                  {FLAG[pw] || ""} {pw}
+                </span>
+                {ps?.home !== undefined && (
+                  <span style={{ color: "var(--muted)" }}>{ps.home}–{ps.away}</span>
+                )}
+              </>
+            ) : (
+              <span style={{ color: "var(--muted)", fontStyle: "italic" }}>niet ingevuld</span>
+            )}
+          </div>
+        </>
+      ) : (
+        /* Nog te spelen */
+        <div style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}>
+          <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>
+            <SlotDisplay desc={homeDesc} align="right" size={12} />
+          </span>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 1, minWidth: 90 }}>
+            {pw ? (
+              <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+                <span style={{ fontSize: 10, color: "var(--muted)" }}>Jij:</span>
+                <span style={{ fontWeight: 700, color: "var(--orange)", background: "rgba(240,136,62,.1)", borderRadius: 4, padding: "1px 7px", fontSize: 13 }}>
+                  {FLAG[pw] || ""} {pw}
+                </span>
+              </div>
+            ) : (
+              <span style={{ fontSize: 10, color: "var(--muted)", fontStyle: "italic" }}>niet ingevuld</span>
+            )}
+            {ps?.home !== undefined && (
+              <span style={{ fontSize: 10, color: "var(--muted)" }}>{ps.home}–{ps.away}</span>
+            )}
+          </div>
+          <span style={{ flex: 1, fontWeight: 600 }}>
+            <SlotDisplay desc={awayDesc} align="left" size={12} />
           </span>
         </div>
-      </div>
-      <div
-        style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}
-      >
-        <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>
-          <SlotDisplay desc={homeDesc} align="right" size={12} />
-        </span>
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            alignItems: "center",
-            gap: 1,
-            minWidth: 90,
-          }}
-        >
-          {pw ? (
-            <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
-              <span style={{ fontSize: 10, color: "var(--muted)" }}>Jij:</span>
-              <span
-                style={{
-                  fontWeight: 700,
-                  color: "var(--orange)",
-                  background: "rgba(240,136,62,.1)",
-                  borderRadius: 4,
-                  padding: "1px 7px",
-                  fontSize: 13,
-                }}
-              >
-                {FLAG[pw] || ""} {pw}
-              </span>
-            </div>
-          ) : (
-            <span
-              style={{
-                fontSize: 10,
-                color: "var(--muted)",
-                fontStyle: "italic",
-              }}
-            >
-              niet ingevuld
-            </span>
-          )}
-          {ps?.home !== undefined && (
-            <span style={{ fontSize: 10, color: "var(--muted)" }}>
-              {ps.home}–{ps.away}
-            </span>
-          )}
-          {r?.played && (
-            <span style={{ fontSize: 10, color: "var(--muted)" }}>
-              → winnaar: {FLAG[r.winner] || ""} {r.winner}
-            </span>
-          )}
-        </div>
-        <span style={{ flex: 1, fontWeight: 600 }}>
-          <SlotDisplay desc={awayDesc} align="left" size={12} />
-        </span>
-        <div
-          style={{
-            minWidth: 40,
-            textAlign: "right",
-            display: "flex",
-            gap: 3,
-            justifyContent: "flex-end",
-          }}
-        >
-          {winOk && (
-            <span
-              style={{ color: "var(--green)", fontWeight: 700, fontSize: 11 }}
-            >
-              +{schema.winner}
-            </span>
-          )}
-          {winNope && (
-            <span
-              style={{ color: "var(--red)", fontWeight: 700, fontSize: 11 }}
-            >
-              ✗
-            </span>
-          )}
-          {diffOk && (
-            <span
-              style={{ color: "var(--yellow)", fontWeight: 700, fontSize: 11 }}
-            >
-              +{schema.diff}
-            </span>
-          )}
-          {scoreOk && (
-            <span
-              style={{ color: "var(--green)", fontWeight: 700, fontSize: 11 }}
-            >
-              +{schema.exact}
-            </span>
-          )}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
