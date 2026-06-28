@@ -146,6 +146,21 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
               ? isRoundFrozen("final") && isRoundFrozen("3rd")
               : isRoundFrozen(r.key);
           const isActive = activeRound === r.key;
+
+          let progress = null;
+          if (r.key !== "bracket") {
+            const roundMatches = KO_STRUCTURE.filter((m) =>
+              r.key === "final"
+                ? m.round === "final" || m.round === "3rd"
+                : m.round === r.key
+            );
+            const total  = roundMatches.length;
+            const filled = roundMatches.filter((m) => pred.koWinners?.[m.id]).length;
+            if (filled > 0) {
+              progress = { filled, total, complete: filled === total };
+            }
+          }
+
           return (
             <button
               key={r.key}
@@ -167,6 +182,17 @@ function KOPredictionsForm({ user, state, onSave, onBack }) {
               }}
             >
               {r.label}
+              {progress && (
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 700,
+                  color: progress.complete
+                    ? (isActive ? "rgba(255,255,255,.85)" : "var(--green)")
+                    : (isActive ? "rgba(255,255,255,.7)" : "var(--muted)"),
+                }}>
+                  {progress.complete ? "✓" : `${progress.filled}/${progress.total}`}
+                </span>
+              )}
               {(tabFrozen || legacyFrozen) && (
                 <span style={{ fontSize: 10 }}>🔒</span>
               )}
