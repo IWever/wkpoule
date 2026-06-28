@@ -1096,8 +1096,8 @@ function KOCompareSection({ section, me, other, state, richSlots }) {
             }}
           >
             <div style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.4 }}>
-              <div style={{ fontWeight: 600, color: "var(--text)" }}>{homeLabel}</div>
-              <div>vs {awayLabel}</div>
+              <div style={{ color: "var(--text)" }}>{homeLabel}</div>
+              <div style={{ color: "var(--text)" }}>{awayLabel}</div>
               {r?.played && (
                 <div style={{ color: "var(--green)", fontWeight: 700, marginTop: 2 }}>
                   {FLAG[r.winner] || ""} {r.winner}
@@ -1203,6 +1203,25 @@ function PlayerCompare({ me, other, state, onClose }) {
     }, 0);
   }
 
+  function calcKOTotalPts(u) {
+    return KO_STRUCTURE.reduce((sum, m) => {
+      const res = calcKOMatchPts(m, u.predictions, state.koResults);
+      return sum + (res?.pts ?? 0);
+    }, 0);
+  }
+
+  const myKOPts = calcKOTotalPts(me);
+  const otKOPts = calcKOTotalPts(other);
+  const myExtraPts = myPts - myBreakdown.matchPts - myBreakdown.standingPts - myKOPts;
+  const otExtraPts = otherPts - otherBreakdown.matchPts - otherBreakdown.standingPts - otKOPts;
+
+  const breakdown = [
+    ["Extra vragen", myExtraPts, otExtraPts],
+    ["Groepswedstrijden", myBreakdown.matchPts, otherBreakdown.matchPts],
+    ["Stand groepsfase", myBreakdown.standingPts, otherBreakdown.standingPts],
+    ["KO-fase", myKOPts, otKOPts],
+  ];
+
   return (
     <Overlay onClose={onClose}>
       <OverlayHeader title="Vergelijking" onClose={onClose} />
@@ -1213,34 +1232,60 @@ function PlayerCompare({ me, other, state, onClose }) {
           display: "grid",
           gridTemplateColumns: "90px 1fr 1fr",
           gap: 6,
-          marginBottom: 14,
+          marginBottom: 6,
           alignItems: "center",
         }}
       >
         <div />
-        <div
-          style={{
-            textAlign: "center",
-            fontWeight: 700,
-            fontSize: 14,
-            color: "var(--accent)",
-          }}
-        >
+        <div style={{ textAlign: "center", fontWeight: 700, fontSize: 14, color: "var(--accent)" }}>
           {me.name}
-          <br />
-          <span style={{ fontWeight: 400, fontSize: 12 }}>{myPts} pt</span>
         </div>
+        <div style={{ textAlign: "center", fontWeight: 700, fontSize: 14, color: "var(--orange)" }}>
+          {other.name}
+        </div>
+      </div>
+
+      {/* Points breakdown */}
+      {breakdown.map(([label, myV, otV]) => (
         <div
+          key={label}
           style={{
-            textAlign: "center",
-            fontWeight: 700,
-            fontSize: 14,
-            color: "var(--orange)",
+            display: "grid",
+            gridTemplateColumns: "90px 1fr 1fr",
+            gap: 6,
+            marginBottom: 3,
+            alignItems: "center",
           }}
         >
-          {other.name}
-          <br />
-          <span style={{ fontWeight: 400, fontSize: 12 }}>{otherPts} pt</span>
+          <div style={{ fontSize: 10, color: "var(--muted)" }}>{label}</div>
+          <div style={{ textAlign: "center", fontSize: 11, color: "var(--accent)", fontWeight: 600 }}>
+            {myV} pt
+          </div>
+          <div style={{ textAlign: "center", fontSize: 11, color: "var(--orange)", fontWeight: 600 }}>
+            {otV} pt
+          </div>
+        </div>
+      ))}
+
+      {/* Totaal */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "90px 1fr 1fr",
+          gap: 6,
+          marginTop: 4,
+          marginBottom: 14,
+          paddingTop: 6,
+          borderTop: "1px solid var(--border)",
+          alignItems: "center",
+        }}
+      >
+        <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 700 }}>Totaal</div>
+        <div style={{ textAlign: "center", fontSize: 18, color: "var(--accent)", fontWeight: 900 }}>
+          {myPts} pt
+        </div>
+        <div style={{ textAlign: "center", fontSize: 18, color: "var(--orange)", fontWeight: 900 }}>
+          {otherPts} pt
         </div>
       </div>
 
@@ -1632,12 +1677,12 @@ function CompareSection({ section, me, other, state, mySecPts, otherSecPts, myGr
             <div
               style={{ fontSize: 10, color: "var(--muted)", lineHeight: 1.3 }}
             >
-              <span style={{ fontWeight: 600, color: "var(--text)" }}>
+              <span style={{ color: "var(--text)" }}>
                 {FLAG[m.home]} {m.home}
               </span>
               <br />
-              <span>
-                vs {FLAG[m.away]} {m.away}
+              <span style={{ color: "var(--text)" }}>
+                {FLAG[m.away]} {m.away}
               </span>
               {r?.played && (
                 <div style={{ color: "var(--green)", fontWeight: 700 }}>
