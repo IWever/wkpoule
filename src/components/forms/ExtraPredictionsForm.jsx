@@ -19,12 +19,14 @@ import {
 import { S } from "../../styles/ui";
 import { Alert } from "../common";
 import { FormHeader } from "./GroupPredictionsForm";
+import { ExtraQuestionCompare } from "../compare";
 
 function ExtraPredictionsForm({ user, state, onSave, onBack }) {
   const [pred, setPred] = useState(() =>
     JSON.parse(JSON.stringify(user.predictions || {}))
   );
   const [saved, setSaved] = useState(false);
+  const [compareQuestion, setCompareQuestion] = useState(null);
   const unlocked = (state.unlockedUsers || []).includes(user.id);
   const frozen = state.extraFrozen && !unlocked;
 
@@ -85,21 +87,31 @@ function ExtraPredictionsForm({ user, state, onSave, onBack }) {
       )}
 
       <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <ChampionCard pred={pred} frozen={frozen} set={set} state={state} />
+        <ChampionCard pred={pred} frozen={frozen} set={set} state={state} onCompare={() => setCompareQuestion("champion")} />
         <TopScorerCard
           pred={pred}
           frozen={frozen}
           setTopScorer={setTopScorer}
           setTopScorerCountry={setTopScorerCountry}
           state={state}
+          onCompare={() => setCompareQuestion("topScorers")}
         />
-        <NlStageCard pred={pred} frozen={frozen} set={set} state={state} />
-        <YellowCardsCard pred={pred} frozen={frozen} set={set} state={state} />
-        <SurpriseTeamCard pred={pred} frozen={frozen} set={set} state={state} />
-        <TopOutCard pred={pred} frozen={frozen} set={set} state={state} />
-        <MostCleanSheetsCard pred={pred} frozen={frozen} set={set} state={state} />
-        <MostGroupGoalsCard pred={pred} frozen={frozen} set={set} state={state} />
+        <NlStageCard pred={pred} frozen={frozen} set={set} state={state} onCompare={() => setCompareQuestion("nlStage")} />
+        <YellowCardsCard pred={pred} frozen={frozen} set={set} state={state} onCompare={() => setCompareQuestion("yellowCards")} />
+        <SurpriseTeamCard pred={pred} frozen={frozen} set={set} state={state} onCompare={() => setCompareQuestion("surpriseTeam")} />
+        <TopOutCard pred={pred} frozen={frozen} set={set} state={state} onCompare={() => setCompareQuestion("topOut")} />
+        <MostCleanSheetsCard pred={pred} frozen={frozen} set={set} state={state} onCompare={() => setCompareQuestion("mostCleanSheets")} />
+        <MostGroupGoalsCard pred={pred} frozen={frozen} set={set} state={state} onCompare={() => setCompareQuestion("mostGroupGoals")} />
       </div>
+
+      {compareQuestion && (
+        <ExtraQuestionCompare
+          questionKey={compareQuestion}
+          state={state}
+          currentUserId={user.id}
+          onClose={() => setCompareQuestion(null)}
+        />
+      )}
     </div>
   );
 }
@@ -114,8 +126,11 @@ function ResultBadge({ correct, pts }) {
   }
   if (correct === false) {
     return (
-      <span style={{ color: "var(--red)", fontWeight: 700, fontSize: 13 }}>
-        ✗
+      <span style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
+        <span style={{ color: "var(--red)", fontWeight: 700, fontSize: 13 }}>✗</span>
+        {pts !== undefined && (
+          <span style={{ color: "var(--muted)", fontSize: 11 }}>+{pts}</span>
+        )}
       </span>
     );
   }
@@ -139,7 +154,22 @@ function CorrectAnswerRow({ children }) {
   );
 }
 
-function QuestionCard({ label, pts, description, children, resultBadge, correctNode }) {
+function CompareHint() {
+  return (
+    <span
+      style={{
+        fontSize: 10,
+        color: "var(--muted)",
+        marginLeft: 4,
+        opacity: 0.6,
+      }}
+    >
+      👥
+    </span>
+  );
+}
+
+function QuestionCard({ label, pts, description, children, resultBadge, correctNode, onCompare }) {
   return (
     <div style={S.card()}>
       <div
@@ -153,7 +183,13 @@ function QuestionCard({ label, pts, description, children, resultBadge, correctN
           gap: 8,
         }}
       >
-        <span>{label}</span>
+        <span
+          onClick={onCompare}
+          style={{ cursor: onCompare ? "pointer" : "default", flex: 1 }}
+        >
+          {label}
+          {onCompare && <CompareHint />}
+        </span>
         {resultBadge || (pts !== undefined && (
           <span style={{ color: "var(--accent)", fontWeight: 700 }}>
             +{pts} pt
@@ -200,7 +236,7 @@ function TeamSelect({ value, onChange, disabled, placeholder, teams }) {
   );
 }
 
-function ChampionCard({ pred, frozen, set, state }) {
+function ChampionCard({ pred, frozen, set, state, onCompare }) {
   const finalResult = state?.koResults?.["FINAL"];
   let resultBadge = null;
   let correctNode = null;
@@ -218,7 +254,7 @@ function ChampionCard({ pred, frozen, set, state }) {
     }
   }
   return (
-    <QuestionCard label="🏆 Wereldkampioen" pts={PTS_EXTRA.champion} resultBadge={resultBadge} correctNode={correctNode}>
+    <QuestionCard label="🏆 Wereldkampioen" pts={PTS_EXTRA.champion} resultBadge={resultBadge} correctNode={correctNode} onCompare={onCompare}>
       <TeamSelect
         value={pred.champion}
         onChange={(e) => set(["champion"], e.target.value)}
@@ -230,7 +266,7 @@ function ChampionCard({ pred, frozen, set, state }) {
   );
 }
 
-function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry, state }) {
+function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry, state, onCompare }) {
   const topScorers = Array.isArray(pred.topScorers)
     ? [...pred.topScorers]
     : [pred.topScorer || "", "", ""];
@@ -262,14 +298,25 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry, state 
           gap: 8,
         }}
       >
-        <span>⚽ Topscoorders — kies 3 spelers</span>
+        <span
+          onClick={onCompare}
+          style={{ cursor: onCompare ? "pointer" : "default" }}
+        >
+          ⚽ Topscoorders — kies 3 spelers
+          {onCompare && <CompareHint />}
+        </span>
         {topScorersKnown ? (
           totalPts > 0 ? (
             <span style={{ color: "var(--green)", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>
               +{totalPts} ✓
             </span>
           ) : (
-            <span style={{ color: "var(--red)", fontWeight: 700, fontSize: 13 }}>✗</span>
+            <span style={{ display: "flex", alignItems: "center", gap: 5, whiteSpace: "nowrap" }}>
+              <span style={{ color: "var(--red)", fontWeight: 700, fontSize: 13 }}>✗</span>
+              <span style={{ color: "var(--muted)", fontSize: 11 }}>
+                +{PTS_TOPSCORER_RANK[1] + PTS_TOPSCORER_RANK[2] + PTS_TOPSCORER_RANK[3]}
+              </span>
+            </span>
           )
         ) : null}
       </div>
@@ -457,7 +504,7 @@ function TopScorerCard({ pred, frozen, setTopScorer, setTopScorerCountry, state 
   );
 }
 
-function NlStageCard({ pred, frozen, set, state }) {
+function NlStageCard({ pred, frozen, set, state, onCompare }) {
   const nlStageResult = state?.results?.["NL_STAGE"];
   let resultBadge = null;
   let correctNode = null;
@@ -474,6 +521,7 @@ function NlStageCard({ pred, frozen, set, state }) {
       pts={PTS_EXTRA.nlStage}
       resultBadge={resultBadge}
       correctNode={correctNode}
+      onCompare={onCompare}
     >
       <select
         disabled={frozen}
@@ -502,7 +550,7 @@ function NlStageCard({ pred, frozen, set, state }) {
   );
 }
 
-function SurpriseTeamCard({ pred, frozen, set, state }) {
+function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
   const SURPRISE_STAGES = [
     { stage: "Zestiende finale", pts: PTS_SURPRISE["Zestiende finale"] },
     { stage: "Achtste finale", pts: PTS_SURPRISE["Achtste finale"] },
@@ -530,7 +578,13 @@ function SurpriseTeamCard({ pred, frozen, set, state }) {
           gap: 8,
         }}
       >
-        <span>🌟 Verrassing van het WK</span>
+        <span
+          onClick={onCompare}
+          style={{ cursor: onCompare ? "pointer" : "default" }}
+        >
+          🌟 Verrassing van het WK
+          {onCompare && <CompareHint />}
+        </span>
         {surpriseStage && (
           <span style={{ color: "var(--green)", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>
             +{surprisePts} pt
@@ -604,7 +658,7 @@ function SurpriseTeamCard({ pred, frozen, set, state }) {
   );
 }
 
-function TopOutCard({ pred, frozen, set, state }) {
+function TopOutCard({ pred, frozen, set, state, onCompare }) {
   let resultBadge = null;
   let correctNode = null;
   const outs = state ? deriveTopOuts(state.results || {}, state.koResults || {}) : [];
@@ -634,6 +688,7 @@ function TopOutCard({ pred, frozen, set, state }) {
       description="Kies een van de 12 hoogst geklasseerde landen die de achtste finales niet bereiken — uitgeschakeld in de groepsfase of in de zestiende finales."
       resultBadge={resultBadge}
       correctNode={correctNode}
+      onCompare={onCompare}
     >
       <TeamSelect
         value={pred.topOut}
@@ -646,7 +701,7 @@ function TopOutCard({ pred, frozen, set, state }) {
   );
 }
 
-function MostCleanSheetsCard({ pred, frozen, set, state }) {
+function MostCleanSheetsCard({ pred, frozen, set, state, onCompare }) {
   let resultBadge = null;
   let correctNode = null;
   const csResult = state?.results?.["MOST_CLEAN_SHEETS"];
@@ -669,6 +724,7 @@ function MostCleanSheetsCard({ pred, frozen, set, state }) {
       description="Welk land houdt op het hele toernooi de meeste clean sheets (nul gehouden)?"
       resultBadge={resultBadge}
       correctNode={correctNode}
+      onCompare={onCompare}
     >
       <TeamSelect
         value={pred.mostCleanSheets}
@@ -681,7 +737,7 @@ function MostCleanSheetsCard({ pred, frozen, set, state }) {
   );
 }
 
-function YellowCardsCard({ pred, frozen, set, state }) {
+function YellowCardsCard({ pred, frozen, set, state, onCompare }) {
   let resultBadge = null;
   let correctNode = null;
   const yellowResult = state?.results?.["YELLOW_CARDS"];
@@ -703,6 +759,7 @@ function YellowCardsCard({ pred, frozen, set, state }) {
       description="Welk land heeft aan het einde van het toernooi de meeste gele kaarten ontvangen?"
       resultBadge={resultBadge}
       correctNode={correctNode}
+      onCompare={onCompare}
     >
       <TeamSelect
         value={pred.yellowCards}
@@ -715,7 +772,7 @@ function YellowCardsCard({ pred, frozen, set, state }) {
   );
 }
 
-function MostGroupGoalsCard({ pred, frozen, set, state }) {
+function MostGroupGoalsCard({ pred, frozen, set, state, onCompare }) {
   let resultBadge = null;
   let correctNode = null;
   const mggResult = state?.results?.["MOST_GROUP_GOALS"];
@@ -738,6 +795,7 @@ function MostGroupGoalsCard({ pred, frozen, set, state }) {
       description="Welk land scoort de meeste doelpunten tijdens de groepsfase?"
       resultBadge={resultBadge}
       correctNode={correctNode}
+      onCompare={onCompare}
     >
       <TeamSelect
         value={pred.mostGroupGoals}

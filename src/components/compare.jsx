@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { GROUPS, GROUP_MATCHES, PTS_KO, FLAG, PTS_STANDING } from "../data/tournamentData";
+import { GROUPS, GROUP_MATCHES, PTS_KO, PTS_TOPSCORER_RANK, PTS_SURPRISE, FLAG, PTS_STANDING } from "../data/tournamentData";
 import { MATCH_FACTS } from "../data/matchFacts";
 import {
   calcGroupMatchPts,
@@ -7,6 +7,8 @@ import {
   calcPoints,
   buildRichKOSlots,
   fmtDateTime,
+  deriveSurpriseStage,
+  deriveTopOuts,
 } from "../pouleEngine";
 import { S } from "../styles/ui";
 import { SlotDisplay } from "./common";
@@ -1695,4 +1697,515 @@ function SingleKOMatchCompare({ match, state, currentUserId, onClose }) {
   );
 }
 
-export { SingleMatchCompare, SingleKOMatchCompare, MatchCompare, PlayerCompare };
+// ─── EXTRA QUESTION COMPARE ───────────────────────────────────────────────────
+
+function PickRow({ label, pickers, total, correct, isMyPick, currentUserId, extra }) {
+  const pct = total > 0 ? Math.round((pickers.length / total) * 100) : 0;
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginBottom: 4,
+        }}
+      >
+        <span
+          style={{
+            flex: 1,
+            fontSize: 13,
+            fontWeight: isMyPick ? 700 : 400,
+            color: correct ? "var(--green)" : "var(--text)",
+          }}
+        >
+          {label}
+          {correct && (
+            <span style={{ color: "var(--green)", marginLeft: 5 }}>✓</span>
+          )}
+        </span>
+        {extra}
+        <span
+          style={{
+            fontSize: 12,
+            fontWeight: 700,
+            color: correct ? "var(--green)" : "var(--muted)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {pickers.length}× ({pct}%)
+        </span>
+      </div>
+      <div
+        style={{
+          height: 6,
+          background: "var(--bg)",
+          borderRadius: 3,
+          overflow: "hidden",
+          marginBottom: 5,
+          border: isMyPick ? "1px solid rgba(88,166,255,.4)" : "1px solid transparent",
+        }}
+      >
+        <div
+          style={{
+            height: "100%",
+            width: `${pct}%`,
+            background: correct
+              ? "var(--green)"
+              : isMyPick
+              ? "var(--accent)"
+              : "rgba(255,255,255,.18)",
+            borderRadius: 3,
+          }}
+        />
+      </div>
+      <div style={{ fontSize: 11, color: "var(--muted)", lineHeight: 1.7 }}>
+        {pickers.map((p, i) => (
+          <span key={p.userId}>
+            {i > 0 && (
+              <span style={{ color: "var(--border)", margin: "0 3px" }}>·</span>
+            )}
+            <span
+              style={{
+                color:
+                  p.userId === currentUserId ? "var(--accent)" : "inherit",
+                fontWeight: p.userId === currentUserId ? 700 : 400,
+              }}
+            >
+              {p.name}
+            </span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function groupAndSort(picks) {
+  const grouped = {};
+  picks.forEach((p) => {
+    if (!grouped[p.value]) grouped[p.value] = [];
+    grouped[p.value].push(p);
+  });
+  return Object.entries(grouped).sort((a, b) => b[1].length - a[1].length);
+}
+
+function SimplePickCompare({ questionKey, state, currentUserId, onClose }) {
+  const { users = [], results = {}, koResults = {} } = state;
+
+  const CONFIGS = {
+    champion: {
+      title: "🏆 Wereldkampioen",
+      getPick: (p) => p.champion || null,
+      correct: koResults["FINAL"]?.played ? [koResults["FINAL"].winner] : null,
+      format: (v) => `${FLAG[v] || "🏳️"} ${v}`,
+    },
+    nlStage: {
+      title: "🇳🇱 Hoe ver komt Nederland?",
+      getPick: (p) => p.nlStage || null,
+      correct: results["NL_STAGE"] ? [results["NL_STAGE"]] : null,
+      format: (v) => v,
+    },
+    yellowCards: {
+      title: "🟨 Meeste gele kaarten",
+      getPick: (p) => p.yellowCards || null,
+      correct: results["YELLOW_CARDS"] ? [results["YELLOW_CARDS"]] : null,
+      format: (v) => `${FLAG[v] || "🏳️"} ${v}`,
+    },
+    mostCleanSheets: {
+      title: "🧤 Meeste clean sheets",
+      getPick: (p) => p.mostCleanSheets || null,
+      correct: results["MOST_CLEAN_SHEETS"]
+        ? Array.isArray(results["MOST_CLEAN_SHEETS"])
+          ? results["MOST_CLEAN_SHEETS"]
+          : [results["MOST_CLEAN_SHEETS"]]
+        : null,
+      format: (v) => `${FLAG[v] || "🏳️"} ${v}`,
+    },
+    mostGroupGoals: {
+      title: "⚽ Meeste doelpunten groepsfase",
+      getPick: (p) => p.mostGroupGoals || null,
+      correct: results["MOST_GROUP_GOALS"]
+        ? Array.isArray(results["MOST_GROUP_GOALS"])
+          ? results["MOST_GROUP_GOALS"]
+          : [results["MOST_GROUP_GOALS"]]
+        : null,
+      format: (v) => `${FLAG[v] || "🏳️"} ${v}`,
+    },
+  };
+
+  const cfg = CONFIGS[questionKey];
+  if (!cfg) return null;
+
+  const picks = users
+    .map((u) => ({
+      userId: u.id,
+      name: u.name,
+      value: cfg.getPick(u.predictions || {}),
+    }))
+    .filter((p) => p.value);
+
+  const sorted = groupAndSort(picks);
+  const total = picks.length;
+  const currentUser = users.find((u) => u.id === currentUserId);
+  const myPick = currentUser ? cfg.getPick(currentUser.predictions || {}) : null;
+
+  return (
+    <Overlay onClose={onClose}>
+      <OverlayHeader
+        title={cfg.title}
+        subtitle={`${total} van ${users.length} ingevuld`}
+        onClose={onClose}
+      />
+      {total === 0 ? (
+        <div
+          style={{
+            color: "var(--muted)",
+            textAlign: "center",
+            padding: 24,
+            fontSize: 13,
+          }}
+        >
+          Niemand heeft deze vraag ingevuld.
+        </div>
+      ) : (
+        sorted.map(([value, pickers]) => (
+          <PickRow
+            key={value}
+            label={cfg.format(value)}
+            pickers={pickers}
+            total={total}
+            correct={cfg.correct ? cfg.correct.includes(value) : false}
+            isMyPick={value === myPick}
+            currentUserId={currentUserId}
+          />
+        ))
+      )}
+    </Overlay>
+  );
+}
+
+function TopScorersCompare({ state, currentUserId, onClose }) {
+  const { users = [], results = {} } = state;
+  const resultTopScorers = Array.isArray(results["TOP_SCORERS"])
+    ? results["TOP_SCORERS"]
+    : [];
+
+  const currentUser = users.find((u) => u.id === currentUserId);
+  const myScorers = Array.isArray(currentUser?.predictions?.topScorers)
+    ? currentUser.predictions.topScorers
+    : [];
+
+  const RANKS = [
+    { pos: 0, label: "1e — Gouden Schoen", pts: PTS_TOPSCORER_RANK[1], rank: 1 },
+    { pos: 1, label: "2e — Zilveren Schoen", pts: PTS_TOPSCORER_RANK[2], rank: 2 },
+    { pos: 2, label: "3e — Bronzen Schoen", pts: PTS_TOPSCORER_RANK[3], rank: 3 },
+  ];
+
+  const totalFilled = users.filter((u) => {
+    const s = u.predictions?.topScorers;
+    return Array.isArray(s) && s.some(Boolean);
+  }).length;
+
+  return (
+    <Overlay onClose={onClose}>
+      <OverlayHeader
+        title="⚽ Topscoorders"
+        subtitle={`${totalFilled} van ${users.length} ingevuld`}
+        onClose={onClose}
+      />
+      {RANKS.map(({ pos, label, pts, rank }) => {
+        const correctPlayer = resultTopScorers.find((r) => r.rank === rank);
+        const picks = users
+          .map((u) => {
+            const s = Array.isArray(u.predictions?.topScorers)
+              ? u.predictions.topScorers
+              : u.predictions?.topScorer
+              ? [u.predictions.topScorer]
+              : [];
+            return { userId: u.id, name: u.name, value: s[pos] || null };
+          })
+          .filter((p) => p.value);
+
+        const sorted = groupAndSort(picks);
+        const total = picks.length;
+        const myPick = myScorers[pos] || null;
+
+        return (
+          <div key={pos} style={{ marginBottom: 22 }}>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginBottom: 8,
+                paddingBottom: 6,
+                borderBottom: "1px solid var(--border)",
+              }}
+            >
+              <span
+                style={{
+                  fontSize: 12,
+                  fontWeight: 700,
+                  color: "var(--accent)",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                {label}
+              </span>
+              <span style={{ fontSize: 11, color: "var(--muted)" }}>
+                +{pts} pt
+              </span>
+            </div>
+            {correctPlayer && (
+              <div
+                style={{
+                  marginBottom: 10,
+                  padding: "6px 10px",
+                  background: "rgba(63,185,80,.08)",
+                  border: "1px solid rgba(63,185,80,.3)",
+                  borderRadius: 7,
+                  fontSize: 12,
+                  color: "var(--green)",
+                  fontWeight: 700,
+                }}
+              >
+                Uitslag: {correctPlayer.name}
+              </div>
+            )}
+            {total === 0 ? (
+              <div style={{ color: "var(--muted)", fontSize: 12 }}>
+                Niemand ingevuld.
+              </div>
+            ) : (
+              sorted.map(([value, pickers]) => (
+                <PickRow
+                  key={value}
+                  label={value}
+                  pickers={pickers}
+                  total={total}
+                  correct={correctPlayer?.name === value}
+                  isMyPick={value === myPick}
+                  currentUserId={currentUserId}
+                />
+              ))
+            )}
+          </div>
+        );
+      })}
+    </Overlay>
+  );
+}
+
+function SurpriseTeamCompare({ state, currentUserId, onClose }) {
+  const { users = [] } = state;
+
+  const picks = users
+    .map((u) => ({
+      userId: u.id,
+      name: u.name,
+      value: u.predictions?.surpriseTeam || null,
+    }))
+    .filter((p) => p.value);
+
+  const sorted = groupAndSort(picks);
+  const total = picks.length;
+  const currentUser = users.find((u) => u.id === currentUserId);
+  const myPick = currentUser?.predictions?.surpriseTeam || null;
+
+  return (
+    <Overlay onClose={onClose}>
+      <OverlayHeader
+        title="🌟 Verrassing van het WK"
+        subtitle={`${total} van ${users.length} ingevuld`}
+        onClose={onClose}
+      />
+      {total === 0 ? (
+        <div
+          style={{
+            color: "var(--muted)",
+            textAlign: "center",
+            padding: 24,
+            fontSize: 13,
+          }}
+        >
+          Niemand heeft deze vraag ingevuld.
+        </div>
+      ) : (
+        sorted.map(([team, pickers]) => {
+          const stage = deriveSurpriseStage(team, state.koResults || {});
+          const stagePts = stage ? PTS_SURPRISE[stage] || 0 : null;
+          const isMyPick = team === myPick;
+
+          const stageExtra = stage ? (
+            <span
+              style={{
+                fontSize: 11,
+                color: stagePts > 0 ? "var(--green)" : "var(--muted)",
+                fontWeight: 700,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {stage.replace("🏆 ", "")} · +{stagePts}
+            </span>
+          ) : null;
+
+          return (
+            <PickRow
+              key={team}
+              label={`${FLAG[team] || "🏳️"} ${team}`}
+              pickers={pickers}
+              total={total}
+              correct={stagePts > 0}
+              isMyPick={isMyPick}
+              currentUserId={currentUserId}
+              extra={stageExtra}
+            />
+          );
+        })
+      )}
+    </Overlay>
+  );
+}
+
+function TopOutCompare({ state, currentUserId, onClose }) {
+  const { users = [] } = state;
+  const outs = deriveTopOuts(state.results || {}, state.koResults || {});
+
+  const picks = users
+    .map((u) => ({
+      userId: u.id,
+      name: u.name,
+      value: u.predictions?.topOut || null,
+    }))
+    .filter((p) => p.value);
+
+  const sorted = groupAndSort(picks);
+  const total = picks.length;
+  const currentUser = users.find((u) => u.id === currentUserId);
+  const myPick = currentUser?.predictions?.topOut || null;
+
+  return (
+    <Overlay onClose={onClose}>
+      <OverlayHeader
+        title="💥 Topland haalt achtste finales niet"
+        subtitle={`${total} van ${users.length} ingevuld`}
+        onClose={onClose}
+      />
+      {outs.length > 0 && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: "8px 12px",
+            background: "rgba(63,185,80,.08)",
+            border: "1px solid rgba(63,185,80,.3)",
+            borderRadius: 8,
+          }}
+        >
+          <div
+            style={{
+              fontSize: 11,
+              color: "var(--muted)",
+              marginBottom: 4,
+              textTransform: "uppercase",
+              letterSpacing: "0.06em",
+              fontWeight: 700,
+            }}
+          >
+            Uitgeschakeld
+          </div>
+          <div
+            style={{ fontSize: 13, fontWeight: 700, color: "var(--green)" }}
+          >
+            {outs.map((t) => `${FLAG[t] || "🏳️"} ${t}`).join("  ·  ")}
+          </div>
+        </div>
+      )}
+      {total === 0 ? (
+        <div
+          style={{
+            color: "var(--muted)",
+            textAlign: "center",
+            padding: 24,
+            fontSize: 13,
+          }}
+        >
+          Niemand heeft deze vraag ingevuld.
+        </div>
+      ) : (
+        sorted.map(([team, pickers]) => {
+          const isOut = outs.includes(team);
+          const advancedInKO = Object.values(state.koResults || {}).some(
+            (r) => r?.played && r.winner === team
+          );
+          const statusExtra = (
+            <span
+              style={{
+                fontSize: 11,
+                color: isOut
+                  ? "var(--green)"
+                  : advancedInKO
+                  ? "var(--red)"
+                  : "var(--muted)",
+                fontWeight: 600,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {isOut ? "✓ uit" : advancedInKO ? "✗ door" : "–"}
+            </span>
+          );
+          return (
+            <PickRow
+              key={team}
+              label={`${FLAG[team] || "🏳️"} ${team}`}
+              pickers={pickers}
+              total={total}
+              correct={isOut}
+              isMyPick={team === myPick}
+              currentUserId={currentUserId}
+              extra={statusExtra}
+            />
+          );
+        })
+      )}
+    </Overlay>
+  );
+}
+
+function ExtraQuestionCompare({ questionKey, state, currentUserId, onClose }) {
+  if (questionKey === "topScorers")
+    return (
+      <TopScorersCompare
+        state={state}
+        currentUserId={currentUserId}
+        onClose={onClose}
+      />
+    );
+  if (questionKey === "surpriseTeam")
+    return (
+      <SurpriseTeamCompare
+        state={state}
+        currentUserId={currentUserId}
+        onClose={onClose}
+      />
+    );
+  if (questionKey === "topOut")
+    return (
+      <TopOutCompare
+        state={state}
+        currentUserId={currentUserId}
+        onClose={onClose}
+      />
+    );
+  return (
+    <SimplePickCompare
+      questionKey={questionKey}
+      state={state}
+      currentUserId={currentUserId}
+      onClose={onClose}
+    />
+  );
+}
+
+export { SingleMatchCompare, SingleKOMatchCompare, MatchCompare, PlayerCompare, ExtraQuestionCompare };
