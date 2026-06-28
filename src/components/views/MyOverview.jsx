@@ -21,6 +21,7 @@ import {
   calcTopScorerPts,
 } from "../../pouleEngine";
 import { S } from "../../styles/ui";
+import { SlotDisplay } from "../common";
 import { SingleMatchCompare, SingleKOMatchCompare, PlayerCompare } from "../compare";
 import { calcPrimaryComp } from "./Standings";
 
@@ -654,7 +655,6 @@ function ExtraCardResult({ item }) {
 function buildMatchTimeline(state) {
   const koMatchesAll = KO_STRUCTURE.map((m) => ({
     ...m,
-    dt: KO_DATES[m.round] + "T20:00",
     isKO: true,
   }));
   const sortedGroup = [...GROUP_MATCHES].sort((a, b) =>
@@ -1011,13 +1011,7 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
         style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 12 }}
       >
         <span style={{ flex: 1, textAlign: "right", fontWeight: 600 }}>
-          {homeDesc?.type === "team" ? (
-            `${FLAG[homeDesc.team] || ""} ${homeDesc.team}`
-          ) : (
-            <span style={{ color: "var(--muted)", fontSize: 11 }}>
-              {homeDesc?.label || "?"}
-            </span>
-          )}
+          <SlotDisplay desc={homeDesc} align="right" size={12} />
         </span>
         <div
           style={{
@@ -1067,13 +1061,7 @@ function KOMatchRow({ m, pred, state, canCompare, onClick }) {
           )}
         </div>
         <span style={{ flex: 1, fontWeight: 600 }}>
-          {awayDesc?.type === "team" ? (
-            `${FLAG[awayDesc.team] || ""} ${awayDesc.team}`
-          ) : (
-            <span style={{ color: "var(--muted)", fontSize: 11 }}>
-              {awayDesc?.label || "?"}
-            </span>
-          )}
+          <SlotDisplay desc={awayDesc} align="left" size={12} />
         </span>
         <div
           style={{
