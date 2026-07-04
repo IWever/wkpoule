@@ -742,7 +742,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 2",
     homeSlot: "WR32_1",
     awaySlot: "WR32_3",
-    dt: "2026-07-04T22:30",
+    dt: "2026-07-04T23:00",
   },
   {
     id: "R16_3",
@@ -750,7 +750,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 3",
     homeSlot: "WR32_11",
     awaySlot: "WR32_12",
-    dt: "2026-07-05T19:00",
+    dt: "2026-07-05T22:00",
   },
   {
     id: "R16_4",
@@ -758,7 +758,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 4",
     homeSlot: "WR32_9",
     awaySlot: "WR32_10",
-    dt: "2026-07-05T22:30",
+    dt: "2026-07-06T02:00",
   },
   {
     id: "R16_5",
@@ -766,7 +766,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 5",
     homeSlot: "WR32_4",
     awaySlot: "WR32_6",
-    dt: "2026-07-06T19:00",
+    dt: "2026-07-06T21:00",
   },
   {
     id: "R16_6",
@@ -774,7 +774,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 6",
     homeSlot: "WR32_7",
     awaySlot: "WR32_8",
-    dt: "2026-07-06T21:00",
+    dt: "2026-07-07T02:00",
   },
   {
     id: "R16_7",
@@ -782,7 +782,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 7",
     homeSlot: "WR32_14",
     awaySlot: "WR32_16",
-    dt: "2026-07-07T19:00",
+    dt: "2026-07-07T18:00",
   },
   {
     id: "R16_8",
@@ -790,7 +790,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 8",
     homeSlot: "WR32_13",
     awaySlot: "WR32_15",
-    dt: "2026-07-07T22:30",
+    dt: "2026-07-07T22:00",
   },
 
   // ─── KWARTFINALES ────────────────────────────────────────────────────────
@@ -808,7 +808,7 @@ const KO_STRUCTURE = [
     label: "Kwartfinale 2",
     homeSlot: "WR16_5",
     awaySlot: "WR16_6",
-    dt: "2026-07-10T00:30",
+    dt: "2026-07-10T21:00",
   },
   {
     id: "QF_3",
@@ -816,7 +816,7 @@ const KO_STRUCTURE = [
     label: "Kwartfinale 3",
     homeSlot: "WR16_3",
     awaySlot: "WR16_4",
-    dt: "2026-07-10T22:00",
+    dt: "2026-07-11T23:00",
   },
   {
     id: "QF_4",
@@ -824,7 +824,7 @@ const KO_STRUCTURE = [
     label: "Kwartfinale 4",
     homeSlot: "WR16_7",
     awaySlot: "WR16_8",
-    dt: "2026-07-11T22:00",
+    dt: "2026-07-12T03:00",
   },
 
   // ─── HALVE FINALES ───────────────────────────────────────────────────────
