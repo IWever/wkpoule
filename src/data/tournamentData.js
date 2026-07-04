@@ -766,7 +766,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 5",
     homeSlot: "WR32_4",
     awaySlot: "WR32_6",
-    dt: "2026-07-06T21:00",
+    dt: "2026-07-05T22:00",
   },
   {
     id: "R16_6",
@@ -774,7 +774,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 6",
     homeSlot: "WR32_7",
     awaySlot: "WR32_8",
-    dt: "2026-07-07T02:00",
+    dt: "2026-07-06T02:00",
   },
   {
     id: "R16_7",
