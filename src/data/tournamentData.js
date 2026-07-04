@@ -734,7 +734,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 1",
     homeSlot: "WR32_2",
     awaySlot: "WR32_5",
-    dt: "2026-07-04T19:00",
+    dt: "2026-07-04T23:00",
   },
   {
     id: "R16_2",
@@ -742,7 +742,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 2",
     homeSlot: "WR32_1",
     awaySlot: "WR32_3",
-    dt: "2026-07-04T23:00",
+    dt: "2026-07-04T19:00",
   },
   {
     id: "R16_3",
@@ -750,7 +750,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 3",
     homeSlot: "WR32_11",
     awaySlot: "WR32_12",
-    dt: "2026-07-05T22:00",
+    dt: "2026-07-06T21:00",
   },
   {
     id: "R16_4",
@@ -758,7 +758,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 4",
     homeSlot: "WR32_9",
     awaySlot: "WR32_10",
-    dt: "2026-07-06T02:00",
+    dt: "2026-07-07T02:00",
   },
   {
     id: "R16_5",
@@ -766,7 +766,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 5",
     homeSlot: "WR32_4",
     awaySlot: "WR32_6",
-    dt: "2026-07-06T21:00",
+    dt: "2026-07-05T22:00",
   },
   {
     id: "R16_6",
@@ -774,7 +774,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 6",
     homeSlot: "WR32_7",
     awaySlot: "WR32_8",
-    dt: "2026-07-07T02:00",
+    dt: "2026-07-06T02:00",
   },
   {
     id: "R16_7",
@@ -808,7 +808,7 @@ const KO_STRUCTURE = [
     label: "Kwartfinale 2",
     homeSlot: "WR16_5",
     awaySlot: "WR16_6",
-    dt: "2026-07-10T21:00",
+    dt: "2026-07-11T23:00",
   },
   {
     id: "QF_3",
@@ -816,7 +816,7 @@ const KO_STRUCTURE = [
     label: "Kwartfinale 3",
     homeSlot: "WR16_3",
     awaySlot: "WR16_4",
-    dt: "2026-07-11T23:00",
+    dt: "2026-07-10T21:00",
   },
   {
     id: "QF_4",
@@ -833,14 +833,14 @@ const KO_STRUCTURE = [
     round: "sf",
     label: "Halve finale 1",
     homeSlot: "WQF_1",
-    awaySlot: "WQF_2",
+    awaySlot: "WQF_3",
     dt: "2026-07-14T21:00",
   },
   {
     id: "SF_2",
     round: "sf",
     label: "Halve finale 2",
-    homeSlot: "WQF_3",
+    homeSlot: "WQF_2",
     awaySlot: "WQF_4",
     dt: "2026-07-15T21:00",
   },
