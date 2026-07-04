@@ -758,7 +758,7 @@ const KO_STRUCTURE = [
     label: "Achtste finale 4",
     homeSlot: "WR32_9",
     awaySlot: "WR32_10",
-    dt: "2026-07-06T02:00",
+    dt: "2026-07-07T02:00",
   },
   {
     id: "R16_5",
@@ -808,7 +808,7 @@ const KO_STRUCTURE = [
     label: "Kwartfinale 2",
     homeSlot: "WR16_5",
     awaySlot: "WR16_6",
-    dt: "2026-07-10T21:00",
+    dt: "2026-07-11T23:00",
   },
   {
     id: "QF_3",
@@ -816,7 +816,7 @@ const KO_STRUCTURE = [
     label: "Kwartfinale 3",
     homeSlot: "WR16_3",
     awaySlot: "WR16_4",
-    dt: "2026-07-11T23:00",
+    dt: "2026-07-10T21:00",
   },
   {
     id: "QF_4",
