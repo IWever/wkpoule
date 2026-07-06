@@ -6,7 +6,7 @@ import {
   FLAG,
   GROUPS,
 } from "../../data/tournamentData";
-import { deepSet, buildRichKOSlots, fmtDateTime } from "../../pouleEngine";
+import { deepSet, buildRichKOSlots, effectiveKOWinner, fmtDateTime } from "../../pouleEngine";
 import { S } from "../../styles/ui";
 import { Alert, SlotDisplay, FrozenBadge } from "../common";
 import { SingleKOMatchCompare } from "../compare";
@@ -435,8 +435,12 @@ function KOMatchCard({
   const schema = PTS_KO[m.round] || PTS_KO.r16;
   const predWinner = pred.koWinners?.[m.id];
   const predScore = pred.koScores?.[m.id];
-  const winOk = r?.played && predWinner && predWinner === r.winner;
-  const winNope = r?.played && predWinner && predWinner !== r.winner;
+  // Effectieve winnaar: expliciete keuze, of afgeleid uit een beslissende uitslag.
+  // Gebruikt voor de punten-/uitslagweergave; de knoppen hieronder blijven op de
+  // expliciete keuze (predWinner) staan.
+  const effWinner = effectiveKOWinner(pred, m.id);
+  const winOk = r?.played && effWinner && effWinner === r.winner;
+  const winNope = r?.played && effWinner && effWinner !== r.winner;
   const scoreOk =
     r?.played &&
     predScore?.home !== undefined &&

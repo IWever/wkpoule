@@ -10,10 +10,24 @@ const PTS_KO = {
   final: { winner: 15, diff: 12, exact: 25 },
 };
 
+// ── Effectieve winnaar (pouleEngine.js: effectiveKOWinner) ────────────────
+// Expliciete keuze, of afgeleid uit een beslissende uitslag (geen gelijkspel).
+// homeTeam/awayTeam = de teams in het home-/away-slot van de eigen bracket.
+function effWinner(pw, ps, homeTeam, awayTeam) {
+  if (pw) return pw;
+  if (!ps || ps.home === undefined || ps.home === "" ||
+      ps.away === undefined || ps.away === "") return null;
+  const pH = parseInt(ps.home, 10);
+  const pA = parseInt(ps.away, 10);
+  if (Number.isNaN(pH) || Number.isNaN(pA) || pH === pA) return null;
+  return (pH > pA ? homeTeam : awayTeam) || null;
+}
+
 // ── Engine logic (pouleEngine.js) ─────────────────────────────────────────
-function enginePts(schema, pw, ps, r) {
+function enginePts(schema, pw, ps, r, homeTeam, awayTeam) {
   let pts = 0;
-  if (pw && r.winner === pw) pts += schema.winner;
+  const w = effWinner(pw, ps, homeTeam, awayTeam);
+  if (w && r.winner === w) pts += schema.winner;
   if (ps && ps.home !== undefined && r.home90 !== undefined) {
     const pH = parseInt(ps.home, 10);
     const pA = parseInt(ps.away, 10);
@@ -29,8 +43,9 @@ function enginePts(schema, pw, ps, r) {
 }
 
 // ── UI flags ──────────────────────────────────────────────────────────────
-function uiFlags(pw, ps, r) {
-  const winOk   = r?.played && pw && pw === r.winner;
+function uiFlags(pw, ps, r, homeTeam, awayTeam) {
+  const w = effWinner(pw, ps, homeTeam, awayTeam);
+  const winOk   = r?.played && w && w === r.winner;
   const scoreOk = r?.played && ps?.home !== undefined &&
     parseInt(ps.home) === parseInt(r.home90) &&
     parseInt(ps.away) === parseInt(r.away90);
@@ -41,8 +56,8 @@ function uiFlags(pw, ps, r) {
 }
 
 // ── UI totaalpunten (zoals MyOverview / compare.jsx) ──────────────────────
-function uiTotal(schema, pw, ps, r) {
-  const { winOk, scoreOk, diffOk } = uiFlags(pw, ps, r);
+function uiTotal(schema, pw, ps, r, homeTeam, awayTeam) {
+  const { winOk, scoreOk, diffOk } = uiFlags(pw, ps, r, homeTeam, awayTeam);
   let pts = 0;
   if (winOk) pts += schema.winner;
   if (scoreOk) pts += schema.exact;
@@ -282,6 +297,55 @@ for (const c of consistencyCases) {
     eq(eng, ui, `engine=${eng} ui=${ui}`);
   });
 }
+
+// ══════════════════════════════════════════════════════════════════════════
+console.log("\n══ 9. Winnaar afgeleid uit uitslag (geen winnaar aangeklikt) ══\n");
+// homeTeam = "NED", awayTeam = "BEL" in de eigen bracket
+
+test("Uitslag 2-0, geen winnaar → home (NED) afgeleid, NED wint → winner + exact", () => {
+  eq(enginePts(s, null, score(2, 0), played("NED", 2, 0), "NED", "BEL"), s.winner + s.exact);
+});
+
+test("Uitslag 0-2, geen winnaar → away (BEL) afgeleid, BEL wint → winner + exact", () => {
+  eq(enginePts(s, null, score(0, 2), played("BEL", 0, 2), "NED", "BEL"), s.winner + s.exact);
+});
+
+test("Uitslag 1-0, geen winnaar → NED afgeleid, NED wint 2-1 → winner + diff", () => {
+  eq(enginePts(s, null, score(1, 0), played("NED", 2, 1), "NED", "BEL"), s.winner + s.diff);
+});
+
+test("Uitslag 2-0, geen winnaar → NED afgeleid, maar BEL wint → 0 pt", () => {
+  eq(enginePts(s, null, score(2, 0), played("BEL", 0, 2), "NED", "BEL"), 0);
+});
+
+test("Gelijkspel 1-1, geen winnaar → geen winnaar afleidbaar → alleen exact", () => {
+  eq(enginePts(s, null, score(1, 1), played("NED", 1, 1), "NED", "BEL"), s.exact);
+});
+
+test("Uitslag 2-0 maar teams onbekend (bracket niet ingevuld) → geen winnaar → alleen exact", () => {
+  eq(enginePts(s, null, score(2, 0), played("NED", 2, 0), null, null), s.exact);
+});
+
+test("Expliciete winnaar heeft voorrang op afgeleide (BEL gekozen, uitslag wijst NED aan)", () => {
+  // pw=BEL expliciet; uitslag 2-0 zou NED aanwijzen. Uitkomst NED wint 2-0.
+  // winner telt niet (BEL≠NED), exact telt wel.
+  eq(enginePts(s, "BEL", score(2, 0), played("NED", 2, 0), "NED", "BEL"), s.exact);
+});
+
+test("Afgeleide winnaar: engine == UI totaal", () => {
+  const cases = [
+    { pw: null, ps: score(2, 0), r: played("NED", 2, 0) },
+    { pw: null, ps: score(1, 0), r: played("NED", 2, 1) },
+    { pw: null, ps: score(0, 2), r: played("BEL", 0, 2) },
+    { pw: null, ps: score(2, 0), r: played("BEL", 0, 2) },
+    { pw: null, ps: score(1, 1), r: played("NED", 1, 1) },
+  ];
+  for (const c of cases) {
+    const eng = enginePts(s, c.pw, c.ps, c.r, "NED", "BEL");
+    const ui  = uiTotal(s, c.pw, c.ps, c.r, "NED", "BEL");
+    eq(eng, ui, `engine=${eng} ui=${ui}`);
+  }
+});
 
 // ══════════════════════════════════════════════════════════════════════════
 console.log("\n" + "═".repeat(52));

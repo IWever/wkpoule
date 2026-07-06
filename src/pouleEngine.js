@@ -531,6 +531,32 @@ function buildKOSlots(pred) {
   return slots;
 }
 
+// ─── EFFECTIEVE KO-WINNAAR ─────────────────────────────────────────────────────
+// Geeft de winnaar die telt voor de puntentelling van een KO-wedstrijd.
+// Heeft de deelnemer expliciet een winnaar aangeklikt? Dan die.
+// Zo niet, maar wel een beslissende uitslag (geen gelijkspel) ingevuld?
+// Dan leiden we de winnaar af uit die voorspelde stand: het team in het
+// home-slot (bij pH > pA) of away-slot (bij pA > pH) van de eigen bracket.
+// Bij een gelijkspel-voorspelling is er geen winnaar af te leiden
+// (de penaltywinnaar is dan onbekend) → null.
+// koSlots mag meegegeven worden om buildKOSlots niet per wedstrijd te herberekenen.
+function effectiveKOWinner(pred, matchId, koSlots) {
+  const pw = pred?.koWinners?.[matchId];
+  if (pw) return pw;
+  const ps = pred?.koScores?.[matchId];
+  if (
+    !ps ||
+    ps.home === undefined || ps.home === "" ||
+    ps.away === undefined || ps.away === ""
+  )
+    return null;
+  const pH = parseInt(ps.home, 10);
+  const pA = parseInt(ps.away, 10);
+  if (Number.isNaN(pH) || Number.isNaN(pA) || pH === pA) return null;
+  const slots = koSlots || buildKOSlots(pred);
+  return (pH > pA ? slots?.[matchId]?.home : slots?.[matchId]?.away) || null;
+}
+
 // ─── EXTRA BEREKENINGEN ───────────────────────────────────────────────────────
 
 // deriveTopOuts: geeft toplands terug die de achtste finales NIET halen.
@@ -690,11 +716,12 @@ function calcPoints(user, results, koResults) {
   });
 
   // KO-wedstrijden
+  const koSlots = buildKOSlots(p);
   KO_STRUCTURE.forEach((m) => {
     const r = koResults[m.id];
     if (!r?.played) return;
     const schema = PTS_KO[m.round] || PTS_KO.r16;
-    const pw = p.koWinners?.[m.id];
+    const pw = effectiveKOWinner(p, m.id, koSlots);
     const ps = p.koScores?.[m.id];
     if (pw && r.winner === pw) pts += schema.winner;
     if (ps && ps.home !== undefined && r.home90 !== undefined) {
@@ -860,6 +887,7 @@ export {
   buildRichKOSlots,
   resolveSlot,
   buildKOSlots,
+  effectiveKOWinner,
   deriveTopOuts,
   deriveSurpriseStage,
   calcTopScorerPts,
