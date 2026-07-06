@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { calcPoints, calcGroupMatchPts } from "../../pouleEngine";
+import { calcPoints, calcGroupMatchPts, effectiveKOWinner } from "../../pouleEngine";
 import { GROUP_MATCHES, KO_STRUCTURE, PTS_KO } from "../../data/tournamentData";
 import { S } from "../../styles/ui";
 import { PlayerCompare } from "../compare";
@@ -37,7 +37,7 @@ function calcLast5Pts(user, state) {
     if (m.isKO) {
       const r = state.koResults[m.id];
       const schema = PTS_KO[m.round] || PTS_KO.r16;
-      const pw = pred.koWinners?.[m.id];
+      const pw = effectiveKOWinner(pred, m.id);
       const ps = pred.koScores?.[m.id];
       if (pw && r.winner === pw) pts += schema.winner;
       if (

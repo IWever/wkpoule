@@ -15,6 +15,7 @@ import {
   calcPoints,
   calcGroupMatchPts,
   buildRichKOSlots,
+  effectiveKOWinner,
   deriveSurpriseStage,
   deriveTopOuts,
   fmtDateTime,
@@ -940,7 +941,7 @@ function GroupMatchRow({ m, pred, state, canCompare, onClick }) {
 }
 
 function KOMatchRow({ m, pred, state, canCompare, onClick }) {
-  const pw = pred.koWinners?.[m.id];
+  const pw = effectiveKOWinner(pred, m.id);
   const ps = pred.koScores?.[m.id];
   const r = state.koResults[m.id];
   const schema = PTS_KO[m.round] || PTS_KO.r16;

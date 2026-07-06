@@ -6,6 +6,7 @@ import {
   calcGroupPointsBreakdown,
   calcPoints,
   buildRichKOSlots,
+  effectiveKOWinner,
   fmtDateTime,
   deriveSurpriseStage,
   deriveTopOuts,
@@ -994,14 +995,14 @@ function calcKOMatchPts(m, userPred, koResults) {
   const r = koResults?.[m.id];
   if (!r?.played) return null;
   const schema = PTS_KO[m.round] || PTS_KO.r16;
-  const pw = userPred?.koWinners?.[m.id];
+  const pw = effectiveKOWinner(userPred, m.id);
   const ps = userPred?.koScores?.[m.id];
-  if (!pw) return null;
-  const winOk = r.winner === pw;
+  if (!pw && (ps?.home === undefined || ps.home === "")) return null;
+  const winOk = !!pw && r.winner === pw;
   let pts = winOk ? schema.winner : 0;
   let scoreOk = false;
   let diffOk = false;
-  if (ps?.home !== undefined && r.home90 !== undefined) {
+  if (ps?.home !== undefined && ps.home !== "" && r.home90 !== undefined) {
     const pH = parseInt(ps.home, 10);
     const pA = parseInt(ps.away, 10);
     const rH = parseInt(r.home90, 10);
@@ -2068,11 +2069,11 @@ function SingleKOMatchCompare({ match, state, currentUserId, onClose }) {
   const awayTeam = awayDesc?.type === "team" ? awayDesc.team : null;
 
   const currentUser = state.users.find((u) => u.id === currentUserId);
-  const myWinner = currentUser?.predictions?.koWinners?.[match.id];
+  const myWinner = effectiveKOWinner(currentUser?.predictions, match.id);
   const myScore = currentUser?.predictions?.koScores?.[match.id];
 
   const allWinnerPreds = state.users
-    .map((u) => u.predictions?.koWinners?.[match.id])
+    .map((u) => effectiveKOWinner(u.predictions, match.id))
     .filter(Boolean);
   const totalPicked = allWinnerPreds.length;
 
