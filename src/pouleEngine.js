@@ -409,7 +409,12 @@ function resolveSlotRich(slot, ctx) {
       const hd = resolveSlotRich(koMatch.homeSlot, ctx);
       const ad = resolveSlotRich(koMatch.awaySlot, ctx);
       if (hd.type === "team" && ad.type === "team") {
-        if (userPick) return { type: "team", team: userPick, candidates: [hd.team, ad.team] };
+        // Alleen een expliciete keuze tonen als die ook echt één van de twee
+        // bekende deelnemers is. Een oude/verouderde keuze (team dat deze
+        // wedstrijd uiteindelijk niet haalde) negeren we, anders tonen we een
+        // team dat helemaal niet in deze wedstrijd speelt.
+        if (userPick === hd.team || userPick === ad.team)
+          return { type: "team", team: userPick, candidates: [hd.team, ad.team] };
         return { type: "two", teams: [hd.team, ad.team] };
       }
     }
