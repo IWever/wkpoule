@@ -580,6 +580,7 @@ function NlStageCard({ pred, frozen, set, state, onCompare }) {
 
 function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
   const SURPRISE_STAGES = [
+    { stage: "Groepsfase", pts: 0 },
     { stage: "Zestiende finale", pts: PTS_SURPRISE["Zestiende finale"] },
     { stage: "Achtste finale", pts: PTS_SURPRISE["Achtste finale"] },
     { stage: "Kwartfinale", pts: PTS_SURPRISE["Kwartfinale"] },
@@ -594,13 +595,19 @@ function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
   const surpriseStage = info?.stage || null;
   const surprisePts = info ? info.pts : 0;
   const hasPts = !!surpriseStage && surprisePts > 0;
+  // Welk blok in het rooster oplicht. Strandt het team in de groepsfase, dan
+  // lichten we het "Groepsfase"-blok op (in plaats van een aparte rode tekst).
+  const activeStage = info
+    ? info.status === "group_out"
+      ? "Groepsfase"
+      : surpriseStage
+    : null;
 
-  // Statusregel onderaan de kaart: toont óók 0 punten en hoe ver het land kwam.
-  const ptsText = surprisePts > 0 ? `+${surprisePts}` : "0";
+  // Statusregel onderaan de kaart (alleen positieve/neutrale info; hoe ver een
+  // uitgeschakeld team kwam blijkt uit het opgelichte blok hierboven).
   let statusLine = null;
-  if (info && info.status !== "none") {
+  if (info) {
     const green = "var(--green)";
-    const red = "var(--red)";
     const muted = "var(--muted)";
     if (info.status === "champion")
       statusLine = { color: green, text: `🏆 Wereldkampioen → +${surprisePts} pt` };
@@ -612,10 +619,6 @@ function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
       statusLine = { color: green, text: `4e plaats → +${surprisePts} pt` };
     else if (info.status === "advanced")
       statusLine = { color: green, text: `Doorgestoten naar ${info.roundLabel} → +${surprisePts} pt` };
-    else if (info.status === "eliminated")
-      statusLine = { color: red, text: `Uitgeschakeld in ${info.roundLabel} → ${ptsText} pt` };
-    else if (info.status === "group_out")
-      statusLine = { color: red, text: "Uitgeschakeld in de groepsfase → 0 pt" };
     else if (info.status === "qualified")
       statusLine = { color: green, text: `Geplaatst voor de zestiende finale → +${surprisePts} pt` };
     else if (info.status === "not_started")
@@ -661,13 +664,16 @@ function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
         }}
       >
         {SURPRISE_STAGES.map(({ stage, pts }) => {
-          const isActive = stage === surpriseStage;
+          const isActive = stage === activeStage;
+          // 0-punten blok (groepsfase) licht rood op = uitgeschakeld; de rest groen.
+          const activeCol = pts > 0 ? "var(--green)" : "var(--red)";
+          const activeBg = pts > 0 ? "rgba(63,185,80,.12)" : "rgba(248,81,73,.12)";
           return (
             <div
               key={stage}
               style={{
-                background: isActive ? "rgba(63,185,80,.12)" : "var(--bg)",
-                border: `1px solid ${isActive ? "var(--green)" : "var(--border)"}`,
+                background: isActive ? activeBg : "var(--bg)",
+                border: `1px solid ${isActive ? activeCol : "var(--border)"}`,
                 borderRadius: 7,
                 padding: "6px 8px",
                 textAlign: "center",
@@ -677,7 +683,7 @@ function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
                 style={{
                   fontSize: 13,
                   fontWeight: 700,
-                  color: isActive ? "var(--green)" : "var(--accent)",
+                  color: isActive ? activeCol : "var(--accent)",
                   marginBottom: 2,
                 }}
               >
