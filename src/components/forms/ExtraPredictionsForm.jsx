@@ -595,24 +595,31 @@ function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
   const surprisePts = info ? info.pts : 0;
   const hasPts = !!surpriseStage && surprisePts > 0;
 
-  // Statusregel onderaan de kaart: toont óók 0 punten en de uitschakelronde.
+  // Statusregel onderaan de kaart: toont óók 0 punten en hoe ver het land kwam.
+  const ptsText = surprisePts > 0 ? `+${surprisePts}` : "0";
   let statusLine = null;
   if (info && info.status !== "none") {
+    const green = "var(--green)";
+    const red = "var(--red)";
+    const muted = "var(--muted)";
     if (info.status === "champion")
-      statusLine = { color: "var(--green)", text: `🏆 Wereldkampioen → +${surprisePts} pt` };
+      statusLine = { color: green, text: `🏆 Wereldkampioen → +${surprisePts} pt` };
+    else if (info.status === "runner_up")
+      statusLine = { color: green, text: `🥈 Verliezend finalist → +${surprisePts} pt` };
+    else if (info.status === "third")
+      statusLine = { color: green, text: `🥉 3e plaats → +${surprisePts} pt` };
+    else if (info.status === "fourth")
+      statusLine = { color: green, text: `4e plaats → +${surprisePts} pt` };
     else if (info.status === "advanced")
-      statusLine = { color: "var(--green)", text: `Nu in: ${surpriseStage} → +${surprisePts} pt` };
+      statusLine = { color: green, text: `Doorgestoten naar ${info.roundLabel} → +${surprisePts} pt` };
     else if (info.status === "eliminated")
-      statusLine = {
-        color: "var(--red)",
-        text: `Uitgeschakeld in ${info.roundLabel} → ${surprisePts > 0 ? `+${surprisePts}` : "0"} pt`,
-      };
+      statusLine = { color: red, text: `Uitgeschakeld in ${info.roundLabel} → ${ptsText} pt` };
     else if (info.status === "group_out")
-      statusLine = { color: "var(--red)", text: "Uitgeschakeld in de groepsfase → 0 pt" };
+      statusLine = { color: red, text: "Uitgeschakeld in de groepsfase → 0 pt" };
     else if (info.status === "qualified")
-      statusLine = { color: "var(--muted)", text: "Geplaatst voor de KO-fase — nog geen punten" };
+      statusLine = { color: green, text: `Geplaatst voor de zestiende finale → +${surprisePts} pt` };
     else if (info.status === "not_started")
-      statusLine = { color: "var(--muted)", text: "KO-fase nog niet begonnen" };
+      statusLine = { color: muted, text: "KO-fase nog niet begonnen" };
   }
 
   return (

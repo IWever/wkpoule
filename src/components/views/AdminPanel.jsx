@@ -21,7 +21,7 @@ import {
   groupsAllFilled,
   resolveSlotRich,
   buildRichKOSlots,
-  deriveSurpriseStage,
+  deriveSurpriseInfo,
   deriveTopOuts,
   fmtDateTime,
   hash,
@@ -2265,7 +2265,7 @@ function ExtrasAdmin({ state, setState }) {
   const topOuts = deriveTopOuts(state.results, state.koResults);
   const surpriseProgress = SURPRISE_TEAMS.map((team) => ({
     team,
-    stage: deriveSurpriseStage(team, state.koResults),
+    stage: deriveSurpriseInfo(team, state.results, state.koResults).stage,
   })).filter((s) => s.stage && PTS_SURPRISE[s.stage] > 0);
 
   function setResult(patch) {

@@ -8,7 +8,7 @@ import {
   buildRichKOSlots,
   effectiveKOWinner,
   fmtDateTime,
-  deriveSurpriseStage,
+  deriveSurpriseInfo,
   deriveTopOuts,
 } from "../pouleEngine";
 import { S } from "../styles/ui";
@@ -2591,8 +2591,9 @@ function SurpriseTeamCompare({ state, currentUserId, onClose }) {
         </div>
       ) : (
         sorted.map(([team, pickers]) => {
-          const stage = deriveSurpriseStage(team, state.koResults || {});
-          const stagePts = stage ? PTS_SURPRISE[stage] || 0 : null;
+          const sInfo = deriveSurpriseInfo(team, state.results || {}, state.koResults || {});
+          const stage = sInfo.stage;
+          const stagePts = sInfo.pts > 0 ? sInfo.pts : null;
           const isMyPick = team === myPick;
 
           const stageExtra = stage ? (
