@@ -626,15 +626,28 @@ const KO_ROUND_TO_STAGE = {
   final: "🏆 Wereldkampioen",
 };
 
+// Natuurlijke omschrijving van de ronde waarin een team werd uitgeschakeld.
+const KO_ROUND_ELIM_LABEL = {
+  r32: "de zestiende finale",
+  r16: "de achtste finale",
+  qf: "de kwartfinale",
+  sf: "de halve finale",
+  "3rd": "de troostfinale",
+  final: "de finale",
+};
+
 // deriveSurpriseStage: geeft de hoogste ronde terug die het team haalde
 function deriveSurpriseStage(team, koResults) {
   if (!team) return null;
   let furthestIdx = -1;
+  let wonFinal = false;
   KO_STRUCTURE.forEach((m) => {
     const r = koResults[m.id];
     if (!r?.played) return;
     const roundIdx = KO_ROUND_ORDER.indexOf(m.round);
-    if (r.winner === team && roundIdx > furthestIdx) furthestIdx = roundIdx;
+    const wonThis = r.winner === team;
+    if (wonThis && roundIdx > furthestIdx) furthestIdx = roundIdx;
+    if (wonThis && m.round === "final") wonFinal = true;
     const hId =
       m.homeSlot && m.homeSlot.charAt(0) === "W" ? m.homeSlot.slice(1) : null;
     const aId =
@@ -644,9 +657,81 @@ function deriveSurpriseStage(team, koResults) {
     if ((hw === team || aw === team) && roundIdx > furthestIdx)
       furthestIdx = roundIdx;
   });
+  // Alleen de winnaar van de finale is wereldkampioen (50 pt). Wie de finale
+  // haalt maar verliest, is verliezend finalist en valt in de 3e-plaats-tier
+  // (40 pt) — anders zou de verliezer ook als kampioen scoren.
+  if (KO_ROUND_ORDER[furthestIdx] === "final" && !wonFinal) {
+    furthestIdx = KO_ROUND_ORDER.indexOf("3rd");
+  }
   return furthestIdx >= 0
     ? KO_ROUND_TO_STAGE[KO_ROUND_ORDER[furthestIdx]]
     : null;
+}
+
+// deriveSurpriseInfo: rijkere status van het verrassingsteam, zodat het extra-
+// vragen scherm ook 0 punten en "hoe ver gekomen" kan tonen.
+//   status: "none" | "not_started" | "qualified" | "group_out"
+//         | "eliminated" | "advanced" | "champion"
+function deriveSurpriseInfo(team, results, koResults) {
+  if (!team) return { stage: null, pts: 0, status: "none", roundLabel: null };
+  results = results || {};
+  koResults = koResults || {};
+
+  const stage = deriveSurpriseStage(team, koResults);
+  const pts = stage ? PTS_SURPRISE[stage] || 0 : 0;
+
+  // Werkelijke bracket resolven om te bepalen tot welke ronde het team
+  // daadwerkelijk speelde (gewonnen én verloren wedstrijden).
+  const slots = buildRichKOSlots({}, results, koResults);
+  const teamOf = (d) => (d && d.type === "team" ? d.team : null);
+
+  let furthestIdx = -1;
+  let wonFurthest = false;
+  let furthestRound = null;
+  KO_STRUCTURE.forEach((m) => {
+    const r = koResults[m.id];
+    if (!r?.played) return;
+    const home = teamOf(slots[m.id]?.home);
+    const away = teamOf(slots[m.id]?.away);
+    if (home !== team && away !== team) return;
+    const idx = KO_ROUND_ORDER.indexOf(m.round);
+    if (idx > furthestIdx) {
+      furthestIdx = idx;
+      wonFurthest = r.winner === team;
+      furthestRound = m.round;
+    }
+  });
+
+  if (furthestIdx >= 0) {
+    if (wonFurthest && furthestRound === "final")
+      return { stage, pts, status: "champion", roundLabel: null };
+    if (wonFurthest) return { stage, pts, status: "advanced", roundLabel: null };
+    return {
+      stage,
+      pts,
+      status: "eliminated",
+      roundLabel: KO_ROUND_ELIM_LABEL[furthestRound],
+    };
+  }
+
+  // Team speelde nog geen KO-wedstrijd: bepaal of het geplaatst is.
+  const allGroupsComplete = Object.values(
+    groupsAllFilled((id) => {
+      const r = results[id];
+      return r?.played ? r : null;
+    })
+  ).every(Boolean);
+  const qualified = KO_STRUCTURE.some(
+    (m) =>
+      m.round === "r32" &&
+      (teamOf(slots[m.id]?.home) === team ||
+        teamOf(slots[m.id]?.away) === team)
+  );
+
+  if (qualified) return { stage: null, pts: 0, status: "qualified", roundLabel: null };
+  if (allGroupsComplete)
+    return { stage: null, pts: 0, status: "group_out", roundLabel: null };
+  return { stage: null, pts: 0, status: "not_started", roundLabel: null };
 }
 
 // ─── TOPSCORER PUNTEN HELPER ─────────────────────────────────────────────────
@@ -895,6 +980,7 @@ export {
   effectiveKOWinner,
   deriveTopOuts,
   deriveSurpriseStage,
+  deriveSurpriseInfo,
   calcTopScorerPts,
   calcGroupMatchPts,
   calcGroupPointsBreakdown,
