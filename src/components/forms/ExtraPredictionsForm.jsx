@@ -13,7 +13,7 @@ import {
 import {
   deepSet,
   deriveTopOuts,
-  deriveSurpriseStage,
+  deriveSurpriseInfo,
   calcTopScorerPts,
 } from "../../pouleEngine";
 import { S } from "../../styles/ui";
@@ -580,6 +580,7 @@ function NlStageCard({ pred, frozen, set, state, onCompare }) {
 
 function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
   const SURPRISE_STAGES = [
+    { stage: "Groepsfase", pts: 0 },
     { stage: "Zestiende finale", pts: PTS_SURPRISE["Zestiende finale"] },
     { stage: "Achtste finale", pts: PTS_SURPRISE["Achtste finale"] },
     { stage: "Kwartfinale", pts: PTS_SURPRISE["Kwartfinale"] },
@@ -588,10 +589,41 @@ function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
     { stage: "🏆 Wereldkampioen", pts: PTS_SURPRISE["🏆 Wereldkampioen"] },
   ];
 
-  const surpriseStage = pred.surpriseTeam && state
-    ? deriveSurpriseStage(pred.surpriseTeam, state.koResults || {})
+  const info = pred.surpriseTeam && state
+    ? deriveSurpriseInfo(pred.surpriseTeam, state.results || {}, state.koResults || {})
     : null;
-  const surprisePts = surpriseStage ? PTS_SURPRISE[surpriseStage] || 0 : null;
+  const surpriseStage = info?.stage || null;
+  const surprisePts = info ? info.pts : 0;
+  const hasPts = !!surpriseStage && surprisePts > 0;
+  // Welk blok in het rooster oplicht. Strandt het team in de groepsfase, dan
+  // lichten we het "Groepsfase"-blok op (in plaats van een aparte rode tekst).
+  const activeStage = info
+    ? info.status === "group_out"
+      ? "Groepsfase"
+      : surpriseStage
+    : null;
+
+  // Statusregel onderaan de kaart (alleen positieve/neutrale info; hoe ver een
+  // uitgeschakeld team kwam blijkt uit het opgelichte blok hierboven).
+  let statusLine = null;
+  if (info) {
+    const green = "var(--green)";
+    const muted = "var(--muted)";
+    if (info.status === "champion")
+      statusLine = { color: green, text: `🏆 Wereldkampioen → +${surprisePts} pt` };
+    else if (info.status === "runner_up")
+      statusLine = { color: green, text: `🥈 Verliezend finalist → +${surprisePts} pt` };
+    else if (info.status === "third")
+      statusLine = { color: green, text: `🥉 3e plaats → +${surprisePts} pt` };
+    else if (info.status === "fourth")
+      statusLine = { color: green, text: `4e plaats → +${surprisePts} pt` };
+    else if (info.status === "advanced")
+      statusLine = { color: green, text: `Doorgestoten naar ${info.roundLabel} → +${surprisePts} pt` };
+    else if (info.status === "qualified")
+      statusLine = { color: green, text: `Geplaatst voor de zestiende finale → +${surprisePts} pt` };
+    else if (info.status === "not_started")
+      statusLine = { color: muted, text: "KO-fase nog niet begonnen" };
+  }
 
   return (
     <div style={S.card()}>
@@ -613,7 +645,7 @@ function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
           🌟 Verrassing van het WK
           {onCompare && <CompareHint />}
         </span>
-        {surpriseStage && (
+        {hasPts && (
           <span style={{ color: "var(--green)", fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }}>
             +{surprisePts} pt
           </span>
@@ -632,13 +664,16 @@ function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
         }}
       >
         {SURPRISE_STAGES.map(({ stage, pts }) => {
-          const isActive = stage === surpriseStage;
+          const isActive = stage === activeStage;
+          // 0-punten blok (groepsfase) licht rood op = uitgeschakeld; de rest groen.
+          const activeCol = pts > 0 ? "var(--green)" : "var(--red)";
+          const activeBg = pts > 0 ? "rgba(63,185,80,.12)" : "rgba(248,81,73,.12)";
           return (
             <div
               key={stage}
               style={{
-                background: isActive ? "rgba(63,185,80,.12)" : "var(--bg)",
-                border: `1px solid ${isActive ? "var(--green)" : "var(--border)"}`,
+                background: isActive ? activeBg : "var(--bg)",
+                border: `1px solid ${isActive ? activeCol : "var(--border)"}`,
                 borderRadius: 7,
                 padding: "6px 8px",
                 textAlign: "center",
@@ -648,7 +683,7 @@ function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
                 style={{
                   fontSize: 13,
                   fontWeight: 700,
-                  color: isActive ? "var(--green)" : "var(--accent)",
+                  color: isActive ? activeCol : "var(--accent)",
                   marginBottom: 2,
                 }}
               >
@@ -670,16 +705,16 @@ function SurpriseTeamCard({ pred, frozen, set, state, onCompare }) {
         placeholder="— kies jouw verrassing —"
         teams={SURPRISE_TEAMS}
       />
-      {surpriseStage && (
+      {statusLine && (
         <div
           style={{
             marginTop: 10,
             fontSize: 12,
-            color: "var(--green)",
+            color: statusLine.color,
             fontWeight: 700,
           }}
         >
-          Nu in: {surpriseStage} → +{surprisePts} pt
+          {statusLine.text}
         </div>
       )}
     </div>

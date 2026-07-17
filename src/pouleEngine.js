@@ -626,27 +626,128 @@ const KO_ROUND_TO_STAGE = {
   final: "🏆 Wereldkampioen",
 };
 
-// deriveSurpriseStage: geeft de hoogste ronde terug die het team haalde
-function deriveSurpriseStage(team, koResults) {
-  if (!team) return null;
-  let furthestIdx = -1;
+// Natuurlijke omschrijving van de ronde waarin een team werd uitgeschakeld.
+const KO_ROUND_ELIM_LABEL = {
+  r32: "de zestiende finale",
+  r16: "de achtste finale",
+  qf: "de kwartfinale",
+  sf: "de halve finale",
+  "3rd": "de troostfinale",
+  final: "de finale",
+};
+
+// Punt-tiers voor de verrassing: index = hoe ver het team KWAM (bereikte ronde).
+// Punten horen bij het BEREIKEN van een ronde, niet bij het winnen ervan.
+//   0 = in de zestiende finale (uit de groep geplaatst)  → 5
+//   1 = in de achtste finale   (zestiende finale gewonnen)→ 10
+//   2 = in de kwartfinale      (achtste gewonnen)         → 20
+//   3 = in de halve finale     (kwartfinale gewonnen)     → 30
+//   4 = verliezend finalist / 3e plaats                   → 40
+//   5 = wereldkampioen                                    → 50
+const SURPRISE_TIER_STAGE = [
+  "Zestiende finale",
+  "Achtste finale",
+  "Kwartfinale",
+  "Halve finale",
+  "3e Plaats",
+  "🏆 Wereldkampioen",
+];
+// Het winnen van een ronde brengt je naar de VOLGENDE tier.
+const ROUND_WIN_TIER = { r32: 1, r16: 2, qf: 3, sf: 4, "3rd": 4, final: 5 };
+// Ronde die het team bereikt zodra het de huidige ronde wint (voor "nu in").
+const ROUND_REACHED_LABEL = {
+  r32: "de achtste finale",
+  r16: "de kwartfinale",
+  qf: "de halve finale",
+  sf: "de finale",
+};
+
+// deriveSurpriseInfo: bepaalt punten én status van het verrassingsteam.
+// Punten = hoogste ronde die het team BEREIKTE (winst telt alleen mee om de
+// volgende ronde te halen). status wordt gebruikt door het extra-vragen scherm
+// om ook 0 punten en de uitschakelronde te tonen.
+//   status: "none" | "not_started" | "qualified" | "group_out"
+//         | "eliminated" | "advanced" | "champion" | "runner_up"
+//         | "third" | "fourth"
+function deriveSurpriseInfo(team, results, koResults) {
+  if (!team) return { stage: null, pts: 0, status: "none", roundLabel: null };
+  results = results || {};
+  koResults = koResults || {};
+
+  // Lichte bracket-resolutie (zonder de dure groepskandidaten-enumeratie):
+  // we willen enkel zekere teams per slot.
+  const koWinners = {};
+  KO_STRUCTURE.forEach((km) => {
+    const w = koResults[km.id]?.winner;
+    if (w) koWinners[km.id] = w;
+  });
+  Object.keys(koResults).forEach((k) => {
+    if (k.startsWith("N3_")) koWinners[k] = koResults[k];
+  });
+  const ctx = {
+    adminStandings: deriveGroupStandingsFromResults(results),
+    adminComplete: groupsAllFilled((id) => {
+      const r = results[id];
+      return r?.played ? r : null;
+    }),
+    userKoWinners: koWinners,
+    adminKoResults: koResults,
+  };
+  const teamOf = (slot) => {
+    const d = resolveSlotRich(slot, ctx);
+    return d && d.type === "team" ? d.team : null;
+  };
+  const plays = (m) =>
+    teamOf(m.homeSlot) === team ||
+    teamOf(m.awaySlot) === team ||
+    koResults[m.id]?.winner === team;
+
+  // ── Punten: hoogste BEREIKTE ronde ─────────────────────────────────────────
+  const qualifiedR32 = KO_STRUCTURE.some((m) => m.round === "r32" && plays(m));
+  let tier = qualifiedR32 ? 0 : -1;
   KO_STRUCTURE.forEach((m) => {
     const r = koResults[m.id];
-    if (!r?.played) return;
-    const roundIdx = KO_ROUND_ORDER.indexOf(m.round);
-    if (r.winner === team && roundIdx > furthestIdx) furthestIdx = roundIdx;
-    const hId =
-      m.homeSlot && m.homeSlot.charAt(0) === "W" ? m.homeSlot.slice(1) : null;
-    const aId =
-      m.awaySlot && m.awaySlot.charAt(0) === "W" ? m.awaySlot.slice(1) : null;
-    const hw = hId && koResults[hId]?.winner;
-    const aw = aId && koResults[aId]?.winner;
-    if ((hw === team || aw === team) && roundIdx > furthestIdx)
-      furthestIdx = roundIdx;
+    if (!r?.played || r.winner !== team) return;
+    const t = ROUND_WIN_TIER[m.round];
+    if (t > tier) tier = t;
   });
-  return furthestIdx >= 0
-    ? KO_ROUND_TO_STAGE[KO_ROUND_ORDER[furthestIdx]]
-    : null;
+  const stage = tier >= 0 ? SURPRISE_TIER_STAGE[tier] : null;
+  const pts = stage ? PTS_SURPRISE[stage] || 0 : 0;
+
+  // ── Status: verste GESPEELDE wedstrijd + uitkomst ──────────────────────────
+  let furthestIdx = -1;
+  let furthestRound = null;
+  let wonFurthest = false;
+  KO_STRUCTURE.forEach((m) => {
+    if (!koResults[m.id]?.played || !plays(m)) return;
+    const idx = KO_ROUND_ORDER.indexOf(m.round);
+    if (idx > furthestIdx) {
+      furthestIdx = idx;
+      furthestRound = m.round;
+      wonFurthest = koResults[m.id].winner === team;
+    }
+  });
+
+  let status;
+  let roundLabel = null;
+  if (furthestIdx >= 0) {
+    if (furthestRound === "final") status = wonFurthest ? "champion" : "runner_up";
+    else if (furthestRound === "3rd") status = wonFurthest ? "third" : "fourth";
+    else if (wonFurthest) {
+      status = "advanced";
+      roundLabel = ROUND_REACHED_LABEL[furthestRound];
+    } else {
+      status = "eliminated";
+      roundLabel = KO_ROUND_ELIM_LABEL[furthestRound];
+    }
+  } else if (qualifiedR32) {
+    status = "qualified";
+  } else {
+    const allGroupsComplete = Object.values(ctx.adminComplete).every(Boolean);
+    status = allGroupsComplete ? "group_out" : "not_started";
+  }
+
+  return { stage, pts, status, roundLabel };
 }
 
 // ─── TOPSCORER PUNTEN HELPER ─────────────────────────────────────────────────
@@ -780,10 +881,9 @@ function calcPoints(user, results, koResults) {
   )
     pts += PTS_EXTRA.yellowCards;
 
-  // Extra: verrassing
+  // Extra: verrassing — punten voor de hoogste BEREIKTE ronde.
   if (p.surpriseTeam) {
-    const ss = deriveSurpriseStage(p.surpriseTeam, koResults);
-    if (ss) pts += PTS_SURPRISE[ss] || 0;
+    pts += deriveSurpriseInfo(p.surpriseTeam, results, koResults).pts;
   }
 
   // Extra: topland haalt achtste finales niet
@@ -894,7 +994,7 @@ export {
   buildKOSlots,
   effectiveKOWinner,
   deriveTopOuts,
-  deriveSurpriseStage,
+  deriveSurpriseInfo,
   calcTopScorerPts,
   calcGroupMatchPts,
   calcGroupPointsBreakdown,

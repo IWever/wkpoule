@@ -16,7 +16,7 @@ import {
   calcGroupMatchPts,
   buildRichKOSlots,
   effectiveKOWinner,
-  deriveSurpriseStage,
+  deriveSurpriseInfo,
   deriveTopOuts,
   fmtDateTime,
   calcTopScorerPts,
@@ -424,10 +424,11 @@ function NavCard({ icon, label, filled, total, frozen, available, onClick }) {
 // ─── EXTRA PREDICTIONS GRID — alleen 4 vragen tonen ──────────────────────────
 
 function ExtraPredictionsGrid({ pred, state }) {
-  const surpriseStage = pred.surpriseTeam
-    ? deriveSurpriseStage(pred.surpriseTeam, state.koResults)
+  const surpriseInfo = pred.surpriseTeam
+    ? deriveSurpriseInfo(pred.surpriseTeam, state.results, state.koResults)
     : null;
-  const surprisePts = surpriseStage ? PTS_SURPRISE[surpriseStage] || 0 : null;
+  const surpriseStage = surpriseInfo?.stage || null;
+  const surprisePts = surpriseInfo && surpriseInfo.pts > 0 ? surpriseInfo.pts : null;
   const championGroup = pred.champion ? TEAM_GROUP[pred.champion] : null;
 
   // Topscorers
