@@ -30,6 +30,7 @@ import { persistAdmin } from "../../persist-helpers";
 import { S } from "../../styles/ui";
 import { Alert, SlotDisplay, TabBar } from "../common";
 import { DeadlineBanner } from "./MyOverview";
+import { PrizesOverview } from "./PrizesOverview";
 
 const KO_DATES = {
   r32: "2026-07-01",
@@ -125,6 +126,7 @@ function AdminPanel({ state, setState }) {
 
   const TABS = [
     { id: "home", label: "🏠 Overzicht" },
+    { id: "prizes", label: "🏆 Prijzen & Stats" },
     { id: "fase", label: "🔒 Bevriezen" },
     {
       id: "competitions",
@@ -154,6 +156,7 @@ function AdminPanel({ state, setState }) {
       {tab === "home" && (
         <AdminHome state={state} onUpdResult={updResult} onUpdKO={updKO} />
       )}
+      {tab === "prizes" && <PrizesOverview state={state} />}
       {tab === "fase" && (
         <FreezePanel
           state={state}
