@@ -186,9 +186,18 @@ function PrizesOverview({ state, currentUser = null, isAdmin = true }) {
             ))}
           </div>
 
-          <SectionTitle icon="📊" text="Leuke statistieken" />
+          <SectionTitle
+            icon="📊"
+            text="Leuke statistieken"
+            hint="Automatisch berekend uit de voorspellingen en de tot nu toe ingevoerde uitslagen. Puur voor de lol — deze tellen niet mee voor de punten."
+          />
           <StatsGrid scored={scored} stats={stats} />
 
+          <SectionTitle
+            icon="🔥"
+            text="Populaire keuzes"
+            hint="Waar zetten de meeste deelnemers op in? Achter elke keuze staat hoe vaak die gekozen is en welk aandeel van de groep dat is."
+          />
           <PopularitySection stats={stats} total={users.length} />
 
           {isAdmin && (
@@ -249,19 +258,32 @@ function CompPicker({ competitions, state, activeId, onSelect }) {
   );
 }
 
-function SectionTitle({ icon, text }) {
+function SectionTitle({ icon, text, hint }) {
   return (
-    <div
-      style={{
-        fontSize: 12,
-        fontWeight: 700,
-        color: "var(--accent)",
-        textTransform: "uppercase",
-        letterSpacing: "0.1em",
-        marginBottom: 12,
-      }}
-    >
-      {icon} {text}
+    <div style={{ marginBottom: 12 }}>
+      <div
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          color: "var(--accent)",
+          textTransform: "uppercase",
+          letterSpacing: "0.1em",
+        }}
+      >
+        {icon} {text}
+      </div>
+      {hint && (
+        <div
+          style={{
+            fontSize: 12,
+            color: "var(--muted)",
+            marginTop: 4,
+            lineHeight: 1.5,
+          }}
+        >
+          {hint}
+        </div>
+      )}
     </div>
   );
 }
@@ -346,36 +368,57 @@ function StatsGrid({ scored, stats }) {
   const oranjeFans = per.filter((s) => s.champion === "Nederland").length;
 
   const tiles = [
-    { icon: "👥", value: n, label: "Deelnemers", color: "var(--accent)" },
-    { icon: "📈", value: avg, label: "Gem. score (pt)", color: "var(--accent)" },
+    {
+      icon: "👥",
+      value: n,
+      title: "Deelnemers",
+      hint: "Aantal meespelers in deze selectie.",
+      color: "var(--accent)",
+    },
+    {
+      icon: "📈",
+      value: avg,
+      title: "Gemiddelde score",
+      hint: "Gemiddeld aantal punten per deelnemer.",
+      color: "var(--accent)",
+    },
     {
       icon: "🔥",
       value: topOverall ? `${topOverall.total}` : "—",
-      label: topOverall ? `Koploper: ${topOverall.name}` : "Koploper",
+      title: "Koploper",
+      who: topOverall?.name,
+      hint: "Hoogste totaalscore op dit moment.",
       color: "var(--gold)",
     },
     {
       icon: "🎯",
       value: someExact ? sharpest.exactGroup : "—",
-      label: someExact ? `Scherpst: ${sharpest.name}` : "Meeste exacte uitslagen",
+      title: "Scherpschutter",
+      who: someExact ? sharpest.name : null,
+      hint: "Meeste exact voorspelde groepsuitslagen.",
       color: "var(--green)",
     },
     {
       icon: "🎢",
       value: optimist ? optimist.groupGoals : "—",
-      label: optimist ? `Optimist: ${optimist.name}` : "Meeste doelpunten voorspeld",
+      title: "Grootste optimist",
+      who: optimist?.name,
+      hint: "Voorspelde de meeste doelpunten in de groepsfase.",
       color: "var(--orange)",
     },
     {
       icon: "🧱",
       value: zuinig ? zuinig.groupGoals : "—",
-      label: zuinig ? `Zuinigst: ${zuinig.name}` : "Minste doelpunten voorspeld",
+      title: "Zuinigste",
+      who: zuinig?.name,
+      hint: "Voorspelde de minste doelpunten in de groepsfase.",
       color: "var(--muted)",
     },
     {
       icon: "🇳🇱",
       value: oranjeFans,
-      label: "Geloven in Oranje (kampioen)",
+      title: "Oranjegevoel",
+      hint: "Aantal deelnemers dat Nederland als wereldkampioen koos.",
       color: "var(--orange)",
     },
   ];
@@ -384,13 +427,23 @@ function StatsGrid({ scored, stats }) {
     <div
       style={{
         display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
         gap: 10,
         marginBottom: 26,
       }}
     >
       {tiles.map((t, i) => (
-        <div key={i} style={{ ...S.card(), textAlign: "center", padding: "14px 10px" }}>
+        <div
+          key={i}
+          style={{
+            ...S.card(),
+            textAlign: "center",
+            padding: "14px 12px",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
           <div style={{ fontSize: 20, marginBottom: 4 }}>{t.icon}</div>
           <div
             style={{
@@ -402,8 +455,16 @@ function StatsGrid({ scored, stats }) {
           >
             {t.value}
           </div>
-          <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 5 }}>
-            {t.label}
+          <div style={{ fontSize: 12, fontWeight: 700, marginTop: 6 }}>
+            {t.title}
+          </div>
+          {t.who && (
+            <div style={{ fontSize: 12, color: "var(--accent)", fontWeight: 600, marginTop: 1 }}>
+              {t.who}
+            </div>
+          )}
+          <div style={{ fontSize: 10.5, color: "var(--muted)", marginTop: 5, lineHeight: 1.4 }}>
+            {t.hint}
           </div>
         </div>
       ))}
