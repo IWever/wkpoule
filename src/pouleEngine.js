@@ -911,6 +911,143 @@ function calcPoints(user, results, koResults) {
   return pts;
 }
 
+// ─── KO-PUNTEN (losse categorie) ──────────────────────────────────────────────
+// Zelfde logica als het KO-blok in calcPoints, maar geïsoleerd zodat we per
+// deelnemer de KO-fase apart kunnen ranken voor de prijzenuitreiking.
+function calcKOPoints(user, koResults) {
+  const p = user.predictions || {};
+  const koSlots = buildKOSlots(p);
+  let pts = 0;
+  KO_STRUCTURE.forEach((m) => {
+    const r = koResults[m.id];
+    if (!r?.played) return;
+    const schema = PTS_KO[m.round] || PTS_KO.r16;
+    const pw = effectiveKOWinner(p, m.id, koSlots);
+    const ps = p.koScores?.[m.id];
+    if (pw && r.winner === pw) pts += schema.winner;
+    if (ps && ps.home !== undefined && r.home90 !== undefined) {
+      const pH = parseInt(ps.home, 10);
+      const pA = parseInt(ps.away, 10);
+      const rH = parseInt(r.home90, 10);
+      const rA = parseInt(r.away90, 10);
+      if (pH === rH && pA === rA) pts += schema.exact;
+      else if (pH - pA === rH - rA) pts += schema.diff;
+    }
+  });
+  return pts;
+}
+
+// ─── EXTRA-VRAGEN PUNTEN (losse categorie) ────────────────────────────────────
+// Zelfde logica als het extra-blok in calcPoints. Geeft totaal plus een detail
+// per vraag terug (handig voor de prijzen-/statspagina).
+function calcExtraPoints(user, results, koResults) {
+  const p = user.predictions || {};
+  const detail = {};
+  let pts = 0;
+
+  const championPts =
+    p.champion &&
+    koResults["FINAL"]?.played &&
+    p.champion === koResults["FINAL"].winner
+      ? PTS_EXTRA.champion
+      : 0;
+  detail.champion = championPts;
+  pts += championPts;
+
+  let topScorerPts = 0;
+  const resultTopScorers = results["TOP_SCORERS"];
+  if (resultTopScorers && Array.isArray(resultTopScorers)) {
+    topScorerPts = calcTopScorerPts(p.topScorers, resultTopScorers);
+  } else if (results["TOP_SCORER"]) {
+    const legacy = Array.isArray(results["TOP_SCORER"])
+      ? results["TOP_SCORER"]
+      : [results["TOP_SCORER"]];
+    const predScorers = Array.isArray(p.topScorers)
+      ? p.topScorers
+      : p.topScorer
+      ? [p.topScorer]
+      : [];
+    predScorers.forEach((name) => {
+      if (name && legacy.includes(name)) topScorerPts += 15;
+    });
+  }
+  detail.topScorers = topScorerPts;
+  pts += topScorerPts;
+
+  const nlPts =
+    p.nlStage && results["NL_STAGE"] && p.nlStage === results["NL_STAGE"]
+      ? PTS_EXTRA.nlStage
+      : 0;
+  detail.nlStage = nlPts;
+  pts += nlPts;
+
+  const yellowPts =
+    p.yellowCards &&
+    results["YELLOW_CARDS"] &&
+    p.yellowCards === results["YELLOW_CARDS"]
+      ? PTS_EXTRA.yellowCards
+      : 0;
+  detail.yellowCards = yellowPts;
+  pts += yellowPts;
+
+  const surprisePts = p.surpriseTeam
+    ? deriveSurpriseInfo(p.surpriseTeam, results, koResults).pts
+    : 0;
+  detail.surprise = surprisePts;
+  pts += surprisePts;
+
+  let topOutPts = 0;
+  if (p.topOut) {
+    const outs = deriveTopOuts(results, koResults);
+    if (outs.includes(p.topOut)) topOutPts = PTS_TOP_OUT;
+  }
+  detail.topOut = topOutPts;
+  pts += topOutPts;
+
+  let cleanSheetPts = 0;
+  if (p.mostCleanSheets && results["MOST_CLEAN_SHEETS"]) {
+    const adminCS = Array.isArray(results["MOST_CLEAN_SHEETS"])
+      ? results["MOST_CLEAN_SHEETS"]
+      : [results["MOST_CLEAN_SHEETS"]];
+    if (adminCS.includes(p.mostCleanSheets)) cleanSheetPts = PTS_EXTRA.mostCleanSheets;
+  }
+  detail.mostCleanSheets = cleanSheetPts;
+  pts += cleanSheetPts;
+
+  let groupGoalsPts = 0;
+  if (p.mostGroupGoals && results["MOST_GROUP_GOALS"]) {
+    const adminMGG = Array.isArray(results["MOST_GROUP_GOALS"])
+      ? results["MOST_GROUP_GOALS"]
+      : [results["MOST_GROUP_GOALS"]];
+    if (adminMGG.includes(p.mostGroupGoals)) groupGoalsPts = PTS_EXTRA.mostGroupGoals;
+  }
+  detail.mostGroupGoals = groupGoalsPts;
+  pts += groupGoalsPts;
+
+  return { total: pts, detail };
+}
+
+// ─── PUNTEN PER CATEGORIE ─────────────────────────────────────────────────────
+// Splitst de totaalscore op in de drie prijscategorieën:
+//   group = groepswedstrijden + groepsstand
+//   ko    = alle KO-wedstrijden
+//   extra = alle extra vragen
+// group + ko + extra === calcPoints(...).
+function calcCategoryPoints(user, results, koResults) {
+  const groupBd = calcGroupPointsBreakdown(user, results);
+  const ko = calcKOPoints(user, koResults);
+  const extra = calcExtraPoints(user, results, koResults);
+  return {
+    group: groupBd.totalPts,
+    groupMatch: groupBd.matchPts,
+    groupStanding: groupBd.standingPts,
+    ko,
+    extra: extra.total,
+    extraDetail: extra.detail,
+    total: groupBd.totalPts + ko + extra.total,
+  };
+}
+
 function calcGroupPointsBreakdown(user, results) {
   const p = user.predictions || {};
   const predStandings = deriveGroupStandings(p);
@@ -998,6 +1135,9 @@ export {
   calcTopScorerPts,
   calcGroupMatchPts,
   calcGroupPointsBreakdown,
+  calcKOPoints,
+  calcExtraPoints,
+  calcCategoryPoints,
   calcPoints,
   fmtDate,
   fmtTime,
