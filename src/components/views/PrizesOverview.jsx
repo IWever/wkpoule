@@ -27,7 +27,7 @@ function fmtTeam(team) {
 }
 
 // Bepaal per deelnemer de "leuke" voorspellingsdata (los van de uitslagen).
-function collectStats(users, results) {
+function collectStats(users, results, koResults) {
   const perUser = users.map((u) => {
     const p = u.predictions || {};
 
@@ -49,6 +49,21 @@ function collectStats(users, results) {
       if (res?.label === "exact") exactGroup++;
     });
 
+    // Exact voorspelde uitslagen in de KO-fase (stand na 90 minuten)
+    let exactKO = 0;
+    KO_STRUCTURE.forEach((m) => {
+      const r = koResults[m.id];
+      if (!r?.played || r.home90 === undefined || r.home90 === "") return;
+      const ps = p.koScores?.[m.id];
+      if (!ps || ps.home === undefined || ps.home === "" || ps.away === undefined || ps.away === "")
+        return;
+      const pH = parseInt(ps.home, 10);
+      const pA = parseInt(ps.away, 10);
+      const rH = parseInt(r.home90, 10);
+      const rA = parseInt(r.away90, 10);
+      if (!Number.isNaN(pH) && !Number.isNaN(pA) && pH === rH && pA === rA) exactKO++;
+    });
+
     const topScorers = Array.isArray(p.topScorers)
       ? p.topScorers.filter(Boolean)
       : p.topScorer
@@ -65,6 +80,7 @@ function collectStats(users, results) {
       groupGoals,
       filledMatches,
       exactGroup,
+      exactKO,
     };
   });
 
@@ -124,7 +140,10 @@ function PrizesOverview({ state, currentUser = null, isAdmin = true }) {
     [users, state.results, state.koResults]
   );
 
-  const stats = useMemo(() => collectStats(users, state.results), [users, state.results]);
+  const stats = useMemo(
+    () => collectStats(users, state.results, state.koResults),
+    [users, state.results, state.koResults]
+  );
 
   const compName =
     compId === "all"
@@ -365,6 +384,8 @@ function StatsGrid({ scored, stats }) {
   const zuinig = [...withPreds].sort((a, b) => a.groupGoals - b.groupGoals)[0];
   const sharpest = [...per].sort((a, b) => b.exactGroup - a.exactGroup)[0];
   const someExact = sharpest && sharpest.exactGroup > 0;
+  const sharpestKO = [...per].sort((a, b) => b.exactKO - a.exactKO)[0];
+  const someExactKO = sharpestKO && sharpestKO.exactKO > 0;
   const oranjeFans = per.filter((s) => s.champion === "Nederland").length;
 
   const tiles = [
@@ -393,9 +414,17 @@ function StatsGrid({ scored, stats }) {
     {
       icon: "🎯",
       value: someExact ? sharpest.exactGroup : "—",
-      title: "Scherpschutter",
+      title: "Scherpschutter groep",
       who: someExact ? sharpest.name : null,
       hint: "Meeste exact voorspelde groepsuitslagen.",
+      color: "var(--green)",
+    },
+    {
+      icon: "⚔️",
+      value: someExactKO ? sharpestKO.exactKO : "—",
+      title: "Scherpschutter KO",
+      who: someExactKO ? sharpestKO.name : null,
+      hint: "Meeste exact voorspelde KO-uitslagen (stand na 90 min).",
       color: "var(--green)",
     },
     {
