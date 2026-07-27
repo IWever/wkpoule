@@ -5,6 +5,7 @@ import {
   FLAG,
 } from "../../data/tournamentData";
 import { calcCategoryPoints, calcGroupMatchPts } from "../../pouleEngine";
+import { calcPrimaryComp } from "./Standings";
 import { S } from "../../styles/ui";
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
@@ -91,9 +92,22 @@ function collectStats(users, results) {
 
 // ─── PRIZES OVERVIEW ──────────────────────────────────────────────────────────
 
-function PrizesOverview({ state }) {
-  const competitions = state.competitions || [];
-  const [compId, setCompId] = useState("all");
+function PrizesOverview({ state, currentUser = null, isAdmin = true }) {
+  // Admin ziet alle competities; een deelnemer alleen de niet-verborgen
+  // competities waar hij zelf lid van is (net als bij de Stand).
+  const competitions = useMemo(() => {
+    const all = state.competitions || [];
+    if (isAdmin) return all;
+    return all.filter(
+      (c) => !c.hidden && (currentUser?.competitionIds || []).includes(c.id)
+    );
+  }, [state.competitions, isAdmin, currentUser]);
+
+  const [compId, setCompId] = useState(() => {
+    if (isAdmin) return "all";
+    const primary = calcPrimaryComp(currentUser, state);
+    return primary?.comp?.id || competitions[0]?.id || "all";
+  });
 
   const users = useMemo(() => {
     if (compId === "all") return state.users;
@@ -134,10 +148,9 @@ function PrizesOverview({ state }) {
           lineHeight: 1.6,
         }}
       >
-        Overzicht van de prijswinnaars per categorie en leuke statistieken voor
-        een intranetbericht. Winnaars worden bepaald op basis van de huidige
-        ingevoerde uitslagen — reik de prijzen pas uit als het toernooi (of de
-        betreffende fase) is afgelopen.
+        {isAdmin
+          ? "Overzicht van de prijswinnaars per categorie en leuke statistieken voor een intranetbericht. Winnaars worden bepaald op basis van de huidige ingevoerde uitslagen — reik de prijzen pas uit als het toernooi (of de betreffende fase) is afgelopen."
+          : "Wie ligt er op kop per categorie, plus leuke statistieken over alle voorspellingen. De standen zijn gebaseerd op de tot nu toe ingevoerde uitslagen."}
       </div>
 
       {competitions.length > 0 && (
@@ -178,14 +191,18 @@ function PrizesOverview({ state }) {
 
           <PopularitySection stats={stats} total={users.length} />
 
-          <SectionTitle icon="📋" text="Klaar voor het intranet" />
-          <IntranetBlock
-            scored={scored}
-            stats={stats}
-            prizeCats={prizeCats}
-            compName={compName}
-            userCount={users.length}
-          />
+          {isAdmin && (
+            <>
+              <SectionTitle icon="📋" text="Klaar voor het intranet" />
+              <IntranetBlock
+                scored={scored}
+                stats={stats}
+                prizeCats={prizeCats}
+                compName={compName}
+                userCount={users.length}
+              />
+            </>
+          )}
         </>
       )}
     </div>

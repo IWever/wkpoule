@@ -16,6 +16,7 @@ import {
   Rules,
   StandWithCompare,
   AdminPanel,
+  PrizesOverview,
 } from "./components/views";
 import { ChangePasswordScreen } from "./components/ChangePasswordScreen";
 
@@ -118,6 +119,7 @@ const OVERVIEW_SCREENS = ["overview", "editGroup", "editExtra", "editKO"];
 const NAV_TABS = [
   { id: "overview", label: "🎯 Mijn Poule" },
   { id: "stand", label: "🏅 Stand" },
+  { id: "prizes", label: "🏆 Prijzen" },
   { id: "rules", label: "📋 Spelregels" },
 ];
 
@@ -188,6 +190,8 @@ function Header({ screen, setScreen, state, isAdmin, userName, onSetMainTab }) {
                   ? "stand"
                   : t.id === "rules"
                   ? "rules"
+                  : t.id === "prizes"
+                  ? "prizes"
                   : "overview";
               const isActive =
                 screen === t.id ||
@@ -565,6 +569,8 @@ function UserScreens({ screen, setScreen, user, state, savePred }) {
     );
   if (screen === "stand")
     return <StandWithCompare state={state} currentUser={user} />;
+  if (screen === "prizes")
+    return <PrizesOverview state={state} currentUser={user} isAdmin={false} />;
   if (screen === "rules") return <Rules />;
   return null;
 }
